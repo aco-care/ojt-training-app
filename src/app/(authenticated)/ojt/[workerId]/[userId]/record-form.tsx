@@ -138,7 +138,13 @@ export default function RecordForm({
     setLoading(false);
     resetForm();
     setOpen(false);
+    // Next.js 16: router.refresh() may not always clear server cache
+    // Use a combination for reliability
     router.refresh();
+    // Fallback: force full page reload after a brief delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
   };
 
   return (

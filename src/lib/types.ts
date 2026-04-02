@@ -5,7 +5,7 @@
 export type UserRole = 'admin' | 'trainer' | 'supervisor' | 'worker' | 'executive';
 export type TrainingFormat = 'classroom' | 'ojt' | 'roleplay' | 'simulation';
 export type TrainingStatus = 'not_started' | 'in_progress' | 'completed';
-export type OjtStep = 'explanation' | 'pre_training' | 'observation' | 'main' | 'independent' | 'completion';
+export type OjtStep = 'matching' | 'explanation' | 'pre_training' | 'observation' | 'main' | 'independent' | 'completion';
 export type OjtResult = 'pass' | 'redo' | 'rollback';
 export type OjtStatus = 'not_started' | 'in_progress' | 'completed';
 export type EvalRating = 'good' | 'fair' | 'poor'; // ○ △ ×
@@ -132,6 +132,7 @@ export interface FinalEvaluation {
 
 // OJTステップ定義（報告書準拠）
 export const OJT_STEPS: { step: OjtStep; number: string; label: string; description: string }[] = [
+  { step: 'matching', number: '①', label: '利用者の選定・マッチング', description: '管理者が利用者を選定し、特定技能外国人とマッチング' },
   { step: 'explanation', number: '②', label: '利用者・家族への説明', description: '訪問サービス提供体制とOJTを行うことについて書面にて説明し署名を取得' },
   { step: 'pre_training', number: '③', label: '事前研修', description: '介護記録・個別援助計画の理解、利用者居室確認を事業所内研修で実施' },
   { step: 'observation', number: '④', label: 'OJT 1回目（見学）', description: '同行職員の業務を見学。訪問終了後に業務の確認と復習' },

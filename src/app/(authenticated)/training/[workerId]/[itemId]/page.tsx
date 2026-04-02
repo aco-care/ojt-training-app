@@ -164,6 +164,13 @@ export default async function TrainingItemDetailPage({
             <h2 className="text-sm font-semibold text-gray-900">研修概要</h2>
             <StatusBadge status={approval?.status ?? (sessions.length > 0 ? 'in_progress' : 'not_started')} />
           </div>
+          {/* 研修要件の説明 */}
+          <div className="mb-4 rounded-md bg-blue-50 border border-blue-100 p-3">
+            <p className="text-xs font-medium text-blue-800">
+              この研修項目は <span className="font-bold">1回あたり{item.target_sessions > 0 ? (item.target_hours / item.target_sessions).toFixed(0) : '—'}時間 × {item.target_sessions}日間 = {item.target_hours}時間</span> の実施が必要です
+            </p>
+          </div>
+
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs font-medium text-gray-500">目標時間</p>
