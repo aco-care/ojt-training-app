@@ -144,7 +144,7 @@ export default async function DashboardPage() {
 
   const { data: ojtRecordsData } = await supabase
     .from('ojt_records')
-    .select('*, companion:profiles(id, name)')
+    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name)')
     .order('date', { ascending: false });
   const ojtRecords = (ojtRecordsData ?? []) as (OjtRecord & {
     companion: { id: string; name: string } | null;

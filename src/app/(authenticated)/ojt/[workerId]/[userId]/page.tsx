@@ -38,7 +38,7 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
   // Fetch all OJT records for this user, sorted by date desc
   const { data: ojtRecords } = await supabase
     .from('ojt_records')
-    .select('*, companion:profiles(id, name, role)')
+    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name, role)')
     .eq('ojt_user_id', userId)
     .eq('worker_id', workerId)
     .order('date', { ascending: false });

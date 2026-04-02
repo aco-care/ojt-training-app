@@ -80,7 +80,7 @@ export default async function ExportPage({ params }: ExportPageProps) {
   // Fetch OJT records with companion profile
   const { data: ojtRecordsData } = await supabase
     .from('ojt_records')
-    .select('*, companion:profiles(id, name)')
+    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name)')
     .eq('worker_id', workerId)
     .order('date');
 
