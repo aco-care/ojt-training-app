@@ -63,9 +63,9 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
     router.refresh();
   };
 
-  const toggleArchive = async (profileId: string, currentlyArchived: boolean) => {
-    const action = currentlyArchived ? '復元' : 'アーカイブ';
-    if (!confirm(`このスタッフを${action}しますか？\n※研修記録やOJT記録は影響を受けません。`)) {
+  const toggleArchive = async (profileId: string, currentlyArchived: boolean, reason?: string) => {
+    const action = currentlyArchived ? '復元' : (reason ?? '退職');
+    if (!confirm(`このスタッフを${action}処理しますか？\n※研修記録やOJT記録は影響を受けません。`)) {
       return;
     }
 
@@ -253,6 +253,16 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                       >
                         {loading === profile.id ? '処理中...' : profile.is_archived ? '復元' : '退職処理'}
                       </button>
+                      {!profile.is_archived && (
+                        <button
+                          type="button"
+                          onClick={() => toggleArchive(profile.id, false, '異動')}
+                          disabled={loading === profile.id}
+                          className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50"
+                        >
+                          異動処理
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -366,6 +376,16 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           >
                             {loading === profile.id ? '...' : profile.is_archived ? '復元' : '退職処理'}
                           </button>
+                          {!profile.is_archived && (
+                            <button
+                              type="button"
+                              onClick={() => toggleArchive(profile.id, false, '異動')}
+                              disabled={loading === profile.id}
+                              className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50"
+                            >
+                              異動処理
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
