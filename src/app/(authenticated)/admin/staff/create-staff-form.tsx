@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 import { ROLE_LABELS } from '@/lib/types';
+import AddFacilityDialog from './add-facility-dialog';
 
 interface CreateStaffFormProps {
   facilities: { id: string; name: string }[];
@@ -178,13 +179,7 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
                   <label htmlFor="staff-facility" className="block text-sm font-medium text-gray-700">
                     所属事業所
                   </label>
-                  <a
-                    href="/admin/facilities"
-                    target="_blank"
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                  >
-                    + 事業所を追加
-                  </a>
+                  <AddFacilityDialog onCreated={(id) => setFacilityId(id)} />
                 </div>
                 <select
                   id="staff-facility"

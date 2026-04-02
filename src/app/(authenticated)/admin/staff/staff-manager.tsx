@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Profile, UserRole } from '@/lib/types';
 import { ROLE_LABELS } from '@/lib/types';
 import ResetPasswordDialog from './reset-password-dialog';
+import AddFacilityDialog from './add-facility-dialog';
 
 interface StaffManagerProps {
   profiles: (Profile & { facility: { id: string; name: string } | null })[];
@@ -167,7 +168,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                     <div>
                       <div className="flex items-center justify-between">
                         <label htmlFor={`facility-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">所属施設</label>
-                        <a href="/admin/facilities" target="_blank" className="text-[10px] font-medium text-blue-600 hover:text-blue-800">+ 事業所を追加</a>
+                        <AddFacilityDialog onCreated={(id) => setEditFacilityId(id)} />
                       </div>
                       <select
                         id={`facility-mobile-${profile.id}`}
