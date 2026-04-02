@@ -26,9 +26,16 @@ export interface Profile {
   role: UserRole;
   facility_id: string | null;
   certifications: string[] | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   facility?: Facility;
+}
+
+/** アーカイブ済みスタッフの表示名を返す */
+export function displayName(profile: Pick<Profile, 'name' | 'is_archived'>): string {
+  return profile.is_archived ? `${profile.name}（退職済み）` : profile.name;
 }
 
 export interface ForeignWorker {

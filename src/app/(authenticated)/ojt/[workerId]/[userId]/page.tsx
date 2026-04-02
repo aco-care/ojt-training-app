@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { OjtUser, OjtRecord, OjtStep, Profile } from '@/lib/types';
-import { OJT_STEPS, EVAL_LABELS, OJT_STATUS_LABELS } from '@/lib/types';
+import { OJT_STEPS, EVAL_LABELS, OJT_STATUS_LABELS, displayName } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import RecordForm from './record-form';
@@ -38,13 +38,13 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
   // Fetch all OJT records for this user, sorted by date desc
   const { data: ojtRecords } = await supabase
     .from('ojt_records')
-    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name, role)')
+    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name, role, is_archived)')
     .eq('ojt_user_id', userId)
     .eq('worker_id', workerId)
     .order('date', { ascending: false });
 
   const records = (ojtRecords ?? []) as (OjtRecord & {
-    companion: Pick<Profile, 'id' | 'name' | 'role'> | null;
+    companion: Pick<Profile, 'id' | 'name' | 'role' | 'is_archived'> | null;
   })[];
 
   // Fetch staff list for companion dropdown
@@ -306,7 +306,7 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
                       <p className="mt-0.5 text-xs text-gray-500">
                         {formatDate(record.date)}
                         {record.companion && (
-                          <> / 同行者: {record.companion.name}</>
+                          <> / 同行者: {displayName(record.companion)}</>
                         )}
                         {record.attempt_number > 0 && (
                           <> / {record.attempt_number}回目</>
