@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACO 研修・OJT マネージャー 操作マニュアル</title>
+<style>
+/* ====== Base ====== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--blue-light:#dbeafe;--blue-dark:#1e40af;
+  --green:#16a34a;--green-light:#dcfce7;
+  --amber:#d97706;--amber-light:#fef3c7;
+  --red:#dc2626;--red-light:#fee2e2;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
+  --radius:0.75rem;--shadow:0 1px 3px rgba(0,0,0,.1);
+}
+html{font-size:16px;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+  line-height:1.75;color:var(--gray-700);background:var(--gray-50);
+  padding:0 0 4rem;
+}
+
+/* ====== Print ====== */
+@media print{
+  body{background:#fff;padding:0;font-size:11pt;line-height:1.6}
+  .no-print,.toc-fab{display:none!important}
+  .hero{padding:1.5rem 0!important;min-height:auto!important;background:#fff!important;color:#000!important}
+  .hero h1,.hero p,.hero .meta{color:#000!important}
+  section{break-inside:avoid;page-break-inside:avoid;padding:0!important}
+  .card,.step-card,.faq-item{break-inside:avoid;box-shadow:none!important;border:1px solid #ccc!important}
+  .flow-chart{break-inside:avoid}
+  h2{page-break-after:avoid}
+  a{color:inherit!important;text-decoration:none!important}
+  nav.toc{columns:2;-webkit-columns:2}
+}
+
+/* ====== Layout ====== */
+.container{max-width:48rem;margin:0 auto;padding:0 1rem}
+@media(min-width:640px){.container{padding:0 1.5rem}}
+
+/* ====== Hero ====== */
+.hero{
+  background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+  color:#fff;padding:2.5rem 1rem;text-align:center;
+}
+.hero h1{font-size:1.5rem;font-weight:800;letter-spacing:.02em}
+.hero p{margin-top:.5rem;font-size:.875rem;opacity:.85}
+.hero .meta{margin-top:1rem;display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem}
+.hero .badge{
+  display:inline-flex;align-items:center;gap:.25rem;
+  background:rgba(255,255,255,.18);border-radius:9999px;
+  padding:.25rem .75rem;font-size:.75rem;font-weight:500;
+}
+@media(min-width:640px){.hero h1{font-size:2rem}}
+
+/* ====== TOC ====== */
+nav.toc{
+  background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:1.25rem 1.5rem;margin-top:-1.5rem;position:relative;z-index:1;
+}
+nav.toc h2{font-size:1rem;font-weight:700;color:var(--gray-900);margin-bottom:.75rem}
+nav.toc ol{list-style:none;counter-reset:toc}
+nav.toc li{counter-increment:toc}
+nav.toc li a{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.4rem 0;font-size:.875rem;color:var(--gray-700);
+  text-decoration:none;border-bottom:1px solid var(--gray-100);
+  transition:color .15s;
+}
+nav.toc li a::before{
+  content:counter(toc);display:inline-flex;align-items:center;justify-content:center;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--blue-light);
+  color:var(--blue);font-size:.7rem;font-weight:700;flex-shrink:0;
+}
+nav.toc li a:hover{color:var(--blue)}
+nav.toc li:last-child a{border-bottom:none}
+
+/* TOC FAB (mobile) */
+.toc-fab{
+  display:none;position:fixed;bottom:1.25rem;right:1.25rem;z-index:100;
+  width:3rem;height:3rem;border-radius:50%;border:none;
+  background:var(--blue);color:#fff;font-size:1.25rem;cursor:pointer;
+  box-shadow:0 4px 12px rgba(37,99,235,.4);
+  transition:transform .2s;
+}
+.toc-fab:active{transform:scale(.92)}
+@media(max-width:639px){.toc-fab{display:flex;align-items:center;justify-content:center}}
+
+/* ====== Sections ====== */
+section{padding:2rem 0}
+section+section{border-top:1px solid var(--gray-200)}
+h2.section-title{
+  font-size:1.25rem;font-weight:800;color:var(--gray-900);
+  display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;
+}
+h2.section-title .num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:2rem;height:2rem;border-radius:50%;background:var(--blue);
+  color:#fff;font-size:.8rem;font-weight:700;flex-shrink:0;
+}
+h3{font-size:1rem;font-weight:700;color:var(--gray-900);margin:1.5rem 0 .75rem}
+
+/* ====== Cards ====== */
+.card{
+  background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);
+  padding:1.25rem;box-shadow:var(--shadow);margin-bottom:1rem;
+}
+.card.blue{border-left:4px solid var(--blue)}
+.card.green{border-left:4px solid var(--green)}
+.card.amber{border-left:4px solid var(--amber)}
+
+/* ====== Tables ====== */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+thead{background:var(--gray-100)}
+th{text-align:left;padding:.625rem .75rem;font-weight:600;color:var(--gray-700);white-space:nowrap}
+td{padding:.625rem .75rem;border-top:1px solid var(--gray-200);vertical-align:top}
+tbody tr:hover{background:var(--gray-50)}
+code{
+  background:var(--gray-100);border-radius:.25rem;padding:.1em .35em;
+  font-size:.85em;font-family:"SF Mono",Consolas,monospace;color:var(--blue-dark);
+}
+
+/* ====== Steps / Flow ====== */
+.steps{counter-reset:step}
+.step-card{
+  counter-increment:step;position:relative;
+  background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);
+  padding:1rem 1rem 1rem 3.25rem;margin-bottom:.75rem;box-shadow:var(--shadow);
+}
+.step-card::before{
+  content:counter(step);position:absolute;left:1rem;top:1rem;
+  width:1.75rem;height:1.75rem;border-radius:50%;
+  background:var(--blue);color:#fff;font-weight:700;font-size:.8rem;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-card strong{color:var(--gray-900)}
+
+/* ====== Flow Chart ====== */
+.flow-chart{
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  padding:1.5rem 0;margin:1rem 0;
+}
+.flow-node{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:var(--radius);padding:.625rem 1.25rem;font-size:.8125rem;
+  font-weight:600;min-width:12rem;max-width:90%;position:relative;
+}
+.flow-node.primary{background:var(--blue);color:#fff}
+.flow-node.success{background:var(--green);color:#fff}
+.flow-node.warning{background:var(--amber-light);color:var(--amber);border:2px solid var(--amber)}
+.flow-node.neutral{background:var(--gray-100);color:var(--gray-700);border:1px solid var(--gray-300)}
+.flow-arrow{
+  display:flex;flex-direction:column;align-items:center;color:var(--gray-300);
+  font-size:.75rem;padding:.125rem 0;
+}
+.flow-arrow .arr{font-size:1.25rem;line-height:1;color:var(--gray-400)}
+.flow-arrow .lbl{color:var(--gray-500);font-weight:500}
+.flow-branch{
+  display:flex;align-items:flex-start;gap:1rem;width:100%;max-width:22rem;
+  margin:.25rem 0;
+}
+.flow-branch .flow-node{flex:1;font-size:.75rem;padding:.5rem .75rem;min-width:0}
+.flow-branch-label{
+  font-size:.7rem;color:var(--red);font-weight:600;text-align:center;
+  padding:.15rem 0;
+}
+
+/* ====== Callout ====== */
+.callout{
+  display:flex;gap:.75rem;border-radius:var(--radius);padding:1rem;
+  margin:1rem 0;font-size:.875rem;line-height:1.6;
+}
+.callout.info{background:var(--blue-light);color:var(--blue-dark)}
+.callout.warn{background:var(--amber-light);color:#92400e}
+.callout.danger{background:var(--red-light);color:#991b1b}
+.callout .icon{font-size:1.25rem;flex-shrink:0;line-height:1.4}
+
+/* ====== Screen Mock ====== */
+.screen{
+  background:#fff;border:2px solid var(--gray-200);border-radius:1rem;
+  overflow:hidden;margin:1.25rem auto;max-width:22rem;box-shadow:0 4px 16px rgba(0,0,0,.08);
+}
+.screen-header{
+  background:var(--gray-50);padding:.625rem 1rem;border-bottom:1px solid var(--gray-200);
+  font-size:.8125rem;font-weight:700;color:var(--gray-900);
+}
+.screen-body{padding:1rem;font-size:.8125rem;color:var(--gray-700)}
+.screen-body .field{margin-bottom:.75rem}
+.screen-body .field-label{font-size:.7rem;font-weight:600;color:var(--gray-500);margin-bottom:.25rem}
+.screen-body .field-input{
+  border:1px solid var(--gray-300);border-radius:.5rem;padding:.5rem .75rem;
+  background:var(--gray-50);font-size:.8125rem;width:100%;
+}
+.screen-body .btn{
+  display:block;width:100%;text-align:center;padding:.625rem;border-radius:.5rem;
+  background:var(--blue);color:#fff;font-weight:600;font-size:.875rem;border:none;
+}
+.screen-tab-bar{
+  display:flex;border-top:1px solid var(--gray-200);background:#fff;
+}
+.screen-tab{
+  flex:1;text-align:center;padding:.5rem .25rem;font-size:.625rem;color:var(--gray-500);
+}
+.screen-tab.active{color:var(--blue);font-weight:700}
+.screen-tab .tab-icon{font-size:1rem;display:block;margin-bottom:.125rem}
+
+/* ====== Checklist visual ====== */
+.check-grid{display:grid;grid-template-columns:1fr auto auto;gap:.25rem .75rem;font-size:.8125rem;align-items:center;margin:1rem 0}
+.check-grid .hd{font-weight:700;color:var(--gray-700);font-size:.75rem;padding-bottom:.25rem;border-bottom:2px solid var(--gray-200)}
+.check-grid .item{padding:.35rem 0;border-bottom:1px solid var(--gray-100)}
+.rating{display:inline-flex;gap:.35rem}
+.rating span{
+  width:1.5rem;height:1.5rem;border-radius:50%;display:inline-flex;
+  align-items:center;justify-content:center;font-size:.7rem;font-weight:700;
+  border:2px solid var(--gray-300);color:var(--gray-400);
+}
+.rating span.selected-good{border-color:var(--green);color:var(--green);background:var(--green-light)}
+.rating span.selected-fair{border-color:var(--amber);color:var(--amber);background:var(--amber-light)}
+.rating span.selected-poor{border-color:var(--red);color:var(--red);background:var(--red-light)}
+
+/* ====== Progress Bar ====== */
+.progress{background:var(--gray-200);border-radius:9999px;height:.5rem;overflow:hidden;margin:.25rem 0}
+.progress-bar{height:100%;border-radius:9999px;transition:width .3s}
+.progress-bar.green{background:var(--green)}
+.progress-bar.blue{background:var(--blue)}
+.progress-bar.amber{background:var(--amber)}
+
+/* ====== FAQ ====== */
+.faq-item{
+  background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);
+  margin-bottom:.75rem;overflow:hidden;box-shadow:var(--shadow);
+}
+.faq-q{
+  padding:1rem;font-weight:700;color:var(--gray-900);cursor:pointer;
+  display:flex;align-items:flex-start;gap:.5rem;font-size:.9375rem;
+}
+.faq-q::before{content:"Q";display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--blue);color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:.1rem}
+.faq-a{
+  padding:0 1rem 1rem 3rem;font-size:.875rem;color:var(--gray-700);line-height:1.7;
+}
+
+/* ====== Credential Box ====== */
+.cred-box{
+  background:var(--gray-900);color:#e5e7eb;border-radius:var(--radius);
+  padding:1.25rem;font-family:"SF Mono",Consolas,monospace;font-size:.8125rem;
+  line-height:2;margin:1rem 0;
+}
+.cred-box .label{color:var(--gray-500);font-size:.7rem;display:block}
+.cred-box .value{color:#fbbf24;font-weight:600}
+
+/* ====== Utilities ====== */
+.mt-0{margin-top:0}.mt-1{margin-top:.5rem}.mt-2{margin-top:1rem}
+.mb-1{margin-bottom:.5rem}.mb-2{margin-bottom:1rem}
+.text-sm{font-size:.875rem}.text-xs{font-size:.75rem}
+.text-center{text-align:center}
+.font-bold{font-weight:700}
+.flex-center{display:flex;align-items:center;justify-content:center}
+.gap-1{gap:.5rem}
+.dot{display:inline-block;width:.625rem;height:.625rem;border-radius:50%}
+.dot-green{background:var(--green)}.dot-blue{background:var(--blue)}.dot-gray{background:var(--gray-300)}
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<header class="hero">
+  <h1>ACO 研修・OJT マネージャー<br>操作マニュアル</h1>
+  <p>訪問系特定技能外国人向け 研修・OJT管理アプリ</p>
+  <div class="meta">
+    <span class="badge">対象：管理者・指導者</span>
+    <span class="badge">更新：2026年4月</span>
+    <span class="badge">厚労省報告書準拠</span>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ==================== TOC ==================== -->
+<nav class="toc" id="toc">
+  <h2>目次</h2>
+  <ol>
+    <li><a href="#sec1">はじめに</a></li>
+    <li><a href="#sec2">ログイン方法</a></li>
+    <li><a href="#sec3">画面の見方（ナビゲーション）</a></li>
+    <li><a href="#sec4">管理者アカウントの初期設定</a></li>
+    <li><a href="#sec5">スタッフ・指導者アカウントの追加</a></li>
+    <li><a href="#sec6">事業所の登録・管理</a></li>
+    <li><a href="#sec7">特定技能外国人の登録</a></li>
+    <li><a href="#sec8">研修記録の入力</a></li>
+    <li><a href="#sec9">OJT記録の入力</a></li>
+    <li><a href="#sec10">最終到達目標評価</a></li>
+    <li><a href="#sec11">PDF出力（帳票印刷）</a></li>
+    <li><a href="#sec12">ダッシュボードの使い方</a></li>
+    <li><a href="#sec13">よくあるご質問</a></li>
+  </ol>
+</nav>
+
+<!-- ==================== 1. はじめに ==================== -->
+<section id="sec1">
+  <h2 class="section-title"><span class="num">1</span>はじめに</h2>
+
+  <p>本アプリは、訪問系サービスで働く特定技能外国人の<strong>研修記録</strong>と<strong>OJT（同行訪問）記録</strong>を管理するためのWebアプリです。</p>
+
+  <div class="card blue mt-2">
+    <strong>このアプリでできること</strong>
+    <ul style="margin-top:.5rem;padding-left:1.25rem">
+      <li>研修5大項目の実施記録・進捗管理</li>
+      <li>OJT（同行訪問）のステップ管理（ステップ②〜⑦）</li>
+      <li>到達目標8項目のチェックシート管理</li>
+      <li>巡回訪問時に提出する帳票のPDF出力</li>
+      <li>指導者・管理者ごとの進捗ダッシュボード</li>
+    </ul>
+  </div>
+
+  <!-- Overall flow chart -->
+  <h3>全体の業務フロー</h3>
+  <div class="flow-chart">
+    <div class="flow-node neutral">事業所・スタッフ登録</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node neutral">特定技能外国人を登録</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">研修5大項目を実施・記録</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">全項目完了後</span></div>
+    <div class="flow-node primary">OJT（同行訪問）記録</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">全利用者OJT完了後</span></div>
+    <div class="flow-node primary">最終到達目標評価</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node success">PDF帳票を出力・印刷して巡回訪問に提出</div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x1F4F1;</span>
+    <div><strong>対応デバイス：</strong>スマートフォン・タブレット・PC。スマホでの利用を想定して設計しています。</div>
+  </div>
+</section>
+
+<!-- ==================== 2. ログイン ==================== -->
+<section id="sec2">
+  <h2 class="section-title"><span class="num">2</span>ログイン方法</h2>
+
+  <div class="steps">
+    <div class="step-card"><strong>アプリのURLにアクセス</strong>します（ブックマーク推奨）</div>
+    <div class="step-card"><strong>メールアドレス</strong>と<strong>パスワード</strong>を入力します</div>
+    <div class="step-card">「<strong>ログイン</strong>」ボタンをタップします</div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-body" style="padding-top:1.5rem">
+      <div class="text-center mb-2">
+        <div class="font-bold" style="font-size:1rem;color:var(--gray-900)">ACO 研修・OJT マネージャー</div>
+        <div class="text-xs" style="color:var(--gray-500);margin-top:.25rem">アカウントにログインしてください</div>
+      </div>
+      <div class="field">
+        <div class="field-label">メールアドレス</div>
+        <div class="field-input" style="color:var(--gray-400)">example@email.com</div>
+      </div>
+      <div class="field">
+        <div class="field-label">パスワード</div>
+        <div class="field-input" style="color:var(--gray-400)">********</div>
+      </div>
+      <div class="btn">ログイン</div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="icon">&#x26A0;&#xFE0F;</span>
+    <div><strong>ログインできない場合：</strong>メールアドレスまたはパスワードが間違っています。管理者に確認してください。</div>
+  </div>
+</section>
+
+<!-- ==================== 3. 画面の見方 ==================== -->
+<section id="sec3">
+  <h2 class="section-title"><span class="num">3</span>画面の見方（ナビゲーション）</h2>
+
+  <p>スマートフォンでは画面下部に<strong>5つのタブ</strong>が常に表示されます。</p>
+
+  <div class="screen" style="margin-top:1rem">
+    <div class="screen-body text-center" style="padding:2rem 1rem;color:var(--gray-400)">
+      （メイン画面の内容）
+    </div>
+    <div class="screen-tab-bar">
+      <div class="screen-tab active"><span class="tab-icon">&#x1F3E0;</span>ダッシュボード</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F465;</span>外国人一覧</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F4D6;</span>研修記録</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F4CB;</span>OJT記録</div>
+      <div class="screen-tab"><span class="tab-icon">&#x2699;&#xFE0F;</span>管理</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>タブ</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ダッシュボード</strong></td><td>ホーム画面。全体の進捗が一目で分かります</td></tr>
+        <tr><td><strong>外国人一覧</strong></td><td>登録されている特定技能外国人の一覧</td></tr>
+        <tr><td><strong>研修記録</strong></td><td>研修セッションの記録・進捗確認</td></tr>
+        <tr><td><strong>OJT記録</strong></td><td>OJT（同行訪問）の記録・進捗確認</td></tr>
+        <tr><td><strong>管理</strong></td><td>事業所・スタッフの管理（管理者のみ）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x1F5A5;&#xFE0F;</span>
+    <div><strong>パソコンの場合：</strong>画面の左側にサイドバーとして同じメニューが表示されます。</div>
+  </div>
+</section>
+
+<!-- ==================== 4. 管理者アカウント初期設定 ==================== -->
+<section id="sec4">
+  <h2 class="section-title"><span class="num">4</span>管理者アカウントの初期設定</h2>
+
+  <div class="callout info">
+    <span class="icon">&#x2139;&#xFE0F;</span>
+    <div>この手順は<strong>初回セットアップ時のみ</strong>必要です。通常はシステム担当者が行います。</div>
+  </div>
+
+  <!-- Flow -->
+  <h3>設定の流れ</h3>
+  <div class="flow-chart">
+    <div class="flow-node neutral">Supabaseにログイン</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node neutral">プロジェクト選択</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">Authentication でユーザー作成</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">User UID をメモ</span></div>
+    <div class="flow-node primary">Table Editor の profiles にレコード追加</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node success">アプリにログイン可能</div>
+  </div>
+
+  <h3>4-1. Supabaseにアクセス</h3>
+  <div class="steps">
+    <div class="step-card">ブラウザで <strong>https://supabase.com/dashboard</strong> を開きます</div>
+    <div class="step-card">Googleアカウントまたはメールでログインします</div>
+  </div>
+
+  <h3>4-2. 管理者ユーザーを作成</h3>
+  <div class="steps">
+    <div class="step-card">左メニューから「<strong>Authentication</strong>」をクリック</div>
+    <div class="step-card">「<strong>Users</strong>」タブを開き、右上の「<strong>Add user</strong>」→「<strong>Create new user</strong>」をクリック</div>
+    <div class="step-card">
+      以下を入力して「<strong>Create user</strong>」をクリック
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>入力内容</th></tr></thead>
+          <tbody>
+            <tr><td>Email</td><td>管理者のメールアドレス</td></tr>
+            <tr><td>Password</td><td>パスワード（8文字以上）</td></tr>
+            <tr><td>Auto Confirm User</td><td><strong>ON</strong> にする</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="step-card">作成されたユーザーの <strong>User UID</strong>（長い英数字の文字列）をメモします</div>
+  </div>
+
+  <h3>4-3. プロフィールを登録</h3>
+  <div class="steps">
+    <div class="step-card">左メニューから「<strong>Table Editor</strong>」→「<strong>profiles</strong>」テーブルを開きます</div>
+    <div class="step-card">「<strong>Insert row</strong>」をクリックし、以下を入力して保存します</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>カラム</th><th>入力内容</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>先ほどメモした User UID</td></tr>
+        <tr><td><code>email</code></td><td>管理者のメールアドレス</td></tr>
+        <tr><td><code>name</code></td><td>名前（例：山下）</td></tr>
+        <tr><td><code>role</code></td><td><code>admin</code></td></tr>
+        <tr><td><code>facility_id</code></td><td>所属事業所のID</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== 5. スタッフ追加 ==================== -->
+<section id="sec5">
+  <h2 class="section-title"><span class="num">5</span>スタッフ・指導者アカウントの追加</h2>
+
+  <p><a href="#sec4">セクション4</a>と同じ手順でSupabaseからユーザーを作成し、profilesテーブルの<code>role</code>に以下を設定します。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ロール</th><th>設定値</th><th>対象者</th></tr></thead>
+      <tbody>
+        <tr><td>管理者</td><td><code>admin</code></td><td>事業所の管理者（山下さん等）</td></tr>
+        <tr><td>指導者</td><td><code>trainer</code></td><td>研修を実施する現場スタッフ</td></tr>
+        <tr><td>指導責任者</td><td><code>supervisor</code></td><td>研修計画の承認を行う責任者</td></tr>
+        <tr><td>経営側</td><td><code>executive</code></td><td>進捗を閲覧するのみ（あーちゃん等）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>アプリ内で役割を変更する場合</h3>
+  <div class="steps">
+    <div class="step-card">画面下の「<strong>管理</strong>」タブをタップ</div>
+    <div class="step-card">「<strong>スタッフ管理</strong>」を開きます</div>
+    <div class="step-card">変更したいスタッフの行にある<strong>ロール選択</strong>ドロップダウンを変更します</div>
+  </div>
+</section>
+
+<!-- ==================== 6. 事業所管理 ==================== -->
+<section id="sec6">
+  <h2 class="section-title"><span class="num">6</span>事業所の登録・管理</h2>
+
+  <div class="steps">
+    <div class="step-card">画面下の「<strong>管理</strong>」タブ → 「<strong>事業所管理</strong>」を開きます</div>
+    <div class="step-card">「<strong>新規追加</strong>」ボタンをタップ</div>
+    <div class="step-card">
+      事業所名・住所・種別を入力して「<strong>保存</strong>」
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>入力例</th></tr></thead>
+          <tbody>
+            <tr><td>事業所名</td><td>ACOケア訪問介護事業所</td></tr>
+            <tr><td>住所</td><td>東京都○○区△△ 1-2-3</td></tr>
+            <tr><td>種別</td><td>訪問介護</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="icon">&#x26A0;&#xFE0F;</span>
+    <div><strong>注意：</strong>事業所を削除すると、紐づくデータに影響が出る場合があります。</div>
+  </div>
+</section>
+
+<!-- ==================== 7. 外国人登録 ==================== -->
+<section id="sec7">
+  <h2 class="section-title"><span class="num">7</span>特定技能外国人の登録</h2>
+
+  <div class="steps">
+    <div class="step-card">「<strong>外国人一覧</strong>」タブをタップ</div>
+    <div class="step-card">右上の「<strong>新規登録</strong>」ボタンをタップ</div>
+    <div class="step-card">
+      以下を入力して「<strong>登録</strong>」
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>入力内容</th><th>必須</th></tr></thead>
+          <tbody>
+            <tr><td>氏名</td><td>フルネーム（例：ラジュ・タパ）</td><td>&#x25CB;</td></tr>
+            <tr><td>国籍</td><td>ドロップダウンから選択</td><td>-</td></tr>
+            <tr><td>生年月日</td><td>カレンダーから選択</td><td>-</td></tr>
+            <tr><td>所属事業所</td><td>ドロップダウンから選択</td><td>&#x25CB;</td></tr>
+            <tr><td>経験年数</td><td>数字で入力（例：1）</td><td>-</td></tr>
+            <tr><td>備考</td><td>自由記入</td><td>-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-2">登録後、一覧で名前をタップすると<strong>詳細画面</strong>が開きます。ここから<strong>研修記録・OJT記録・最終評価・PDF出力</strong>にアクセスできます。</p>
+</section>
+
+<!-- ==================== 8. 研修記録 ==================== -->
+<section id="sec8">
+  <h2 class="section-title"><span class="num">8</span>研修記録の入力</h2>
+
+  <!-- Training flow -->
+  <h3>研修記録の全体フロー</h3>
+  <div class="flow-chart">
+    <div class="flow-node neutral">外国人一覧から対象者を選択</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node neutral">研修項目（①〜⑤）を選択</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">セッションを追加（日時・指導者・細目チェック）</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">複数回に分けて繰り返し</span></div>
+    <div class="flow-node primary">全細目チェック完了＋目標時間到達</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node success">指導責任者が承認</div>
+  </div>
+
+  <h3>研修5大項目</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>項目</th><th>目標時間</th><th>細目数</th></tr></thead>
+      <tbody>
+        <tr><td>① 訪問系サービスの基本事項</td><td>1時間</td><td>8項目</td></tr>
+        <tr><td>② 生活支援技術</td><td>48時間（6回×8h）</td><td>7項目</td></tr>
+        <tr><td>③ コミュニケーション</td><td>30分</td><td>6項目</td></tr>
+        <tr><td>④ 日本の生活様式</td><td>30分</td><td>5項目</td></tr>
+        <tr><td>⑤ 緊急時の対応</td><td>30分</td><td>6項目</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>セッションの記録手順</h3>
+  <div class="steps">
+    <div class="step-card">記録したい研修項目をタップ</div>
+    <div class="step-card">「<strong>セッション追加</strong>」ボタン（または右下の<strong>＋</strong>ボタン）をタップ</div>
+    <div class="step-card">
+      以下を入力して「<strong>保存</strong>」
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>入力内容</th></tr></thead>
+          <tbody>
+            <tr><td>実施日</td><td>日付を選択（デフォルト：今日）</td></tr>
+            <tr><td>開始時間</td><td>例：09:00</td></tr>
+            <tr><td>終了時間</td><td>例：10:00</td></tr>
+            <tr><td>指導者</td><td>ドロップダウンから選択</td></tr>
+            <tr><td>実施形式</td><td>対面 / OJT / ロールプレイ / シミュレーション</td></tr>
+            <tr><td>実施した細目</td><td>チェックボックスで選択</td></tr>
+            <tr><td>備考</td><td>自由記入</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x1F4A1;</span>
+    <div><strong>ポイント：</strong>1回の研修で全ての細目を教える必要はありません。複数回に分けて少しずつチェックを入れていきます。累計時間は自動で計算されます。</div>
+  </div>
+
+  <h3>進捗の見方</h3>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <strong style="font-size:.9rem">① 訪問系サービスの基本事項</strong>
+      <span style="font-size:.75rem;padding:.15rem .5rem;border-radius:9999px;background:var(--blue-light);color:var(--blue);font-weight:600">進行中</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--gray-500)">2回実施 / 0.8h（目標 1h）</div>
+    <div class="progress mt-1"><div class="progress-bar amber" style="width:80%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--gray-500);margin-top:.15rem"><span>0.8h / 1h</span><span>80%</span></div>
+    <div style="font-size:.75rem;color:var(--gray-500);margin-top:.5rem">サブトピック: 6 / 8 完了</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>表示</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><strong>プログレスバー</strong></td><td>累計時間 / 目標時間 の進捗率</td></tr>
+        <tr><td><strong>サブトピック</strong></td><td>全細目にチェックが入ると完了</td></tr>
+        <tr><td><span class="dot dot-gray"></span> 未着手</td><td>まだセッションがない</td></tr>
+        <tr><td><span class="dot dot-blue"></span> 進行中</td><td>セッションがあるが未完了</td></tr>
+        <tr><td><span class="dot dot-green"></span> 完了</td><td>全細目＋目標時間を達成</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== 9. OJT記録 ==================== -->
+<section id="sec9">
+  <h2 class="section-title"><span class="num">9</span>OJT記録の入力</h2>
+
+  <!-- OJT Step Flow Chart -->
+  <h3>OJTステップの流れ（報告書準拠）</h3>
+  <div class="flow-chart">
+    <div class="flow-node primary">② 利用者・家族への説明</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">pass</span></div>
+    <div class="flow-node primary">③ 事前研修</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">pass</span></div>
+    <div class="flow-node primary">④ OJT 1回目（見学）</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">pass</span></div>
+    <div class="flow-node primary">⑤ OJT 2回目（メイン）</div>
+    <div class="flow-branch">
+      <div class="flow-node warning">再実施 → ④へ戻る</div>
+    </div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">pass</span></div>
+    <div class="flow-node primary">⑥ OJT 3回目（独立）</div>
+    <div class="flow-branch">
+      <div class="flow-node warning">差し戻し → ④〜⑤へ戻る</div>
+    </div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">pass</span></div>
+    <div class="flow-node success">⑦ OJT完了判定</div>
+  </div>
+
+  <h3>9-1. OJT対象利用者を登録</h3>
+  <div class="steps">
+    <div class="step-card">「<strong>OJT記録</strong>」タブ → 対象の外国人を選択</div>
+    <div class="step-card">「<strong>利用者追加</strong>」ボタンをタップ</div>
+    <div class="step-card">
+      以下を入力して「<strong>追加</strong>」
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>入力内容</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td>利用者イニシャル</td><td>例：A.T.</td><td>個人情報保護のため</td></tr>
+            <tr><td>訪問頻度</td><td>週1回/2回/3回以上</td><td>同行期間の自動計算に使用</td></tr>
+            <tr><td>OJT開始日</td><td>日付を選択</td><td>OJTの開始日</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3>9-2. OJT記録を入力する</h3>
+  <div class="steps">
+    <div class="step-card">OJT対象の利用者をタップ → ステップのタイムライン画面を開く</div>
+    <div class="step-card">「<strong>記録追加</strong>」ボタンをタップ</div>
+    <div class="step-card">ステップ・実施日・同行者・実施内容を入力</div>
+    <div class="step-card">
+      <strong>到達目標チェックシート</strong>（8項目）を入力
+      <p class="text-sm mt-1">各項目について<strong>本人評価</strong>と<strong>指導者評価</strong>をそれぞれ選択します。</p>
+    </div>
+    <div class="step-card">
+      <strong>判定</strong>を選択して「<strong>保存</strong>」
+    </div>
+  </div>
+
+  <h3>到達目標チェックシート（8項目）</h3>
+  <div class="card">
+    <div class="check-grid">
+      <div class="hd">評価項目</div><div class="hd text-center">本人</div><div class="hd text-center">指導者</div>
+      <div class="item">1. サービス内容の手順を理解しているか</div>
+      <div class="item"><div class="rating"><span class="selected-good">&#x25CB;</span><span>&#x25B3;</span><span>&#x00D7;</span></div></div>
+      <div class="item"><div class="rating"><span class="selected-good">&#x25CB;</span><span>&#x25B3;</span><span>&#x00D7;</span></div></div>
+      <div class="item">2. サービス内容を実施できているか</div>
+      <div class="item"><div class="rating"><span>&#x25CB;</span><span class="selected-fair">&#x25B3;</span><span>&#x00D7;</span></div></div>
+      <div class="item"><div class="rating"><span>&#x25CB;</span><span class="selected-fair">&#x25B3;</span><span>&#x00D7;</span></div></div>
+      <div class="item">3. 緊急体制・連携を理解しているか</div>
+      <div class="item"><div class="rating"><span class="selected-good">&#x25CB;</span><span>&#x25B3;</span><span>&#x00D7;</span></div></div>
+      <div class="item"><div class="rating"><span>&#x25CB;</span><span class="selected-fair">&#x25B3;</span><span>&#x00D7;</span></div></div>
+    </div>
+    <div class="text-xs" style="color:var(--gray-500);margin-top:.5rem;text-align:center">（以下 4〜8 も同様に入力）</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>記号</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td>&#x25CB; 良好</td><td>できている</td></tr>
+        <tr><td>&#x25B3; おおむね良好</td><td>もう少し</td></tr>
+        <tr><td>&#x00D7; 不十分</td><td>できていない</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>判定の選択肢</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>判定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><strong>次へ進む</strong></td><td>問題なし。次のステップへ進みます</td></tr>
+        <tr><td><strong>再実施</strong></td><td>もう一度同じステップを実施します</td></tr>
+        <tr><td><strong>差し戻し</strong></td><td>前のステップからやり直します</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x1F4DD;</span>
+    <div><strong>履歴は全て保存されます。</strong>ステップの繰り返しや差し戻しの履歴、何回目の実施かも自動で記録されます。</div>
+  </div>
+</section>
+
+<!-- ==================== 10. 最終評価 ==================== -->
+<section id="sec10">
+  <h2 class="section-title"><span class="num">10</span>最終到達目標評価</h2>
+
+  <h3>評価フロー</h3>
+  <div class="flow-chart">
+    <div class="flow-node neutral">外国人詳細 →「最終評価」ボタン</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">8項目の &#x25CB;/&#x25B3;/&#x00D7; 評価を入力</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">総合コメントを記入して保存</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node success">管理者・指導責任者が「承認」</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">12ヶ月後</span></div>
+    <div class="flow-node warning">キャリアアップ計画の更新期限アラート</div>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">「<strong>外国人一覧</strong>」→ 対象者をタップ → 「<strong>最終評価</strong>」ボタンをタップ</div>
+    <div class="step-card">8項目それぞれについて<strong>本人評価</strong>と<strong>指導者評価</strong>を &#x25CB;/&#x25B3;/&#x00D7; で選択</div>
+    <div class="step-card">「<strong>総合コメント</strong>」欄に指導責任者のコメントを記入し「<strong>保存</strong>」</div>
+    <div class="step-card">管理者が内容を確認のうえ「<strong>承認する</strong>」をタップ</div>
+  </div>
+
+  <div class="callout warn">
+    <span class="icon">&#x23F0;</span>
+    <div><strong>キャリアアップ計画の更新期限：</strong>承認から12ヶ月が近づくと、画面上部に警告アラートが自動表示されます。</div>
+  </div>
+</section>
+
+<!-- ==================== 11. PDF出力 ==================== -->
+<section id="sec11">
+  <h2 class="section-title"><span class="num">11</span>PDF出力（帳票印刷）</h2>
+
+  <h3>PDF出力フロー</h3>
+  <div class="flow-chart">
+    <div class="flow-node neutral">外国人詳細 →「PDF出力」ボタン</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node primary">出力したい帳票の「PDF出力」をタップ</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">数秒で生成</span></div>
+    <div class="flow-node neutral">PDFが自動ダウンロード</div>
+    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
+    <div class="flow-node success">印刷して署名 → 巡回訪問時に提出</div>
+  </div>
+
+  <h3>出力できる帳票一覧</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>帳票名</th><th>内容</th><th>枚数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>研修記録票</strong></td>
+          <td>細目チェックリスト、セッション履歴、累計時間、署名欄</td>
+          <td>研修項目ごと（最大5枚）</td>
+        </tr>
+        <tr>
+          <td><strong>OJT記録票</strong></td>
+          <td>ステップ②〜⑦の全履歴、到達目標チェックシート、署名欄</td>
+          <td>利用者ごと</td>
+        </tr>
+        <tr>
+          <td><strong>最終評価票</strong></td>
+          <td>8項目の到達目標評価、総合コメント、4者署名欄</td>
+          <td>1枚</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">「<strong>外国人一覧</strong>」→ 対象者 → 「<strong>PDF出力</strong>」をタップ</div>
+    <div class="step-card">出力したい帳票の「<strong>PDF出力</strong>」ボタンをタップ</div>
+    <div class="step-card">ボタンが「生成中...」に変わります（数秒お待ちください）</div>
+    <div class="step-card">PDFファイルが自動的にダウンロードされます</div>
+    <div class="step-card">ダウンロードしたPDFを<strong>印刷</strong>してご使用ください</div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x270D;&#xFE0F;</span>
+    <div><strong>署名欄について：</strong>PDFを印刷後、指導者・指導責任者・本人が手書きで署名してください。全帳票は厚労省「訪問系サービスの要件に係る報告書」に準拠した体裁です。</div>
+  </div>
+</section>
+
+<!-- ==================== 12. ダッシュボード ==================== -->
+<section id="sec12">
+  <h2 class="section-title"><span class="num">12</span>ダッシュボードの使い方</h2>
+
+  <p>ログイン後の最初の画面です。<strong>役割によって表示内容が異なります</strong>。</p>
+
+  <h3>管理者ビュー</h3>
+  <div class="card blue">
+    <div class="table-wrap" style="margin:0">
+      <table>
+        <thead><tr><th>セクション</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>サマリーカード</strong></td><td>外国人総数、研修完了率、OJT進行中/完了数</td></tr>
+          <tr><td><strong>研修進捗一覧</strong></td><td>全外国人の研修5項目の状態を色付きドットで表示</td></tr>
+          <tr><td><strong>OJT進捗一覧</strong></td><td>進行中のOJTの利用者・現在のステップ</td></tr>
+          <tr><td><strong>未実施アラート</strong></td><td>まだ研修が完了していない外国人と未実施項目</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p><strong>ドットの色の意味：</strong></p>
+  <div style="display:flex;gap:1.5rem;font-size:.875rem;margin:.5rem 0 1rem">
+    <span><span class="dot dot-green"></span> 完了</span>
+    <span><span class="dot dot-blue"></span> 進行中</span>
+    <span><span class="dot dot-gray"></span> 未着手</span>
+  </div>
+
+  <h3>指導者ビュー</h3>
+  <div class="card green">
+    <div class="table-wrap" style="margin:0">
+      <table>
+        <thead><tr><th>セクション</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>担当外国人</strong></td><td>自分が研修を担当している外国人の進捗</td></tr>
+          <tr><td><strong>未指導の細目</strong></td><td>まだ教えていない研修細目の一覧</td></tr>
+          <tr><td><strong>次回OJT予定</strong></td><td>同行者として担当しているOJTの次のステップ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>経営側ビュー</h3>
+  <div class="card amber">
+    <p>全事業所を横断した進捗サマリーが表示されます（読み取り専用）。</p>
+    <ul style="margin-top:.5rem;padding-left:1.25rem;font-size:.875rem">
+      <li>全体の研修完了率・OJT完了率</li>
+      <li>事業所ごとの進捗比較</li>
+      <li>外国人ごとの研修/OJT進捗一覧</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 13. FAQ ==================== -->
+<section id="sec13">
+  <h2 class="section-title"><span class="num">13</span>よくあるご質問</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">研修を複数回に分けて記録できますか？</div>
+    <div class="faq-a">はい。1つの研修項目に対して複数の「セッション」を追加できます。例えば「②生活支援技術」を3/10、3/14、3/17と3回に分けて記録し、それぞれの回で教えた細目にチェックを入れることができます。累計時間は自動で計算されます。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">OJTのステップを差し戻した場合、履歴は消えますか？</div>
+    <div class="faq-a">消えません。全ての実施履歴（何回目の実施か含む）が保存されます。差し戻しの判定も記録として残ります。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">指導者と指導責任者は同じ人でもよいですか？</div>
+    <div class="faq-a">はい。管理者が指導責任者を兼ねる場合は、同じアカウントで操作できます。ただし、セッションごとの「指導者」（実際に教えた人）と「指導責任者」（承認する人）は明確に分離されています。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">スマートフォンで写真を撮って記録に添付できますか？</div>
+    <div class="faq-a">現在のバージョンでは写真の添付機能はありません。将来のアップデートで対応予定です。備考欄にテキストで記録してください。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">PDFが文字化けします</div>
+    <div class="faq-a">PDFには日本語フォント（Noto Sans JP）が組み込まれています。通常は文字化けしません。問題が発生する場合は、別のPDFビューアで開いてみてください。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">パスワードを忘れました</div>
+    <div class="faq-a">管理者に連絡してください。Supabaseの管理画面からパスワードをリセットできます。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">巡回訪問の提出書類は何を印刷すればよいですか？</div>
+    <div class="faq-a">以下の3種類を印刷してください：<br>1. <strong>研修記録票</strong>（研修項目ごと、最大5枚）<br>2. <strong>OJT記録票</strong>（利用者ごと）<br>3. <strong>最終評価票</strong>（1枚）<br>いずれも厚労省「訪問系サービスの要件に係る報告書」に準拠した体裁です。</div>
+  </div>
+</section>
+
+<!-- ==================== Login Info ==================== -->
+<section id="login-info">
+  <h2 class="section-title">ログイン情報（初期設定）</h2>
+
+  <div class="cred-box">
+    <span class="label">管理者</span>
+    メール: <span class="value">admin@aco-care.jp</span><br>
+    パスワード: <span class="value">Admin1234!</span>
+    <br><br>
+    <span class="label">指導者</span>
+    メール: <span class="value">trainer@aco-care.jp</span><br>
+    パスワード: <span class="value">Trainer1234!</span>
+  </div>
+
+  <div class="callout danger">
+    <span class="icon">&#x1F512;</span>
+    <div><strong>重要：</strong>運用開始前に必ずパスワードを変更してください。</div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- Footer -->
+<footer style="text-align:center;padding:2rem 1rem;font-size:.75rem;color:var(--gray-500);border-top:1px solid var(--gray-200);margin-top:2rem">
+  <p>本マニュアルは「訪問系サービスの要件に係る報告書」（厚生労働省）に準拠して作成されています。</p>
+  <p style="margin-top:.25rem">ACO 研修・OJT マネージャー &copy; 2026 ACO Care</p>
+</footer>
+
+<!-- TOC FAB -->
+<button class="toc-fab no-print" onclick="document.getElementById('toc').scrollIntoView({behavior:'smooth'})" aria-label="目次へ戻る">&#x2630;</button>
+
+</body>
+</html>

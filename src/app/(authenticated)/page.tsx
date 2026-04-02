@@ -1,0 +1,1014 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import type {
+  Profile,
+  ForeignWorker,
+  TrainingItem,
+  TrainingSubtopic,
+  TrainingSession,
+  TrainingApproval,
+  TrainingStatus,
+  OjtUser,
+  OjtRecord,
+  OjtStep,
+} from '@/lib/types';
+import { OJT_STEPS, OJT_STATUS_LABELS, ROLE_LABELS } from '@/lib/types';
+import PageHeader from '@/components/page-header';
+import StatusBadge from '@/components/status-badge';
+import ProgressBar from '@/components/progress-bar';
+
+// ---------- helpers ----------
+
+const ITEM_NUMBERS = ['①', '②', '③', '④', '⑤'];
+
+function statusDot(status: TrainingStatus) {
+  const colors: Record<TrainingStatus, string> = {
+    completed: 'bg-green-500',
+    in_progress: 'bg-blue-500',
+    not_started: 'bg-gray-300',
+  };
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 rounded-full ${colors[status]}`}
+      title={
+        status === 'completed'
+          ? '完了'
+          : status === 'in_progress'
+            ? '進行中'
+            : '未着手'
+      }
+    />
+  );
+}
+
+function computeItemStatus(
+  sessions: TrainingSession[],
+  subtopics: TrainingSubtopic[],
+  targetHours: number,
+  approval: TrainingApproval | undefined,
+): TrainingStatus {
+  if (approval?.status === 'completed') return 'completed';
+  if (sessions.length === 0) return 'not_started';
+  const completedIds = new Set(sessions.flatMap((s) => s.completed_subtopics));
+  const allDone =
+    subtopics.length > 0 && subtopics.every((st) => completedIds.has(st.id));
+  const totalHours = sessions.reduce((acc, s) => {
+    const start = new Date(`2000-01-01T${s.start_time}`);
+    const end = new Date(`2000-01-01T${s.end_time}`);
+    return acc + (end.getTime() - start.getTime()) / 3_600_000;
+  }, 0);
+  if (allDone && totalHours >= targetHours) return 'completed';
+  return 'in_progress';
+}
+
+function getCurrentOjtStep(
+  records: OjtRecord[],
+  userId: string,
+): { step: OjtStep; label: string } {
+  const userRecords = records.filter((r) => r.ojt_user_id === userId);
+  if (userRecords.length === 0) {
+    return {
+      step: OJT_STEPS[0].step,
+      label: `${OJT_STEPS[0].number} ${OJT_STEPS[0].label}`,
+    };
+  }
+  const passedSteps = userRecords
+    .filter((r) => r.result === 'pass')
+    .map((r) => r.step);
+  const stepOrder = OJT_STEPS.map((s) => s.step);
+  let latestPassedIndex = -1;
+  for (const passed of passedSteps) {
+    const idx = stepOrder.indexOf(passed);
+    if (idx > latestPassedIndex) latestPassedIndex = idx;
+  }
+  const nextIndex = Math.min(latestPassedIndex + 1, OJT_STEPS.length - 1);
+  const next = OJT_STEPS[nextIndex];
+  return { step: next.step, label: `${next.number} ${next.label}` };
+}
+
+// ---------- page ----------
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  // Current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  const profile = profileRow as Profile | null;
+  const role = profile?.role ?? 'worker';
+  const userName = profile?.name ?? user.email ?? '';
+
+  // ---------- shared data fetching ----------
+
+  const { data: workersData } = await supabase
+    .from('foreign_workers')
+    .select('*, facility:facilities(id, name)')
+    .order('name');
+  const workers = (workersData ?? []) as (ForeignWorker & {
+    facility: { id: string; name: string } | null;
+  })[];
+
+  const { data: itemsData } = await supabase
+    .from('training_items')
+    .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
+    .order('sort_order');
+  const items = (itemsData ?? []) as (TrainingItem & {
+    subtopics: TrainingSubtopic[];
+  })[];
+
+  const { data: sessionsData } = await supabase
+    .from('training_sessions')
+    .select('*');
+  const sessions = (sessionsData ?? []) as TrainingSession[];
+
+  const { data: approvalsData } = await supabase
+    .from('training_approvals')
+    .select('*');
+  const approvals = (approvalsData ?? []) as TrainingApproval[];
+
+  const { data: ojtUsersData } = await supabase
+    .from('ojt_users')
+    .select('*')
+    .order('created_at', { ascending: false });
+  const ojtUsers = (ojtUsersData ?? []) as OjtUser[];
+
+  const { data: ojtRecordsData } = await supabase
+    .from('ojt_records')
+    .select('*, companion:profiles(id, name)')
+    .order('date', { ascending: false });
+  const ojtRecords = (ojtRecordsData ?? []) as (OjtRecord & {
+    companion: { id: string; name: string } | null;
+  })[];
+
+  // ---------- compute per-worker training statuses ----------
+
+  type WorkerItemStatus = {
+    workerId: string;
+    itemId: string;
+    status: TrainingStatus;
+  };
+
+  const workerItemStatuses: WorkerItemStatus[] = [];
+  for (const w of workers) {
+    for (const item of items) {
+      const wSessions = sessions.filter(
+        (s) => s.worker_id === w.id && s.item_id === item.id,
+      );
+      const approval = approvals.find(
+        (a) => a.worker_id === w.id && a.item_id === item.id,
+      );
+      const status = computeItemStatus(
+        wSessions,
+        item.subtopics ?? [],
+        item.target_hours,
+        approval,
+      );
+      workerItemStatuses.push({
+        workerId: w.id,
+        itemId: item.id,
+        status,
+      });
+    }
+  }
+
+  const totalCombinations = workerItemStatuses.length;
+  const completedCombinations = workerItemStatuses.filter(
+    (s) => s.status === 'completed',
+  ).length;
+  const trainingCompletionRate =
+    totalCombinations > 0
+      ? Math.round((completedCombinations / totalCombinations) * 100)
+      : 0;
+
+  const ojtInProgress = ojtUsers.filter(
+    (u) => u.ojt_status === 'in_progress',
+  ).length;
+  const ojtCompleted = ojtUsers.filter(
+    (u) => u.ojt_status === 'completed',
+  ).length;
+
+  // ---------- admin / supervisor view ----------
+
+  if (role === 'admin' || role === 'supervisor') {
+    // Workers with pending items
+    const workersWithPending = workers
+      .map((w) => {
+        const pending = workerItemStatuses
+          .filter(
+            (s) =>
+              s.workerId === w.id &&
+              (s.status === 'not_started' || s.status === 'in_progress'),
+          )
+          .map((s) => {
+            const item = items.find((i) => i.id === s.itemId);
+            return { itemId: s.itemId, title: item?.title ?? '', status: s.status };
+          });
+        return { worker: w, pending };
+      })
+      .filter((wp) => wp.pending.length > 0);
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader
+          title="ダッシュボード"
+          subtitle={`${userName}（${ROLE_LABELS[role]}）`}
+        />
+
+        <div className="px-4 py-6 sm:px-6 space-y-8">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">外国人総数</p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">
+                {workers.length}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">名</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">研修完了率</p>
+              <p className="mt-2 text-2xl font-bold text-green-600">
+                {trainingCompletionRate}%
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                {completedCombinations}/{totalCombinations}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">OJT進行中</p>
+              <p className="mt-2 text-2xl font-bold text-blue-600">
+                {ojtInProgress}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">件</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">OJT完了</p>
+              <p className="mt-2 text-2xl font-bold text-green-600">
+                {ojtCompleted}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">件</p>
+            </div>
+          </div>
+
+          {/* 研修進捗一覧 */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              研修進捗一覧
+            </h2>
+
+            {workers.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">
+                  外国人が登録されていません
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile: cards */}
+                <div className="space-y-3 sm:hidden">
+                  {workers.map((w) => {
+                    const statuses = items.map((item) => {
+                      const found = workerItemStatuses.find(
+                        (s) => s.workerId === w.id && s.itemId === item.id,
+                      );
+                      return found?.status ?? ('not_started' as TrainingStatus);
+                    });
+                    const completed = statuses.filter(
+                      (s) => s === 'completed',
+                    ).length;
+                    const pct =
+                      items.length > 0
+                        ? Math.round((completed / items.length) * 100)
+                        : 0;
+                    return (
+                      <Link
+                        key={w.id}
+                        href={`/training/${w.id}`}
+                        className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-gray-900">
+                              {w.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {w.facility?.name ?? '未所属'}
+                            </p>
+                          </div>
+                          <span className="ml-2 text-sm font-bold text-gray-700">
+                            {pct}%
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          {statuses.map((status, idx) => (
+                            <div key={idx} className="flex flex-col items-center gap-1">
+                              <span className="text-[10px] text-gray-400">
+                                {ITEM_NUMBERS[idx]}
+                              </span>
+                              {statusDot(status)}
+                            </div>
+                          ))}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm sm:block">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          氏名
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          施設
+                        </th>
+                        {items.map((item, idx) => (
+                          <th
+                            key={item.id}
+                            className="px-3 py-3 text-center text-xs font-medium text-gray-500"
+                            title={item.title}
+                          >
+                            {ITEM_NUMBERS[idx]}
+                          </th>
+                        ))}
+                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                          進捗
+                        </th>
+                        <th className="relative px-4 py-3">
+                          <span className="sr-only">詳細</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {workers.map((w) => {
+                        const statuses = items.map((item) => {
+                          const found = workerItemStatuses.find(
+                            (s) => s.workerId === w.id && s.itemId === item.id,
+                          );
+                          return found?.status ?? ('not_started' as TrainingStatus);
+                        });
+                        const completed = statuses.filter(
+                          (s) => s === 'completed',
+                        ).length;
+                        const pct =
+                          items.length > 0
+                            ? Math.round((completed / items.length) * 100)
+                            : 0;
+                        return (
+                          <tr
+                            key={w.id}
+                            className="transition-colors hover:bg-gray-50"
+                          >
+                            <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                              {w.name}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                              {w.facility?.name ?? '未所属'}
+                            </td>
+                            {statuses.map((status, idx) => (
+                              <td
+                                key={idx}
+                                className="px-3 py-3 text-center"
+                              >
+                                {statusDot(status)}
+                              </td>
+                            ))}
+                            <td className="whitespace-nowrap px-4 py-3 text-center text-sm font-medium text-gray-700">
+                              {pct}%
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+                              <Link
+                                href={`/training/${w.id}`}
+                                className="font-medium text-blue-600 hover:text-blue-800"
+                              >
+                                詳細
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* OJT進捗一覧 */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              OJT進捗一覧
+            </h2>
+
+            {ojtUsers.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">
+                  OJT対象利用者が登録されていません
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile: cards */}
+                <div className="space-y-3 sm:hidden">
+                  {ojtUsers
+                    .filter((u) => u.ojt_status !== 'completed')
+                    .map((ojtUser) => {
+                      const w = workers.find(
+                        (w) => w.id === ojtUser.worker_id,
+                      );
+                      const currentStep = getCurrentOjtStep(
+                        ojtRecords,
+                        ojtUser.id,
+                      );
+                      return (
+                        <Link
+                          key={ojtUser.id}
+                          href={`/ojt/${ojtUser.worker_id}`}
+                          className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                {ojtUser.user_initial}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {w?.name ?? '不明'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  利用者 {ojtUser.user_initial}
+                                </p>
+                              </div>
+                            </div>
+                            <StatusBadge status={ojtUser.ojt_status} />
+                          </div>
+                          <p className="mt-2 text-xs text-gray-600">
+                            {currentStep.label}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm sm:block">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          外国人
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          利用者
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          現在のステップ
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          状態
+                        </th>
+                        <th className="relative px-4 py-3">
+                          <span className="sr-only">詳細</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {ojtUsers
+                        .filter((u) => u.ojt_status !== 'completed')
+                        .map((ojtUser) => {
+                          const w = workers.find(
+                            (w) => w.id === ojtUser.worker_id,
+                          );
+                          const currentStep = getCurrentOjtStep(
+                            ojtRecords,
+                            ojtUser.id,
+                          );
+                          return (
+                            <tr
+                              key={ojtUser.id}
+                              className="transition-colors hover:bg-gray-50"
+                            >
+                              <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                                {w?.name ?? '不明'}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                  {ojtUser.user_initial}
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                                {currentStep.label}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3">
+                                <StatusBadge status={ojtUser.ojt_status} />
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                <Link
+                                  href={`/ojt/${ojtUser.worker_id}`}
+                                  className="font-medium text-blue-600 hover:text-blue-800"
+                                >
+                                  詳細
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* 未実施アラート */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              未実施アラート
+            </h2>
+
+            {workersWithPending.length === 0 ? (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                <p className="text-sm font-medium text-green-700">
+                  全ての研修項目が完了しています
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {workersWithPending.map(({ worker, pending }) => (
+                  <div
+                    key={worker.id}
+                    className="rounded-lg border border-amber-200 bg-amber-50 p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {worker.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {worker.facility?.name ?? '未所属'}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/training/${worker.id}`}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        研修詳細
+                      </Link>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {pending.map((p) => (
+                        <span
+                          key={p.itemId}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            p.status === 'not_started'
+                              ? 'bg-gray-100 text-gray-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {statusDot(p.status)}
+                          {p.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- trainer view ----------
+
+  if (role === 'trainer') {
+    // Workers this trainer has trained
+    const trainerSessions = sessions.filter(
+      (s) => s.trainer_id === user.id,
+    );
+    const trainedWorkerIds = [...new Set(trainerSessions.map((s) => s.worker_id))];
+    const trainedWorkers = workers.filter((w) =>
+      trainedWorkerIds.includes(w.id),
+    );
+
+    // Per-worker progress for trainer
+    const trainerWorkerProgress = trainedWorkers.map((w) => {
+      const itemStatuses = items.map((item) => {
+        const found = workerItemStatuses.find(
+          (s) => s.workerId === w.id && s.itemId === item.id,
+        );
+        return {
+          item,
+          status: found?.status ?? ('not_started' as TrainingStatus),
+        };
+      });
+      const completed = itemStatuses.filter(
+        (s) => s.status === 'completed',
+      ).length;
+      const pct =
+        items.length > 0
+          ? Math.round((completed / items.length) * 100)
+          : 0;
+      return { worker: w, itemStatuses, pct };
+    });
+
+    // Uncovered subtopics per trained worker
+    const uncoveredByWorker = trainedWorkers.map((w) => {
+      const wSessions = sessions.filter((s) => s.worker_id === w.id);
+      const coveredSubtopicIds = new Set(
+        wSessions.flatMap((s) => s.completed_subtopics),
+      );
+      const uncovered = items.flatMap((item) =>
+        (item.subtopics ?? [])
+          .filter((st) => !coveredSubtopicIds.has(st.id))
+          .map((st) => ({
+            itemTitle: item.title,
+            itemNumber:
+              ITEM_NUMBERS[items.indexOf(item)] ?? `${items.indexOf(item) + 1}`,
+            subtopicTitle: st.title,
+          })),
+      );
+      return { worker: w, uncovered };
+    }).filter((u) => u.uncovered.length > 0);
+
+    // OJT records where this user is the companion
+    const companionOjtRecords = ojtRecords.filter(
+      (r) => r.companion_id === user.id,
+    );
+    const companionOjtUserIds = [
+      ...new Set(companionOjtRecords.map((r) => r.ojt_user_id)),
+    ];
+    const companionOjtUsers = ojtUsers.filter(
+      (u) =>
+        companionOjtUserIds.includes(u.id) && u.ojt_status !== 'completed',
+    );
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader
+          title="ダッシュボード"
+          subtitle={`${userName}（${ROLE_LABELS[role]}）`}
+        />
+
+        <div className="px-4 py-6 sm:px-6 space-y-8">
+          {/* 担当外国人 */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              担当外国人
+            </h2>
+
+            {trainedWorkers.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">
+                  まだ研修を実施した外国人がいません
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {trainerWorkerProgress.map(({ worker, itemStatuses, pct }) => (
+                  <Link
+                    key={worker.id}
+                    href={`/training/${worker.id}`}
+                    className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-gray-900">
+                          {worker.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {worker.facility?.name ?? '未所属'}
+                        </p>
+                      </div>
+                      <span className="ml-2 text-sm font-bold text-gray-700">
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="mt-3">
+                      <ProgressBar percentage={pct} />
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      {itemStatuses.map((is, idx) => (
+                        <div
+                          key={is.item.id}
+                          className="flex flex-col items-center gap-1"
+                        >
+                          <span className="text-[10px] text-gray-400">
+                            {ITEM_NUMBERS[idx]}
+                          </span>
+                          {statusDot(is.status)}
+                        </div>
+                      ))}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 未指導の細目 */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              未指導の細目
+            </h2>
+
+            {uncoveredByWorker.length === 0 ? (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                <p className="text-sm font-medium text-green-700">
+                  全ての細目が指導済みです
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {uncoveredByWorker.map(({ worker, uncovered }) => (
+                  <div
+                    key={worker.id}
+                    className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {worker.name}
+                      </p>
+                      <Link
+                        href={`/training/${worker.id}`}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        研修詳細
+                      </Link>
+                    </div>
+                    <div className="space-y-1.5">
+                      {uncovered.map((u, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 text-xs text-gray-600"
+                        >
+                          <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-gray-100 px-1 text-[10px] font-medium text-gray-500">
+                            {u.itemNumber}
+                          </span>
+                          <span className="truncate">{u.subtopicTitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 次回OJT予定 */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+              次回OJT予定
+            </h2>
+
+            {companionOjtUsers.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">
+                  担当中のOJTはありません
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {companionOjtUsers.map((ojtUser) => {
+                  const w = workers.find(
+                    (w) => w.id === ojtUser.worker_id,
+                  );
+                  const currentStep = getCurrentOjtStep(
+                    ojtRecords,
+                    ojtUser.id,
+                  );
+                  return (
+                    <Link
+                      key={ojtUser.id}
+                      href={`/ojt/${ojtUser.worker_id}`}
+                      className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                            {ojtUser.user_initial}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {w?.name ?? '不明'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              利用者 {ojtUser.user_initial}
+                            </p>
+                          </div>
+                        </div>
+                        <StatusBadge status={ojtUser.ojt_status} />
+                      </div>
+                      <div className="mt-2 rounded bg-blue-50 p-2">
+                        <p className="text-xs font-medium text-blue-800">
+                          次のステップ
+                        </p>
+                        <p className="text-sm text-blue-900">
+                          {currentStep.label}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- executive view ----------
+
+  if (role === 'executive') {
+    const ojtTotal = ojtUsers.length;
+    const ojtCompletionRate =
+      ojtTotal > 0 ? Math.round((ojtCompleted / ojtTotal) * 100) : 0;
+
+    // Fetch facilities for cross-facility breakdown
+    const { data: facilitiesData } = await supabase.from('facilities').select('*').order('name');
+    const facilities = facilitiesData ?? [];
+
+    // Per-facility stats
+    const facilityStats = facilities.map((f) => {
+      const fWorkers = workers.filter((w) => w.facility_id === f.id);
+      const fWorkerIds = new Set(fWorkers.map((w) => w.id));
+      const fStatuses = workerItemStatuses.filter((s) => fWorkerIds.has(s.workerId));
+      const fTotal = fStatuses.length;
+      const fCompleted = fStatuses.filter((s) => s.status === 'completed').length;
+      const fTrainingRate = fTotal > 0 ? Math.round((fCompleted / fTotal) * 100) : 0;
+      const fOjtUsers = ojtUsers.filter((u) => fWorkerIds.has(u.worker_id));
+      const fOjtCompleted = fOjtUsers.filter((u) => u.ojt_status === 'completed').length;
+      const fOjtTotal = fOjtUsers.length;
+      const fOjtRate = fOjtTotal > 0 ? Math.round((fOjtCompleted / fOjtTotal) * 100) : 0;
+      return {
+        facility: f,
+        workerCount: fWorkers.length,
+        trainingRate: fTrainingRate,
+        ojtRate: fOjtRate,
+        ojtInProgress: fOjtUsers.filter((u) => u.ojt_status === 'in_progress').length,
+        ojtCompleted: fOjtCompleted,
+        ojtTotal: fOjtTotal,
+      };
+    });
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader
+          title="経営ダッシュボード"
+          subtitle={`${userName}（${ROLE_LABELS[role]}）— 全事業所横断サマリー`}
+        />
+
+        <div className="px-4 py-6 sm:px-6 space-y-6">
+          {/* Overall summary cards */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">外国人総数</p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">{workers.length}</p>
+              <p className="mt-1 text-xs text-gray-400">名（{facilities.length}事業所）</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">研修完了率</p>
+              <p className="mt-2 text-2xl font-bold text-green-600">{trainingCompletionRate}%</p>
+              <p className="mt-1 text-xs text-gray-400">{completedCombinations}/{totalCombinations}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">OJT完了率</p>
+              <p className="mt-2 text-2xl font-bold text-green-600">{ojtCompletionRate}%</p>
+              <p className="mt-1 text-xs text-gray-400">{ojtCompleted}/{ojtTotal}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500">OJT進行中</p>
+              <p className="mt-2 text-2xl font-bold text-blue-600">{ojtInProgress}</p>
+              <p className="mt-1 text-xs text-gray-400">件</p>
+            </div>
+          </div>
+
+          {/* Overall progress bars */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900">全体研修完了率</h3>
+              <ProgressBar percentage={trainingCompletionRate} />
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900">全体OJT完了率</h3>
+              <ProgressBar percentage={ojtCompletionRate} />
+            </div>
+          </div>
+
+          {/* Per-facility breakdown */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">事業所別進捗</h2>
+            {facilityStats.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">事業所が登録されていません</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {facilityStats.map(({ facility, workerCount, trainingRate, ojtRate, ojtInProgress: fOjtIp, ojtCompleted: fOjtC, ojtTotal: fOjtT }) => (
+                  <div key={facility.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <div className="mb-3 flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{facility.name}</p>
+                        <p className="text-xs text-gray-500">{facility.address ?? ''} / {facility.type ?? '種別未設定'}</p>
+                      </div>
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{workerCount}名</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="mb-1 text-xs text-gray-500">研修完了率</p>
+                        <ProgressBar percentage={trainingRate} />
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs text-gray-500">OJT完了率</p>
+                        <ProgressBar percentage={ojtRate} />
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-4 text-xs text-gray-500">
+                      <span>OJT進行中: {fOjtIp}件</span>
+                      <span>OJT完了: {fOjtC}/{fOjtT}件</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Per-worker quick list */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">外国人進捗一覧</h2>
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">氏名</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">事業所</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">研修</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">OJT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {workers.map((w) => {
+                      const wStatuses = workerItemStatuses.filter((s) => s.workerId === w.id);
+                      const wCompleted = wStatuses.filter((s) => s.status === 'completed').length;
+                      const wTotal = wStatuses.length;
+                      const wRate = wTotal > 0 ? Math.round((wCompleted / wTotal) * 100) : 0;
+                      const wOjt = ojtUsers.filter((u) => u.worker_id === w.id);
+                      const wOjtDone = wOjt.filter((u) => u.ojt_status === 'completed').length;
+                      return (
+                        <tr key={w.id} className="hover:bg-gray-50">
+                          <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{w.name}</td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{w.facility?.name ?? '未所属'}</td>
+                          <td className="whitespace-nowrap px-4 py-3 text-center">
+                            <span className={`text-sm font-bold ${wRate >= 100 ? 'text-green-600' : wRate > 0 ? 'text-blue-600' : 'text-gray-400'}`}>{wRate}%</span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500">{wOjtDone}/{wOjt.length}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- fallback (worker or unknown role) ----------
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader
+        title="ダッシュボード"
+        subtitle={`${userName}（${ROLE_LABELS[role] ?? role}）`}
+      />
+
+      <div className="px-4 py-6 sm:px-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-sm text-gray-500">
+            ダッシュボードの表示はお使いのアカウントには対応していません。
+          </p>
+          <p className="mt-1 text-xs text-gray-400">
+            管理者にお問い合わせください。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
