@@ -7,6 +7,7 @@ import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import { FacilityBadges } from '@/components/facility-badges';
+import EditWorkerFacilities from './edit-worker-facilities';
 
 interface WorkerDetailPageProps {
   params: Promise<{ id: string }>;
@@ -31,6 +32,18 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
     facility: { id: string; name: string; address: string | null; type: string | null } | null;
     worker_facilities: { id: string; facility_id: string; is_primary: boolean; facility: { id: string; name: string } }[];
   };
+
+  // Fetch all facilities for editing
+  const { data: allFacilitiesData } = await supabase
+    .from('facilities')
+    .select('id, name')
+    .order('name');
+  const allFacilities = (allFacilitiesData ?? []) as { id: string; name: string }[];
+
+  // Prepare current facilities for edit component
+  const currentWorkerFacilities = (typedWorker.worker_facilities ?? [])
+    .filter((wf) => wf.facility)
+    .map((wf) => ({ id: wf.facility!.id, name: wf.facility!.name, is_primary: wf.is_primary }));
 
   // Fetch training items
   const { data: trainingItems } = await supabase
@@ -120,17 +133,14 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
               <dt className="text-xs font-medium text-gray-500">生年月日</dt>
               <dd className="mt-1 text-sm text-gray-900">{formatDate(typedWorker.birth_date)}</dd>
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <dt className="text-xs font-medium text-gray-500">所属施設</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                <FacilityBadges
-                  facilities={(typedWorker.worker_facilities ?? [])
-                    .filter((wf) => wf.facility)
-                    .map((wf) => ({
-                      id: wf.facility!.id,
-                      name: wf.facility!.name,
-                      is_primary: wf.is_primary,
-                    }))}
+                <FacilityBadges facilities={currentWorkerFacilities} />
+                <EditWorkerFacilities
+                  workerId={id}
+                  allFacilities={allFacilities}
+                  currentFacilities={currentWorkerFacilities}
                 />
               </dd>
             </div>
