@@ -842,10 +842,19 @@ export default async function DashboardPage() {
     const { data: facilitiesData } = await supabase.from('facilities').select('*').order('name');
     const facilities = facilitiesData ?? [];
 
-    // Per-facility stats
+    // Fetch worker_facilities junction for multi-facility support
+    const { data: wfData } = await supabase.from('worker_facilities').select('worker_id, facility_id');
+    const workerFacilitiesMap = new Map<string, Set<string>>();
+    for (const wf of wfData ?? []) {
+      if (!workerFacilitiesMap.has(wf.facility_id)) {
+        workerFacilitiesMap.set(wf.facility_id, new Set());
+      }
+      workerFacilitiesMap.get(wf.facility_id)!.add(wf.worker_id);
+    }
+
+    // Per-facility stats (workers can appear in multiple facilities)
     const facilityStats = facilities.map((f) => {
-      const fWorkers = workers.filter((w) => w.facility_id === f.id);
-      const fWorkerIds = new Set(fWorkers.map((w) => w.id));
+      const fWorkerIds = workerFacilitiesMap.get(f.id) ?? new Set<string>();
       const fStatuses = workerItemStatuses.filter((s) => fWorkerIds.has(s.workerId));
       const fTotal = fStatuses.length;
       const fCompleted = fStatuses.filter((s) => s.status === 'completed').length;
@@ -856,7 +865,7 @@ export default async function DashboardPage() {
       const fOjtRate = fOjtTotal > 0 ? Math.round((fOjtCompleted / fOjtTotal) * 100) : 0;
       return {
         facility: f,
-        workerCount: fWorkers.length,
+        workerCount: fWorkerIds.size,
         trainingRate: fTrainingRate,
         ojtRate: fOjtRate,
         ojtInProgress: fOjtUsers.filter((u) => u.ojt_status === 'in_progress').length,

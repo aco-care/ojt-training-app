@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { FacilityMultiSelect } from '@/components/facility-multi-select';
 
 const NATIONALITIES = [
   'ネパール',
@@ -30,7 +31,8 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
   const [name, setName] = useState('');
   const [nationality, setNationality] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [facilityId, setFacilityId] = useState('');
+  const [facilityIds, setFacilityIds] = useState<string[]>([]);
+  const [primaryFacilityId, setPrimaryFacilityId] = useState('');
   const [experienceYears, setExperienceYears] = useState('0');
   const [notes, setNotes] = useState('');
 
@@ -38,16 +40,22 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
     setName('');
     setNationality('');
     setBirthDate('');
-    setFacilityId('');
+    setFacilityIds([]);
+    setPrimaryFacilityId('');
     setExperienceYears('0');
     setNotes('');
     setError(null);
   };
 
+  const handleFacilityChange = useCallback((selectedIds: string[], primaryId: string) => {
+    setFacilityIds(selectedIds);
+    setPrimaryFacilityId(primaryId);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !facilityId) {
-      setError('氏名と所属施設は必須です');
+    if (!name.trim() || facilityIds.length === 0) {
+      setError('氏名と所属施設（1つ以上）は必須です');
       return;
     }
 
@@ -55,19 +63,39 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
     setError(null);
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from('foreign_workers').insert({
-      name: name.trim(),
-      nationality: nationality || null,
-      birth_date: birthDate || null,
-      facility_id: facilityId,
-      experience_years: parseInt(experienceYears, 10) || 0,
-      notes: notes.trim() || null,
-    });
+    const { data: inserted, error: insertError } = await supabase
+      .from('foreign_workers')
+      .insert({
+        name: name.trim(),
+        nationality: nationality || null,
+        birth_date: birthDate || null,
+        facility_id: primaryFacilityId,
+        experience_years: parseInt(experienceYears, 10) || 0,
+        notes: notes.trim() || null,
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !inserted) {
+      setLoading(false);
+      setError(`登録に失敗しました: ${insertError?.message ?? '不明なエラー'}`);
+      return;
+    }
+
+    const workerFacilityRows = facilityIds.map((fId) => ({
+      worker_id: inserted.id,
+      facility_id: fId,
+      is_primary: fId === primaryFacilityId,
+    }));
+
+    const { error: facilitiesError } = await supabase
+      .from('worker_facilities')
+      .insert(workerFacilityRows);
 
     setLoading(false);
 
-    if (insertError) {
-      setError(`登録に失敗しました: ${insertError.message}`);
+    if (facilitiesError) {
+      setError(`施設の紐付けに失敗しました: ${facilitiesError.message}`);
       return;
     }
 
@@ -148,23 +176,14 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
                 />
               </div>
 
-              <div>
-                <label htmlFor="worker-facility" className="block text-sm font-medium text-gray-700">
-                  所属施設 <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="worker-facility"
-                  value={facilityId}
-                  onChange={(e) => setFacilityId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
+              <FacilityMultiSelect
+                facilities={facilities}
+                selectedIds={facilityIds}
+                primaryId={primaryFacilityId}
+                onChange={handleFacilityChange}
+                label="所属施設"
+                required
+              />
 
               <div>
                 <label htmlFor="worker-experience" className="block text-sm font-medium text-gray-700">経験年数</label>

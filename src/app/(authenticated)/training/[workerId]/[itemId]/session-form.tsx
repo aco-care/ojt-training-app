@@ -12,6 +12,7 @@ interface SessionFormProps {
   subtopics: TrainingSubtopic[];
   trainers: Pick<Profile, 'id' | 'name' | 'email' | 'role'>[];
   completedSubtopicIds: string[];
+  facilities: { id: string; name: string }[];
 }
 
 const FORMAT_OPTIONS: { value: TrainingFormat; label: string }[] = [
@@ -32,9 +33,11 @@ export default function SessionForm({
   subtopics,
   trainers,
   completedSubtopicIds,
+  facilities,
 }: SessionFormProps) {
   const router = useRouter();
 
+  const [facilityId, setFacilityId] = useState(facilities[0]?.id ?? '');
   const [date, setDate] = useState(getTodayString());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
@@ -86,6 +89,7 @@ export default function SessionForm({
         .insert({
           worker_id: workerId,
           item_id: itemId,
+          facility_id: facilityId,
           date,
           start_time: startTime,
           end_time: endTime,
@@ -123,6 +127,29 @@ export default function SessionForm({
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
+
+      {/* Facility */}
+      <div>
+        <label htmlFor="session-facility" className="block text-sm font-medium text-gray-700">
+          研修実施事業所
+        </label>
+        <select
+          id="session-facility"
+          value={facilityId}
+          onChange={(e) => setFacilityId(e.target.value)}
+          required
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="" disabled>
+            選択してください
+          </option>
+          {facilities.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Date */}
       <div>

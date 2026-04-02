@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import type { ForeignWorker } from '@/lib/types';
 import PageHeader from '@/components/page-header';
+import { FacilityBadges } from '@/components/facility-badges';
 import WorkerForm from './worker-form';
 
 export default async function WorkersPage() {
@@ -9,7 +10,7 @@ export default async function WorkersPage() {
 
   const { data: workers } = await supabase
     .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
+    .select('*, facility:facilities(id, name), worker_facilities(id, facility_id, is_primary, facility:facilities(id, name))')
     .order('name');
 
   const { data: facilities } = await supabase
@@ -17,7 +18,10 @@ export default async function WorkersPage() {
     .select('id, name')
     .order('name');
 
-  const workerList = (workers ?? []) as (ForeignWorker & { facility: { id: string; name: string } | null })[];
+  const workerList = (workers ?? []) as (ForeignWorker & {
+    facility: { id: string; name: string } | null;
+    worker_facilities: { id: string; facility_id: string; is_primary: boolean; facility: { id: string; name: string } }[];
+  })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];
 
   return (
@@ -59,7 +63,13 @@ export default async function WorkersPage() {
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
                       </svg>
-                      {worker.facility?.name ?? '未所属'}
+                      <FacilityBadges
+                        facilities={(worker.worker_facilities ?? []).filter((wf) => wf.facility).map((wf) => ({
+                          id: wf.facility!.id,
+                          name: wf.facility!.name,
+                          is_primary: wf.is_primary,
+                        }))}
+                      />
                     </span>
                     <span>経験 {worker.experience_years}年</span>
                   </div>
@@ -84,7 +94,15 @@ export default async function WorkersPage() {
                     <tr key={worker.id} className="transition-colors hover:bg-gray-50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{worker.name}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{worker.nationality ?? '未設定'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{worker.facility?.name ?? '未所属'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        <FacilityBadges
+                          facilities={(worker.worker_facilities ?? []).filter((wf) => wf.facility).map((wf) => ({
+                            id: wf.facility!.id,
+                            name: wf.facility!.name,
+                            is_primary: wf.is_primary,
+                          }))}
+                        />
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{worker.experience_years}年</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                         <Link

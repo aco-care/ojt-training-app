@@ -6,15 +6,16 @@ import { createClient } from '@/lib/supabase/client';
 
 interface OjtUserFormProps {
   workerId: string;
-  facilityId: string;
+  facilities: { id: string; name: string }[];
 }
 
-export default function OjtUserForm({ workerId, facilityId }: OjtUserFormProps) {
+export default function OjtUserForm({ workerId, facilities }: OjtUserFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedFacilityId, setSelectedFacilityId] = useState(facilities[0]?.id ?? '');
   const [userInitial, setUserInitial] = useState('');
   const [visitFrequency, setVisitFrequency] = useState('1');
   const [ojtStartDate, setOjtStartDate] = useState(
@@ -22,6 +23,7 @@ export default function OjtUserForm({ workerId, facilityId }: OjtUserFormProps) 
   );
 
   const resetForm = () => {
+    setSelectedFacilityId(facilities[0]?.id ?? '');
     setUserInitial('');
     setVisitFrequency('1');
     setOjtStartDate(new Date().toISOString().split('T')[0]);
@@ -41,7 +43,7 @@ export default function OjtUserForm({ workerId, facilityId }: OjtUserFormProps) 
     const supabase = createClient();
     const { error: insertError } = await supabase.from('ojt_users').insert({
       worker_id: workerId,
-      facility_id: facilityId,
+      facility_id: selectedFacilityId,
       user_initial: userInitial.trim(),
       visit_frequency: parseInt(visitFrequency, 10),
       ojt_start_date: ojtStartDate || null,
@@ -109,6 +111,31 @@ export default function OjtUserForm({ workerId, facilityId }: OjtUserFormProps) 
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="ojt-facility"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  OJT実施事業所 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="ojt-facility"
+                  value={selectedFacilityId}
+                  onChange={(e) => setSelectedFacilityId(e.target.value)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="" disabled>
+                    選択してください
+                  </option>
+                  {facilities.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label
                   htmlFor="ojt-user-initial"

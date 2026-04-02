@@ -6,6 +6,7 @@ import { OJT_STATUS_LABELS, STATUS_LABELS, OJT_STEPS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
+import { FacilityBadges } from '@/components/facility-badges';
 
 interface WorkerDetailPageProps {
   params: Promise<{ id: string }>;
@@ -15,10 +16,10 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch worker with facility
+  // Fetch worker with facility and worker_facilities
   const { data: worker } = await supabase
     .from('foreign_workers')
-    .select('*, facility:facilities(id, name, address, type)')
+    .select('*, facility:facilities(id, name, address, type), worker_facilities(id, facility_id, is_primary, facility:facilities(id, name))')
     .eq('id', id)
     .single();
 
@@ -26,7 +27,10 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
     notFound();
   }
 
-  const typedWorker = worker as ForeignWorker & { facility: { id: string; name: string; address: string | null; type: string | null } | null };
+  const typedWorker = worker as ForeignWorker & {
+    facility: { id: string; name: string; address: string | null; type: string | null } | null;
+    worker_facilities: { id: string; facility_id: string; is_primary: boolean; facility: { id: string; name: string } }[];
+  };
 
   // Fetch training items
   const { data: trainingItems } = await supabase
@@ -118,7 +122,17 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
             </div>
             <div>
               <dt className="text-xs font-medium text-gray-500">所属施設</dt>
-              <dd className="mt-1 text-sm text-gray-900">{typedWorker.facility?.name ?? '未所属'}</dd>
+              <dd className="mt-1 text-sm text-gray-900">
+                <FacilityBadges
+                  facilities={(typedWorker.worker_facilities ?? [])
+                    .filter((wf) => wf.facility)
+                    .map((wf) => ({
+                      id: wf.facility!.id,
+                      name: wf.facility!.name,
+                      is_primary: wf.is_primary,
+                    }))}
+                />
+              </dd>
             </div>
             <div>
               <dt className="text-xs font-medium text-gray-500">経験年数</dt>

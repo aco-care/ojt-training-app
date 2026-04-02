@@ -5,11 +5,20 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, UserRole } from '@/lib/types';
 import { ROLE_LABELS } from '@/lib/types';
+import { FacilityMultiSelect } from '@/components/facility-multi-select';
+import { FacilityBadges } from '@/components/facility-badges';
 import ResetPasswordDialog from './reset-password-dialog';
 import AddFacilityDialog from './add-facility-dialog';
 
+interface ProfileFacility {
+  id: string;
+  facility_id: string;
+  is_primary: boolean;
+  facility: { id: string; name: string };
+}
+
 interface StaffManagerProps {
-  profiles: (Profile & { facility: { id: string; name: string } | null })[];
+  profiles: (Profile & { facility: { id: string; name: string } | null; profile_facilities: ProfileFacility[] })[];
   facilities: { id: string; name: string }[];
 }
 
@@ -21,17 +30,21 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('trainer');
-  const [editFacilityId, setEditFacilityId] = useState<string>('');
+  const [editFacilityIds, setEditFacilityIds] = useState<string[]>([]);
+  const [editPrimaryFacilityId, setEditPrimaryFacilityId] = useState<string>('');
   const [showArchived, setShowArchived] = useState(false);
 
   const activeProfiles = profiles.filter((p) => !p.is_archived);
   const archivedProfiles = profiles.filter((p) => p.is_archived);
   const displayedProfiles = showArchived ? archivedProfiles : activeProfiles;
 
-  const startEdit = (profile: Profile & { facility: { id: string; name: string } | null }) => {
+  const startEdit = (profile: StaffManagerProps['profiles'][number]) => {
     setEditingId(profile.id);
     setEditRole(profile.role);
-    setEditFacilityId(profile.facility_id ?? '');
+    const pf = profile.profile_facilities ?? [];
+    setEditFacilityIds(pf.map((r) => r.facility_id));
+    const primary = pf.find((r) => r.is_primary);
+    setEditPrimaryFacilityId(primary?.facility_id ?? (pf.length > 0 ? pf[0].facility_id : ''));
     setError(null);
   };
 
@@ -45,21 +58,53 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
     setError(null);
     const supabase = createClient();
 
+    // 1. Update profiles.facility_id to primary for backward compat
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         role: editRole,
-        facility_id: editFacilityId || null,
+        facility_id: editPrimaryFacilityId || null,
       })
       .eq('id', profileId);
 
-    setLoading(null);
-
     if (updateError) {
+      setLoading(null);
       setError(`更新に失敗しました: ${updateError.message}`);
       return;
     }
 
+    // 2. Delete old profile_facilities rows
+    const { error: deleteError } = await supabase
+      .from('profile_facilities')
+      .delete()
+      .eq('profile_id', profileId);
+
+    if (deleteError) {
+      setLoading(null);
+      setError(`施設割り当ての削除に失敗しました: ${deleteError.message}`);
+      return;
+    }
+
+    // 3. Insert new profile_facilities rows
+    if (editFacilityIds.length > 0) {
+      const rows = editFacilityIds.map((fid) => ({
+        profile_id: profileId,
+        facility_id: fid,
+        is_primary: fid === editPrimaryFacilityId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('profile_facilities')
+        .insert(rows);
+
+      if (insertError) {
+        setLoading(null);
+        setError(`施設割り当ての保存に失敗しました: ${insertError.message}`);
+        return;
+      }
+    }
+
+    setLoading(null);
     setEditingId(null);
     router.refresh();
   };
@@ -91,6 +136,22 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
 
     router.refresh();
   };
+
+  const handleFacilityChange = (selectedIds: string[], newPrimaryId: string) => {
+    setEditFacilityIds(selectedIds);
+    setEditPrimaryFacilityId(newPrimaryId);
+  };
+
+  const handleFacilityCreated = (id: string) => {
+    setEditFacilityIds((prev) => [...prev, id]);
+    if (editFacilityIds.length === 0) {
+      setEditPrimaryFacilityId(id);
+    }
+    router.refresh();
+  };
+
+  const getBadgesData = (pf: ProfileFacility[]) =>
+    pf.map((r) => ({ id: r.facility.id, name: r.facility.name, is_primary: r.is_primary }));
 
   return (
     <>
@@ -166,21 +227,17 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                       </select>
                     </div>
                     <div>
-                      <div className="flex items-center justify-between">
-                        <label htmlFor={`facility-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">所属施設</label>
-                        <AddFacilityDialog onCreated={(id) => setEditFacilityId(id)} />
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="block text-xs font-medium text-gray-700">所属施設</span>
+                        <AddFacilityDialog onCreated={handleFacilityCreated} />
                       </div>
-                      <select
-                        id={`facility-mobile-${profile.id}`}
-                        value={editFacilityId}
-                        onChange={(e) => setEditFacilityId(e.target.value)}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="">未所属</option>
-                        {facilities.map((f) => (
-                          <option key={f.id} value={f.id}>{f.name}</option>
-                        ))}
-                      </select>
+                      <FacilityMultiSelect
+                        facilities={facilities}
+                        selectedIds={editFacilityIds}
+                        primaryId={editPrimaryFacilityId}
+                        onChange={handleFacilityChange}
+                        label=""
+                      />
                     </div>
                     <div className="flex items-center justify-end gap-2">
                       <button
@@ -220,9 +277,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         }`}>
                           {ROLE_LABELS[profile.role]}
                         </span>
-                        <span className="text-xs text-gray-500">
-                          {profile.facility?.name ?? '未所属'}
-                        </span>
+                        <FacilityBadges facilities={getBadgesData(profile.profile_facilities ?? [])} />
                       </div>
                       {profile.archived_at && (
                         <p className="mt-1 text-[10px] text-gray-400">
@@ -319,20 +374,22 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         </span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-gray-500">
                       {editingId === profile.id ? (
-                        <select
-                          value={editFacilityId}
-                          onChange={(e) => setEditFacilityId(e.target.value)}
-                          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="">未所属</option>
-                          {facilities.map((f) => (
-                            <option key={f.id} value={f.id}>{f.name}</option>
-                          ))}
-                        </select>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <AddFacilityDialog onCreated={handleFacilityCreated} />
+                          </div>
+                          <FacilityMultiSelect
+                            facilities={facilities}
+                            selectedIds={editFacilityIds}
+                            primaryId={editPrimaryFacilityId}
+                            onChange={handleFacilityChange}
+                            label=""
+                          />
+                        </div>
                       ) : (
-                        profile.facility?.name ?? '未所属'
+                        <FacilityBadges facilities={getBadgesData(profile.profile_facilities ?? [])} />
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm">

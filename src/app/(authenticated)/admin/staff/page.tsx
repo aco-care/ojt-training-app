@@ -9,7 +9,7 @@ export default async function StaffPage() {
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('*, facility:facilities(id, name)')
+    .select('*, facility:facilities(id, name), profile_facilities(id, facility_id, is_primary, facility:facilities(id, name))')
     .order('name');
 
   const { data: facilities } = await supabase
@@ -17,7 +17,7 @@ export default async function StaffPage() {
     .select('id, name')
     .order('name');
 
-  const profileList = (profiles ?? []) as (Profile & { facility: { id: string; name: string } | null })[];
+  const profileList = (profiles ?? []) as (Profile & { facility: { id: string; name: string } | null; profile_facilities: { id: string; facility_id: string; is_primary: boolean; facility: { id: string; name: string } }[] })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];
 
   return (

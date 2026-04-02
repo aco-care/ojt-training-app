@@ -46,6 +46,18 @@ export default async function TrainingItemDetailPage({
     facility: { id: string; name: string } | null;
   };
 
+  // Fetch worker's facilities
+  const { data: workerFacilitiesData } = await supabase
+    .from('worker_facilities')
+    .select('facility:facilities(id, name)')
+    .eq('worker_id', workerId);
+
+  const workerFacilities = (workerFacilitiesData ?? [])
+    .map((wf: Record<string, unknown>) => wf.facility as { id: string; name: string } | null)
+    .filter((f): f is { id: string; name: string } => f !== null);
+
+  const workerFacilityIds = workerFacilities.map((f) => f.id);
+
   // Fetch training item with subtopics
   const { data: trainingItem } = await supabase
     .from('training_items')
@@ -64,16 +76,17 @@ export default async function TrainingItemDetailPage({
     (a, b) => a.sort_order - b.sort_order
   );
 
-  // Fetch sessions for this worker + item, with trainer info
+  // Fetch sessions for this worker + item, with trainer info and facility
   const { data: trainingSessions } = await supabase
     .from('training_sessions')
-    .select('*, trainer:profiles(id, name, email, role)')
+    .select('*, trainer:profiles(id, name, email, role), facility:facilities(id, name)')
     .eq('worker_id', workerId)
     .eq('item_id', itemId)
     .order('date', { ascending: false });
 
   const sessions = (trainingSessions ?? []) as (TrainingSession & {
     trainer: Pick<Profile, 'id' | 'name' | 'email' | 'role'> | null;
+    facility: { id: string; name: string } | null;
   })[];
 
   // Fetch approval for this worker + item
@@ -86,11 +99,11 @@ export default async function TrainingItemDetailPage({
 
   const approval = approvalData as TrainingApproval | null;
 
-  // Fetch trainers at same facility for the session form dropdown
+  // Fetch trainers at all of the worker's facilities for the session form dropdown
   const { data: trainersData } = await supabase
     .from('profiles')
     .select('id, name, email, role')
-    .eq('facility_id', typedWorker.facility_id)
+    .in('facility_id', workerFacilityIds.length > 0 ? workerFacilityIds : ['__none__'])
     .in('role', ['trainer', 'supervisor', 'admin']);
 
   const trainers = (trainersData ?? []) as Pick<
@@ -297,6 +310,11 @@ export default async function TrainingItemDetailPage({
                       </span>
                     </div>
                     <div className="space-y-1">
+                      {session.facility && (
+                        <p className="text-xs text-gray-500">
+                          事業所: {session.facility.name}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500">
                         指導者: {session.trainer?.name ?? '不明'}
                       </p>
@@ -329,6 +347,7 @@ export default async function TrainingItemDetailPage({
             subtopics={subtopics}
             trainers={trainers}
             completedSubtopicIds={Array.from(completedSubtopicIds)}
+            facilities={workerFacilities}
           />
         </div>
       </div>

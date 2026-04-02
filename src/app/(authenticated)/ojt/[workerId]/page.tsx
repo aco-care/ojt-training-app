@@ -30,14 +30,26 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
     facility: { id: string; name: string } | null;
   };
 
-  // Fetch OJT users for this worker
+  // Fetch worker's facilities
+  const { data: workerFacilitiesData } = await supabase
+    .from('worker_facilities')
+    .select('facility:facilities(id, name)')
+    .eq('worker_id', workerId);
+
+  const workerFacilities = (workerFacilitiesData ?? [])
+    .map((wf: Record<string, unknown>) => wf.facility as { id: string; name: string } | null)
+    .filter((f): f is { id: string; name: string } => f !== null);
+
+  // Fetch OJT users for this worker with facility info
   const { data: ojtUsers } = await supabase
     .from('ojt_users')
-    .select('*')
+    .select('*, facility:facilities(id, name)')
     .eq('worker_id', workerId)
     .order('created_at', { ascending: false });
 
-  const users = (ojtUsers ?? []) as OjtUser[];
+  const users = (ojtUsers ?? []) as (OjtUser & {
+    facility: { id: string; name: string } | null;
+  })[];
 
   // Fetch all OJT records for this worker to determine current step per user
   const { data: ojtRecords } = await supabase
@@ -114,7 +126,7 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
           <h2 className="text-lg font-semibold text-gray-900">OJT対象利用者</h2>
           <OjtUserForm
             workerId={workerId}
-            facilityId={typedWorker.facility_id}
+            facilities={workerFacilities}
           />
         </div>
 
@@ -150,6 +162,7 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
                           </p>
                           <p className="text-xs text-gray-500">
                             週{user.visit_frequency}回
+                            {user.facility && ` / ${user.facility.name}`}
                           </p>
                         </div>
                       </div>

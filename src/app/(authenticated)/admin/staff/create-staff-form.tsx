@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 import { ROLE_LABELS } from '@/lib/types';
+import { FacilityMultiSelect } from '@/components/facility-multi-select';
 import AddFacilityDialog from './add-facility-dialog';
 
 interface CreateStaffFormProps {
@@ -23,14 +24,16 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('trainer');
-  const [facilityId, setFacilityId] = useState('');
+  const [facilityIds, setFacilityIds] = useState<string[]>([]);
+  const [primaryFacilityId, setPrimaryFacilityId] = useState('');
 
   const reset = () => {
     setName('');
     setEmail('');
     setPassword('');
     setRole('trainer');
-    setFacilityId('');
+    setFacilityIds([]);
+    setPrimaryFacilityId('');
     setError('');
     setSuccess('');
   };
@@ -49,7 +52,8 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
         email,
         password,
         role,
-        facility_id: facilityId || null,
+        facility_ids: facilityIds.length > 0 ? facilityIds : null,
+        primary_facility_id: primaryFacilityId || null,
       }),
     });
 
@@ -69,6 +73,19 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
       setSuccess('');
       setOpen(false);
     }, 2000);
+  };
+
+  const handleFacilityChange = (selectedIds: string[], newPrimaryId: string) => {
+    setFacilityIds(selectedIds);
+    setPrimaryFacilityId(newPrimaryId);
+  };
+
+  const handleFacilityCreated = (id: string) => {
+    setFacilityIds((prev) => [...prev, id]);
+    if (facilityIds.length === 0) {
+      setPrimaryFacilityId(id);
+    }
+    router.refresh();
   };
 
   return (
@@ -175,23 +192,17 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
               </div>
 
               <div className="sm:col-span-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="staff-facility" className="block text-sm font-medium text-gray-700">
-                    所属事業所
-                  </label>
-                  <AddFacilityDialog onCreated={(id) => setFacilityId(id)} />
+                <div className="flex items-center justify-between mb-1">
+                  <span className="block text-sm font-medium text-gray-700">所属施設</span>
+                  <AddFacilityDialog onCreated={handleFacilityCreated} />
                 </div>
-                <select
-                  id="staff-facility"
-                  value={facilityId}
-                  onChange={(e) => setFacilityId(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">選択してください</option>
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
+                <FacilityMultiSelect
+                  facilities={facilities}
+                  selectedIds={facilityIds}
+                  primaryId={primaryFacilityId}
+                  onChange={handleFacilityChange}
+                  label=""
+                />
               </div>
             </div>
 

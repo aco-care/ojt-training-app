@@ -31,6 +31,25 @@ export interface Profile {
   created_at: string;
   updated_at: string;
   facility?: Facility;
+  profile_facilities?: ProfileFacility[];
+}
+
+export interface ProfileFacility {
+  id: string;
+  profile_id: string;
+  facility_id: string;
+  is_primary: boolean;
+  created_at: string;
+  facility?: Facility;
+}
+
+export interface WorkerFacility {
+  id: string;
+  worker_id: string;
+  facility_id: string;
+  is_primary: boolean;
+  created_at: string;
+  facility?: Facility;
 }
 
 /** アーカイブ済みスタッフの表示名を返す */
@@ -49,6 +68,7 @@ export interface ForeignWorker {
   created_at: string;
   updated_at: string;
   facility?: Facility;
+  worker_facilities?: WorkerFacility[];
 }
 
 export interface TrainingItem {
@@ -79,10 +99,12 @@ export interface TrainingSession {
   format: TrainingFormat;
   completed_subtopics: string[];
   notes: string | null;
+  facility_id?: string;
   created_at: string;
   updated_at: string;
   trainer?: Profile;
   item?: TrainingItem;
+  facility?: Facility;
 }
 
 export interface TrainingApproval {
