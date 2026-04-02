@@ -174,9 +174,18 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="staff-facility" className="block text-sm font-medium text-gray-700">
-                  所属事業所
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="staff-facility" className="block text-sm font-medium text-gray-700">
+                    所属事業所
+                  </label>
+                  <a
+                    href="/admin/facilities"
+                    target="_blank"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    + 事業所を追加
+                  </a>
+                </div>
                 <select
                   id="staff-facility"
                   value={facilityId}

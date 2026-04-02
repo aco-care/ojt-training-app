@@ -165,7 +165,10 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                       </select>
                     </div>
                     <div>
-                      <label htmlFor={`facility-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">所属施設</label>
+                      <div className="flex items-center justify-between">
+                        <label htmlFor={`facility-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">所属施設</label>
+                        <a href="/admin/facilities" target="_blank" className="text-[10px] font-medium text-blue-600 hover:text-blue-800">+ 事業所を追加</a>
+                      </div>
                       <select
                         id={`facility-mobile-${profile.id}`}
                         value={editFacilityId}
