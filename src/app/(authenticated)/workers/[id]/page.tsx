@@ -8,6 +8,7 @@ import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import { FacilityBadges } from '@/components/facility-badges';
 import EditWorkerFacilities from './edit-worker-facilities';
+import LinkProfile from './link-profile';
 
 interface WorkerDetailPageProps {
   params: Promise<{ id: string }>;
@@ -44,6 +45,18 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   const currentWorkerFacilities = (typedWorker.worker_facilities ?? [])
     .filter((wf) => wf.facility)
     .map((wf) => ({ id: wf.facility!.id, name: wf.facility!.name, is_primary: wf.is_primary }));
+
+  // Fetch worker-role profiles for linking
+  const { data: workerProfilesData } = await supabase
+    .from('profiles')
+    .select('id, name, email')
+    .eq('role', 'worker')
+    .eq('is_archived', false)
+    .order('name');
+  const workerProfiles = (workerProfilesData ?? []) as { id: string; name: string; email: string }[];
+
+  // Get current linked profile name
+  const linkedProfile = workerProfiles.find((p) => p.id === typedWorker.profile_id);
 
   // Fetch training items
   const { data: trainingItems } = await supabase
@@ -152,6 +165,12 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
               <dt className="text-xs font-medium text-gray-500">備考</dt>
               <dd className="mt-1 text-sm text-gray-900">{typedWorker.notes ?? 'なし'}</dd>
             </div>
+            <LinkProfile
+              workerId={id}
+              currentProfileId={typedWorker.profile_id}
+              currentProfileName={linkedProfile?.name ?? null}
+              workerProfiles={workerProfiles}
+            />
           </dl>
         </div>
 
