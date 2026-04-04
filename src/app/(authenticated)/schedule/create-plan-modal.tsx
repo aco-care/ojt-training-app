@@ -7,11 +7,12 @@ import { OJT_STEPS } from '@/lib/types';
 
 interface CreatePlanModalProps {
   workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
+  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
+  hoursByWorkerItem: Record<string, number>;
   currentUserId: string;
   initialDate: string;
   onClose: () => void;
@@ -26,6 +27,7 @@ export default function CreatePlanModal({
   staff,
   completedSubtopicsByWorker,
   sessionCountByWorkerItem,
+  hoursByWorkerItem,
   currentUserId,
   initialDate,
   onClose,
@@ -213,7 +215,10 @@ export default function CreatePlanModal({
                     const doneCount = item.subtopics.filter((st) =>
                       completedForWorker.includes(st.id)
                     ).length;
-                    const sessionCount = sessionCountByWorkerItem[`${workerId}:${item.id}`] ?? 0;
+                    const key = `${workerId}:${item.id}`;
+                    const sessionCount = sessionCountByWorkerItem[key] ?? 0;
+                    const doneHours = hoursByWorkerItem[key] ?? 0;
+                    const remainingHours = Math.max(0, item.target_hours - doneHours);
                     const allSubtopicsDone = doneCount >= totalSubs;
                     const sessionsMetTarget = item.target_sessions > 0
                       ? sessionCount >= item.target_sessions
@@ -230,21 +235,30 @@ export default function CreatePlanModal({
                             .map((st) => st.id);
                           setSelectedSubtopics(incomplete);
                         }}
-                        className={`flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors ${
+                        className={`flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-xs transition-colors ${
                           itemId === item.id
                             ? 'bg-blue-200 text-blue-900'
                             : 'text-blue-700 hover:bg-blue-100'
                         }`}
                       >
-                        <span className="truncate">{item.title}</span>
-                        <span className="ml-2 flex-shrink-0">
-                          {doneCount}/{totalSubs}完了
+                        <div className="flex items-center justify-between w-full">
+                          <span className="truncate font-medium">{item.title}</span>
                           {doneCount === 0 && (
                             <span className="ml-1 rounded bg-orange-100 px-1 py-0.5 text-[10px] font-medium text-orange-700">
                               未実施
                             </span>
                           )}
-                        </span>
+                        </div>
+                        <div className="flex items-center gap-2 w-full text-[10px] opacity-80">
+                          <span>項目: {doneCount}/{totalSubs}</span>
+                          <span>|</span>
+                          <span>回数: {sessionCount}/{item.target_sessions}回</span>
+                          <span>|</span>
+                          <span>時間: {doneHours.toFixed(1)}/{item.target_hours}h</span>
+                          {remainingHours > 0 && (
+                            <span className="ml-auto font-medium text-red-600">残{remainingHours.toFixed(1)}h</span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}

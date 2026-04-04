@@ -25,11 +25,12 @@ import CreatePlanModal from './create-plan-modal';
 interface ScheduleCalendarProps {
   events: CalendarEvent[];
   workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
+  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
+  hoursByWorkerItem: Record<string, number>;
   currentUserId: string;
   currentUserRole: string;
   canCreate: boolean;
@@ -58,6 +59,7 @@ export default function ScheduleCalendar({
   staff,
   completedSubtopicsByWorker,
   sessionCountByWorkerItem,
+  hoursByWorkerItem,
   currentUserId,
   currentUserRole,
   canCreate,
@@ -420,6 +422,7 @@ export default function ScheduleCalendar({
           staff={staff}
           completedSubtopicsByWorker={completedSubtopicsByWorker}
           sessionCountByWorkerItem={sessionCountByWorkerItem}
+          hoursByWorkerItem={hoursByWorkerItem}
           currentUserId={currentUserId}
           initialDate={
             selectedDate ? toDateKey(selectedDate) : toDateKey(new Date())

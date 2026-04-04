@@ -37,7 +37,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, target_sessions, training_subtopics(id, title)')
+      .select('id, title, target_sessions, target_hours, training_subtopics(id, title)')
       .order('sort_order'),
     supabase
       .from('ojt_users')
@@ -51,7 +51,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_sessions')
-      .select('worker_id, item_id, completed_subtopics'),
+      .select('worker_id, item_id, completed_subtopics, start_time, end_time'),
     supabase
       .from('profiles')
       .select('id, name, role')
@@ -74,16 +74,17 @@ export default async function SchedulePage() {
   })[];
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
-  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; training_subtopics: { id: string; title: string }[] }[];
+  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; target_hours: number; training_subtopics: { id: string; title: string }[] }[];
   const trainingItems = rawItems.map((item) => ({
     id: item.id,
     title: item.title,
     target_sessions: item.target_sessions,
+    target_hours: item.target_hours,
     subtopics: item.training_subtopics ?? [],
   }));
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
-  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[] }[];
+  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[]; start_time: string; end_time: string }[];
 
   // Transform to CalendarEvent[]
   let events: CalendarEvent[] = [
@@ -144,11 +145,18 @@ export default async function SchedulePage() {
     completedSubtopicsByWorker[k] = [...new Set(completedSubtopicsByWorker[k])];
   }
 
-  // Compute session count per worker+item (key: "workerId:itemId")
+  // Compute session count and hours per worker+item (key: "workerId:itemId")
   const sessionCountByWorkerItem: Record<string, number> = {};
+  const hoursByWorkerItem: Record<string, number> = {};
   for (const s of trainingSessions) {
     const key = `${s.worker_id}:${s.item_id}`;
     sessionCountByWorkerItem[key] = (sessionCountByWorkerItem[key] ?? 0) + 1;
+    if (s.start_time && s.end_time) {
+      const start = new Date(`2000-01-01T${s.start_time}`);
+      const end = new Date(`2000-01-01T${s.end_time}`);
+      const diffH = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      if (diffH > 0) hoursByWorkerItem[key] = (hoursByWorkerItem[key] ?? 0) + diffH;
+    }
   }
 
   const canCreate = userRole === 'admin' || userRole === 'supervisor';
@@ -164,6 +172,7 @@ export default async function SchedulePage() {
             id: item.id,
             title: item.title,
             target_sessions: item.target_sessions,
+            target_hours: item.target_hours,
             subtopics: (item.subtopics ?? []).map((st) => ({
               id: st.id,
               title: st.title,
@@ -173,6 +182,7 @@ export default async function SchedulePage() {
           staff={staffList.map((s) => ({ id: s.id, name: s.name }))}
           completedSubtopicsByWorker={completedSubtopicsByWorker}
           sessionCountByWorkerItem={sessionCountByWorkerItem}
+          hoursByWorkerItem={hoursByWorkerItem}
           currentUserId={user.id}
           currentUserRole={userRole}
           canCreate={canCreate}
