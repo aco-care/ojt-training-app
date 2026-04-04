@@ -140,13 +140,9 @@ export default async function DashboardPage() {
     subtopics: TrainingSubtopic[];
   })[];
 
-  const { data: sessionsData, error: sessionsError } = await supabase
+  const { data: sessionsData } = await supabase
     .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, companion_id, break_minutes');
-  if (sessionsError) {
-    console.error('[DASHBOARD] Failed to fetch training_sessions:', sessionsError.message);
-  }
-  console.log('[DASHBOARD] sessionsData count:', sessionsData?.length ?? 'NULL');
+    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, break_minutes');
   const sessions = (sessionsData ?? []) as unknown as TrainingSession[];
 
   const { data: approvalsData } = await supabase
@@ -176,15 +172,6 @@ export default async function DashboardPage() {
     status: TrainingStatus;
   };
 
-  // DEBUG: Log data counts
-  console.log('[DASHBOARD DEBUG] sessions count:', sessions.length, 'items count:', items.length, 'workers count:', workers.length);
-  if (sessions.length > 0) {
-    console.log('[DASHBOARD DEBUG] first session:', JSON.stringify(sessions[0]));
-  }
-  if (items.length > 0) {
-    console.log('[DASHBOARD DEBUG] first item subtopics count:', items[0].subtopics?.length ?? 'NO SUBTOPICS');
-  }
-
   const workerItemStatuses: WorkerItemStatus[] = [];
   for (const w of workers) {
     for (const item of items) {
@@ -200,12 +187,6 @@ export default async function DashboardPage() {
         item.target_hours,
         approval,
       );
-
-      // DEBUG: Log each computation
-      if (wSessions.length > 0) {
-        const completedIds = new Set(wSessions.flatMap((s) => s.completed_subtopics ?? []));
-        console.log(`[DASHBOARD DEBUG] ${w.name} - ${item.title}: sessions=${wSessions.length}, subtopics=${(item.subtopics??[]).length}, completedSubtopics=${completedIds.size}, targetHours=${item.target_hours}, status=${status}`);
-      }
 
       workerItemStatuses.push({
         workerId: w.id,
@@ -309,12 +290,8 @@ export default async function DashboardPage() {
       facilityName: u.facility?.name ?? null,
     }));
 
-    // DEBUG
-    const _dbg = { s: sessions.length, sErr: sessionsError?.message ?? null, sRaw: sessionsData?.length ?? 'NULL', i: items.length, w: workers.length, sub0: items[0]?.subtopics?.length, wis: workerItemStatuses.map(x=>x.status), cc: completedCombinations, tc: totalCombinations, rate: trainingCompletionRate };
-
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-yellow-100 p-2 text-[10px] text-yellow-800 overflow-x-auto"><pre>{JSON.stringify(_dbg)}</pre></div>
         <PageHeader
           title="ダッシュボード"
           subtitle={`${userName}（${ROLE_LABELS[role]}）`}
