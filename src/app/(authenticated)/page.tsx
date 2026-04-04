@@ -310,7 +310,7 @@ export default async function DashboardPage() {
     }));
 
     // DEBUG
-    const _dbg = { s: sessions.length, i: items.length, w: workers.length, sub0: items[0]?.subtopics?.length, wis: workerItemStatuses.map(x=>x.status), cc: completedCombinations, tc: totalCombinations, rate: trainingCompletionRate };
+    const _dbg = { s: sessions.length, sErr: sessionsError?.message ?? null, sRaw: sessionsData?.length ?? 'NULL', i: items.length, w: workers.length, sub0: items[0]?.subtopics?.length, wis: workerItemStatuses.map(x=>x.status), cc: completedCombinations, tc: totalCombinations, rate: trainingCompletionRate };
 
     return (
       <div className="min-h-screen bg-gray-50">
