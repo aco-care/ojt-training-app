@@ -17,8 +17,14 @@ import { OJT_STEPS, OJT_STATUS_LABELS, ROLE_LABELS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
-import AdminDashboardContent from './dashboard-content';
+import dynamic from 'next/dynamic';
 import FeedbackButton from '@/components/feedback-button';
+
+const AdminDashboardContent = dynamic(() => import('./dashboard-content'), {
+  loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />,
+});
+
+export const revalidate = 60;
 
 // ---------- helpers ----------
 
@@ -113,54 +119,61 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('id, name, role')
-    .eq('id', user.id)
-    .single();
+  // ---------- shared data fetching (parallel) ----------
+
+  const [
+    { data: profileRow },
+    { data: workersData },
+    { data: itemsData },
+    { data: sessionsData },
+    { data: approvalsData },
+    { data: ojtUsersData },
+    { data: ojtRecordsData },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, name, role')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .order('name'),
+    supabase
+      .from('training_items')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order, subtopics:training_subtopics(id, item_id, title, sort_order)')
+      .order('sort_order'),
+    supabase
+      .from('training_sessions')
+      .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, break_minutes')
+      .limit(5000),
+    supabase
+      .from('training_approvals')
+      .select('id, worker_id, item_id, status, approved_by, approved_at'),
+    supabase
+      .from('ojt_users')
+      .select('id, worker_id, facility_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('ojt_records')
+      .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name)')
+      .order('date', { ascending: false })
+      .limit(2000),
+  ]);
 
   const profile = profileRow as Profile | null;
   const role = profile?.role ?? 'worker';
   const userName = profile?.name ?? user.email ?? '';
 
-  // ---------- shared data fetching ----------
-
-  const { data: workersData } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .order('name');
   const workers = (workersData ?? []) as (ForeignWorker & {
     facility: { id: string; name: string } | null;
   })[];
-
-  const { data: itemsData } = await supabase
-    .from('training_items')
-    .select('id, item_number, title, target_hours, target_sessions, sort_order, subtopics:training_subtopics(id, item_id, title, sort_order)')
-    .order('sort_order');
   const items = (itemsData ?? []) as (TrainingItem & {
     subtopics: TrainingSubtopic[];
   })[];
-
-  const { data: sessionsData } = await supabase
-    .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, break_minutes');
   const sessions = (sessionsData ?? []) as unknown as TrainingSession[];
-
-  const { data: approvalsData } = await supabase
-    .from('training_approvals')
-    .select('id, worker_id, item_id, status, approved_by, approved_at');
   const approvals = (approvalsData ?? []) as unknown as TrainingApproval[];
-
-  const { data: ojtUsersData } = await supabase
-    .from('ojt_users')
-    .select('id, worker_id, facility_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
-    .order('created_at', { ascending: false });
   const ojtUsers = (ojtUsersData ?? []) as unknown as OjtUser[];
-
-  const { data: ojtRecordsData } = await supabase
-    .from('ojt_records')
-    .select('*, companion:profiles!ojt_records_companion_id_fkey(id, name)')
-    .order('date', { ascending: false });
   const ojtRecords = (ojtRecordsData ?? []) as (OjtRecord & {
     companion: { id: string; name: string } | null;
   })[];
@@ -216,26 +229,29 @@ export default async function DashboardPage() {
   // ---------- admin / supervisor view ----------
 
   if (role === 'admin' || role === 'supervisor') {
-    // Fetch facilities list and worker_facilities mapping
-    const { data: facilitiesData } = await supabase
-      .from('facilities')
-      .select('id, name')
-      .order('name');
+    // Fetch facilities, worker_facilities, and enriched OJT users in parallel
+    const [
+      { data: facilitiesData },
+      { data: wfData },
+      { data: ojtUsersWithFacility },
+    ] = await Promise.all([
+      supabase
+        .from('facilities')
+        .select('id, name')
+        .order('name'),
+      supabase
+        .from('worker_facilities')
+        .select('worker_id, facility_id'),
+      supabase
+        .from('ojt_users')
+        .select('*, facility:facilities(id, name)')
+        .order('created_at', { ascending: false }),
+    ]);
     const facilitiesList = (facilitiesData ?? []) as { id: string; name: string }[];
-
-    const { data: wfData } = await supabase
-      .from('worker_facilities')
-      .select('worker_id, facility_id');
     const workerFacilitiesList = (wfData ?? []) as {
       worker_id: string;
       facility_id: string;
     }[];
-
-    // Fetch ojt_users with facility join for facility name
-    const { data: ojtUsersWithFacility } = await supabase
-      .from('ojt_users')
-      .select('*, facility:facilities(id, name)')
-      .order('created_at', { ascending: false });
     const ojtUsersEnriched = (ojtUsersWithFacility ?? []) as (OjtUser & {
       facility: { id: string; name: string } | null;
     })[];
@@ -572,12 +588,12 @@ export default async function DashboardPage() {
     const ojtCompletionRate =
       ojtTotal > 0 ? Math.round((ojtCompleted / ojtTotal) * 100) : 0;
 
-    // Fetch facilities for cross-facility breakdown
-    const { data: facilitiesData } = await supabase.from('facilities').select('id, name, address, type').order('name');
+    // Fetch facilities and worker_facilities in parallel
+    const [{ data: facilitiesData }, { data: wfData }] = await Promise.all([
+      supabase.from('facilities').select('id, name, address, type').order('name'),
+      supabase.from('worker_facilities').select('worker_id, facility_id'),
+    ]);
     const facilities = facilitiesData ?? [];
-
-    // Fetch worker_facilities junction for multi-facility support
-    const { data: wfData } = await supabase.from('worker_facilities').select('worker_id, facility_id');
     const workerFacilitiesMap = new Map<string, Set<string>>();
     for (const wf of wfData ?? []) {
       if (!workerFacilitiesMap.has(wf.facility_id)) {

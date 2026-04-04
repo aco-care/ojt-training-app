@@ -67,6 +67,16 @@ function AdminIcon({ className }: { className?: string }) {
   );
 }
 
+function HelpIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 function PlanIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -84,14 +94,15 @@ const navItems: NavItem[] = [
   { href: '/schedule', label: '予定管理', icon: <PlanIcon className="w-5 h-5" /> },
   { href: '/training', label: '研修記録', icon: <TrainingIcon className="w-5 h-5" /> },
   { href: '/ojt', label: 'OJT記録', icon: <OjtIcon className="w-5 h-5" /> },
+  { href: '/help', label: 'ヘルプ', icon: <HelpIcon className="w-5 h-5" /> },
   { href: '/admin', label: '管理', icon: <AdminIcon className="w-5 h-5" />, adminOnly: true },
 ];
 
 export default function Sidebar({ currentPath, userRole }: SidebarProps) {
   const filteredItems = navItems.filter((item) => {
     if (item.adminOnly && userRole !== 'admin' && userRole !== 'supervisor') return false;
-    // Worker role: only show dashboard (マイページ) - other pages accessed via links
-    if (userRole === 'worker' && item.href !== '/') return false;
+    // Worker role: only show dashboard and help
+    if (userRole === 'worker' && item.href !== '/' && item.href !== '/help') return false;
     return true;
   });
 
@@ -135,9 +146,9 @@ export default function Sidebar({ currentPath, userRole }: SidebarProps) {
       <aside className="hidden md:flex md:w-60 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-white">
         <div className="flex h-16 items-center px-4 border-b border-gray-200">
           <h1 className="text-sm font-bold text-gray-900 leading-tight">
-            ACO 研修・OJT
+            吉兆 研修・OJT
             <br />
-            マネージャー
+            管理システム
           </h1>
         </div>
         <nav className="flex-1 px-2 py-4 space-y-1">
@@ -162,6 +173,10 @@ export default function Sidebar({ currentPath, userRole }: SidebarProps) {
             </Link>
           ))}
         </nav>
+        <div className="mt-auto border-t border-gray-200 px-4 py-3 text-center">
+          <p className="text-[10px] text-gray-400">Powered by ACO_care</p>
+          <p className="text-[10px] text-gray-300">CHAOS合同会社</p>
+        </div>
       </aside>
     </>
   );

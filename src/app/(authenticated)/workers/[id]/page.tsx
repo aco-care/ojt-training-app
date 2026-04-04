@@ -19,12 +19,49 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch worker with facility and worker_facilities
-  const { data: worker } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name, address, type), worker_facilities(id, facility_id, is_primary, facility:facilities(id, name))')
-    .eq('id', id)
-    .single();
+  // Fetch all data in parallel
+  const [
+    { data: worker },
+    { data: allFacilitiesData },
+    { data: workerProfilesData },
+    { data: trainingItems },
+    { data: trainingSessions },
+    { data: trainingApprovals },
+    { data: ojtUsers },
+  ] = await Promise.all([
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name, address, type), worker_facilities(id, facility_id, is_primary, facility:facilities(id, name))')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('facilities')
+      .select('id, name')
+      .order('name'),
+    supabase
+      .from('profiles')
+      .select('id, name, email')
+      .eq('role', 'worker')
+      .eq('is_archived', false)
+      .order('name'),
+    supabase
+      .from('training_items')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order')
+      .order('sort_order'),
+    supabase
+      .from('training_sessions')
+      .select('id, worker_id, item_id, date, start_time, end_time')
+      .eq('worker_id', id),
+    supabase
+      .from('training_approvals')
+      .select('id, worker_id, item_id, status, approved_by, approved_at')
+      .eq('worker_id', id),
+    supabase
+      .from('ojt_users')
+      .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
+      .eq('worker_id', id)
+      .order('created_at', { ascending: false }),
+  ]);
 
   if (!worker) {
     notFound();
@@ -35,61 +72,18 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
     worker_facilities: { id: string; facility_id: string; is_primary: boolean; facility: { id: string; name: string } }[];
   };
 
-  // Fetch all facilities for editing
-  const { data: allFacilitiesData } = await supabase
-    .from('facilities')
-    .select('id, name')
-    .order('name');
   const allFacilities = (allFacilitiesData ?? []) as { id: string; name: string }[];
 
-  // Prepare current facilities for edit component
   const currentWorkerFacilities = (typedWorker.worker_facilities ?? [])
     .filter((wf) => wf.facility)
     .map((wf) => ({ id: wf.facility!.id, name: wf.facility!.name, is_primary: wf.is_primary }));
 
-  // Fetch worker-role profiles for linking
-  const { data: workerProfilesData } = await supabase
-    .from('profiles')
-    .select('id, name, email')
-    .eq('role', 'worker')
-    .eq('is_archived', false)
-    .order('name');
   const workerProfiles = (workerProfilesData ?? []) as { id: string; name: string; email: string }[];
-
-  // Get current linked profile name
   const linkedProfile = workerProfiles.find((p) => p.id === typedWorker.profile_id);
 
-  // Fetch training items
-  const { data: trainingItems } = await supabase
-    .from('training_items')
-    .select('id, item_number, title, target_hours, target_sessions, sort_order')
-    .order('sort_order');
-
   const items = (trainingItems ?? []) as TrainingItem[];
-
-  // Fetch training sessions for this worker
-  const { data: trainingSessions } = await supabase
-    .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time')
-    .eq('worker_id', id);
-
   const sessions = (trainingSessions ?? []) as TrainingSession[];
-
-  // Fetch training approvals for this worker
-  const { data: trainingApprovals } = await supabase
-    .from('training_approvals')
-    .select('id, worker_id, item_id, status, approved_by, approved_at')
-    .eq('worker_id', id);
-
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];
-
-  // Fetch OJT users for this worker
-  const { data: ojtUsers } = await supabase
-    .from('ojt_users')
-    .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
-    .eq('worker_id', id)
-    .order('created_at', { ascending: false });
-
   const ojtList = (ojtUsers ?? []) as OjtUser[];
 
   // Build training progress data

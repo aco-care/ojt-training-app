@@ -15,12 +15,33 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
   const { workerId } = await params;
   const supabase = await createClient();
 
-  // Fetch worker with facility
-  const { data: worker } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .eq('id', workerId)
-    .single();
+  // Fetch worker, facilities, OJT users, and records in parallel
+  const [
+    { data: worker },
+    { data: workerFacilitiesData },
+    { data: ojtUsers },
+    { data: ojtRecords },
+  ] = await Promise.all([
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .eq('id', workerId)
+      .single(),
+    supabase
+      .from('worker_facilities')
+      .select('facility:facilities(id, name)')
+      .eq('worker_id', workerId),
+    supabase
+      .from('ojt_users')
+      .select('*, facility:facilities(id, name)')
+      .eq('worker_id', workerId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('ojt_records')
+      .select('id, worker_id, ojt_user_id, step, result, date')
+      .eq('worker_id', workerId)
+      .order('date', { ascending: false }),
+  ]);
 
   if (!worker) {
     notFound();
@@ -30,33 +51,13 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
     facility: { id: string; name: string } | null;
   };
 
-  // Fetch worker's facilities
-  const { data: workerFacilitiesData } = await supabase
-    .from('worker_facilities')
-    .select('facility:facilities(id, name)')
-    .eq('worker_id', workerId);
-
   const workerFacilities = (workerFacilitiesData ?? [])
     .map((wf: Record<string, unknown>) => wf.facility as { id: string; name: string } | null)
     .filter((f): f is { id: string; name: string } => f !== null);
 
-  // Fetch OJT users for this worker with facility info
-  const { data: ojtUsers } = await supabase
-    .from('ojt_users')
-    .select('*, facility:facilities(id, name)')
-    .eq('worker_id', workerId)
-    .order('created_at', { ascending: false });
-
   const users = (ojtUsers ?? []) as (OjtUser & {
     facility: { id: string; name: string } | null;
   })[];
-
-  // Fetch all OJT records for this worker to determine current step per user
-  const { data: ojtRecords } = await supabase
-    .from('ojt_records')
-    .select('id, worker_id, ojt_user_id, step, result, date')
-    .eq('worker_id', workerId)
-    .order('date', { ascending: false });
 
   const records = (ojtRecords ?? []) as OjtRecord[];
 

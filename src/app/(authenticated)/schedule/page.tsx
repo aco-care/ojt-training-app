@@ -3,8 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import type { Profile, TrainingItem, TrainingPlan, OjtPlan } from '@/lib/types';
 import { OJT_STEPS } from '@/lib/types';
 import type { CalendarEvent } from '@/lib/types';
+import dynamic from 'next/dynamic';
 import PageHeader from '@/components/page-header';
-import ScheduleCalendar from './schedule-calendar';
+
+const ScheduleCalendar = dynamic(() => import('./schedule-calendar'), {
+  loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />,
+});
+
+export const revalidate = 60;
 
 export default async function SchedulePage() {
   const supabase = await createClient();
@@ -51,7 +57,8 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_sessions')
-      .select('worker_id, item_id, completed_subtopics, start_time, end_time, break_minutes'),
+      .select('worker_id, item_id, completed_subtopics, start_time, end_time, break_minutes')
+      .limit(5000),
     supabase
       .from('profiles')
       .select('id, name, role')

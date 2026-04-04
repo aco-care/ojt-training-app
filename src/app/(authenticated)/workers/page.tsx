@@ -4,6 +4,8 @@ import PageHeader from '@/components/page-header';
 import WorkerForm from './worker-form';
 import WorkerList from './worker-list';
 
+export const revalidate = 60;
+
 export default async function WorkersPage() {
   const supabase = await createClient();
 

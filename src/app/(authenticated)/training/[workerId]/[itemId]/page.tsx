@@ -31,12 +31,27 @@ export default async function TrainingItemDetailPage({
   const { workerId, itemId } = await params;
   const supabase = await createClient();
 
-  // Fetch worker
-  const { data: worker } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .eq('id', workerId)
-    .single();
+  // Fetch worker, facilities, and training item in parallel
+  const [
+    { data: worker },
+    { data: workerFacilitiesData },
+    { data: trainingItem },
+  ] = await Promise.all([
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .eq('id', workerId)
+      .single(),
+    supabase
+      .from('worker_facilities')
+      .select('facility:facilities(id, name)')
+      .eq('worker_id', workerId),
+    supabase
+      .from('training_items')
+      .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
+      .eq('id', itemId)
+      .single(),
+  ]);
 
   if (!worker) {
     notFound();
@@ -46,24 +61,11 @@ export default async function TrainingItemDetailPage({
     facility: { id: string; name: string } | null;
   };
 
-  // Fetch worker's facilities
-  const { data: workerFacilitiesData } = await supabase
-    .from('worker_facilities')
-    .select('facility:facilities(id, name)')
-    .eq('worker_id', workerId);
-
   const workerFacilities = (workerFacilitiesData ?? [])
     .map((wf: Record<string, unknown>) => wf.facility as { id: string; name: string } | null)
     .filter((f): f is { id: string; name: string } => f !== null);
 
   const workerFacilityIds = workerFacilities.map((f) => f.id);
-
-  // Fetch training item with subtopics
-  const { data: trainingItem } = await supabase
-    .from('training_items')
-    .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
-    .eq('id', itemId)
-    .single();
 
   if (!trainingItem) {
     notFound();
@@ -76,45 +78,44 @@ export default async function TrainingItemDetailPage({
     (a, b) => a.sort_order - b.sort_order
   );
 
-  // Fetch sessions for this worker + item, with trainer info and facility
-  const { data: trainingSessions } = await supabase
-    .from('training_sessions')
-    .select('*, trainer:profiles(id, name, email, role), facility:facilities(id, name)')
-    .eq('worker_id', workerId)
-    .eq('item_id', itemId)
-    .order('date', { ascending: false });
+  // Fetch sessions, approval, trainers, and current user in parallel
+  const [
+    { data: trainingSessions },
+    { data: approvalData },
+    { data: trainersData },
+    { data: { user: authUser } },
+  ] = await Promise.all([
+    supabase
+      .from('training_sessions')
+      .select('*, trainer:profiles(id, name, email, role), facility:facilities(id, name)')
+      .eq('worker_id', workerId)
+      .eq('item_id', itemId)
+      .order('date', { ascending: false }),
+    supabase
+      .from('training_approvals')
+      .select('id, worker_id, item_id, status, approved_by, approved_at')
+      .eq('worker_id', workerId)
+      .eq('item_id', itemId)
+      .single(),
+    supabase
+      .from('profiles')
+      .select('id, name, email, role')
+      .in('facility_id', workerFacilityIds.length > 0 ? workerFacilityIds : ['__none__'])
+      .in('role', ['trainer', 'supervisor', 'admin']),
+    supabase.auth.getUser(),
+  ]);
 
   const sessions = (trainingSessions ?? []) as (TrainingSession & {
     trainer: Pick<Profile, 'id' | 'name' | 'email' | 'role'> | null;
     facility: { id: string; name: string } | null;
   })[];
 
-  // Fetch approval for this worker + item
-  const { data: approvalData } = await supabase
-    .from('training_approvals')
-    .select('id, worker_id, item_id, status, approved_by, approved_at')
-    .eq('worker_id', workerId)
-    .eq('item_id', itemId)
-    .single();
-
   const approval = approvalData as TrainingApproval | null;
-
-  // Fetch trainers at all of the worker's facilities for the session form dropdown
-  const { data: trainersData } = await supabase
-    .from('profiles')
-    .select('id, name, email, role')
-    .in('facility_id', workerFacilityIds.length > 0 ? workerFacilityIds : ['__none__'])
-    .in('role', ['trainer', 'supervisor', 'admin']);
 
   const trainers = (trainersData ?? []) as Pick<
     Profile,
     'id' | 'name' | 'email' | 'role'
   >[];
-
-  // Fetch current user for approval action
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
 
   const { data: currentProfile } = authUser
     ? await supabase

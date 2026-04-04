@@ -27,21 +27,38 @@ export default async function EvaluationPage({ params }: EvaluationPageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('id, name, role')
-    .eq('id', user.id)
-    .single();
+  // Fetch all data in parallel
+  const [
+    { data: profileRow },
+    { data: worker },
+    { data: evaluationData },
+    { data: ojtRecordsData },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, name, role')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .eq('id', workerId)
+      .single(),
+    supabase
+      .from('final_evaluations')
+      .select('*, approved_by_profile:profiles(id, name)')
+      .eq('worker_id', workerId)
+      .order('eval_date', { ascending: false })
+      .limit(1),
+    supabase
+      .from('ojt_records')
+      .select('id, worker_id, ojt_user_id, checklist_self, checklist_trainer, date')
+      .eq('worker_id', workerId)
+      .order('date', { ascending: false }),
+  ]);
 
   const profile = profileRow as Profile | null;
   const userRole = profile?.role ?? 'worker';
-
-  // Fetch worker with facility
-  const { data: worker } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .eq('id', workerId)
-    .single();
 
   if (!worker) {
     notFound();
@@ -51,26 +68,11 @@ export default async function EvaluationPage({ params }: EvaluationPageProps) {
     facility: { id: string; name: string } | null;
   };
 
-  // Fetch existing final evaluation
-  const { data: evaluationData } = await supabase
-    .from('final_evaluations')
-    .select('*, approved_by_profile:profiles(id, name)')
-    .eq('worker_id', workerId)
-    .order('eval_date', { ascending: false })
-    .limit(1);
-
   const evaluations = (evaluationData ?? []) as (FinalEvaluation & {
     approved_by_profile: { id: string; name: string } | null;
   })[];
 
   const existingEvaluation = evaluations.length > 0 ? evaluations[0] : null;
-
-  // Fetch latest OJT records to pre-populate checklist data
-  const { data: ojtRecordsData } = await supabase
-    .from('ojt_records')
-    .select('id, worker_id, ojt_user_id, checklist_self, checklist_trainer, date')
-    .eq('worker_id', workerId)
-    .order('date', { ascending: false });
 
   const ojtRecords = (ojtRecordsData ?? []) as OjtRecord[];
 

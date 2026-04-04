@@ -3,6 +3,8 @@ import type { ForeignWorker } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import TrainingList from './training-list';
 
+export const revalidate = 60;
+
 export default async function TrainingListPage() {
   const supabase = await createClient();
 

@@ -3,6 +3,8 @@ import type { Facility } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import FacilityManager from './facility-manager';
 
+export const revalidate = 60;
+
 export default async function FacilitiesPage() {
   const supabase = await createClient();
 

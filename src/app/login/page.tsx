@@ -63,7 +63,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            ACO 研修・OJT マネージャー
+            吉兆 研修・OJT管理システム
           </h1>
           <p className="mt-2 text-sm text-gray-600">
             アカウントにログインしてください
@@ -194,6 +194,9 @@ export default function LoginPage() {
             </button>
           </form>
         )}
+        <div className="mt-8 text-center">
+          <p className="text-[10px] text-gray-400">Powered by ACO_care / CHAOS合同会社</p>
+        </div>
       </div>
     </div>
   );

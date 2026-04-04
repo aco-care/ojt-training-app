@@ -1,5 +1,5 @@
 // ============================================================
-// ACO 研修・OJT マネージャー — TypeScript Type Definitions
+// 吉兆 研修・OJT管理システム — TypeScript Type Definitions
 // ============================================================
 
 export type UserRole = 'admin' | 'trainer' | 'supervisor' | 'worker' | 'executive';

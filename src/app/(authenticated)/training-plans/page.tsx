@@ -10,45 +10,47 @@ export default async function TrainingPlansPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, name, role')
-    .eq('id', user.id)
-    .single();
+  // Fetch all data in parallel
+  const [
+    { data: profile },
+    { data: plansData },
+    { data: workersData },
+    { data: itemsData },
+    { data: trainersData },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, name, role')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('training_plans')
+      .select('*, worker:foreign_workers(id, name), item:training_items(id, title), trainer:profiles!training_plans_trainer_id_fkey(id, name)')
+      .order('planned_date', { ascending: false }),
+    supabase
+      .from('foreign_workers')
+      .select('id, name')
+      .order('name'),
+    supabase
+      .from('training_items')
+      .select('id, title, subtopics')
+      .order('sort_order'),
+    supabase
+      .from('profiles')
+      .select('id, name, role, qualification')
+      .in('role', ['trainer', 'supervisor', 'admin'])
+      .eq('is_archived', false)
+      .order('name'),
+  ]);
 
   if (!profile) redirect('/login');
   const userRole = (profile as Profile).role;
-
-  // Fetch plans with joins
-  const { data: plansData } = await supabase
-    .from('training_plans')
-    .select('*, worker:foreign_workers(id, name), item:training_items(id, title), trainer:profiles!training_plans_trainer_id_fkey(id, name)')
-    .order('planned_date', { ascending: false });
 
   const plans = (plansData ?? []) as (TrainingPlan & {
     worker: { id: string; name: string };
     item: { id: string; title: string };
     trainer: { id: string; name: string };
   })[];
-
-  // Fetch workers, items, trainers for plan creation
-  const { data: workersData } = await supabase
-    .from('foreign_workers')
-    .select('id, name')
-    .order('name');
-
-  const { data: itemsData } = await supabase
-    .from('training_items')
-    .select('id, title, subtopics')
-    .order('sort_order');
-
-  const { data: trainersData } = await supabase
-    .from('profiles')
-    .select('id, name, role, qualification')
-    .in('role', ['trainer', 'supervisor', 'admin'])
-    .eq('is_archived', false)
-    .order('name');
-
   const workers = (workersData ?? []) as { id: string; name: string }[];
   const items = (itemsData ?? []) as (TrainingItem & { subtopics: { id: string; title: string }[] })[];
   const trainers = (trainersData ?? []) as { id: string; name: string; role: string; qualification: string }[];

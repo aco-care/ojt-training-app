@@ -53,12 +53,31 @@ export default async function TrainingOverviewPage({
   const { workerId } = await params;
   const supabase = await createClient();
 
-  // Fetch worker
-  const { data: worker } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .eq('id', workerId)
-    .single();
+  // Fetch worker, items, sessions, approvals in parallel
+  const [
+    { data: worker },
+    { data: trainingItems },
+    { data: trainingSessions },
+    { data: trainingApprovals },
+  ] = await Promise.all([
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .eq('id', workerId)
+      .single(),
+    supabase
+      .from('training_items')
+      .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
+      .order('sort_order'),
+    supabase
+      .from('training_sessions')
+      .select('id, worker_id, item_id, date, start_time, end_time, completed_subtopics, break_minutes')
+      .eq('worker_id', workerId),
+    supabase
+      .from('training_approvals')
+      .select('id, worker_id, item_id, status, approved_by, approved_at')
+      .eq('worker_id', workerId),
+  ]);
 
   if (!worker) {
     notFound();
@@ -68,30 +87,10 @@ export default async function TrainingOverviewPage({
     facility: { id: string; name: string } | null;
   };
 
-  // Fetch training items with subtopics
-  const { data: trainingItems } = await supabase
-    .from('training_items')
-    .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
-    .order('sort_order');
-
   const items = (trainingItems ?? []) as (TrainingItem & {
     subtopics: TrainingSubtopic[];
   })[];
-
-  // Fetch all training sessions for this worker
-  const { data: trainingSessions } = await supabase
-    .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time, completed_subtopics, break_minutes')
-    .eq('worker_id', workerId);
-
   const sessions = (trainingSessions ?? []) as TrainingSession[];
-
-  // Fetch training approvals for this worker
-  const { data: trainingApprovals } = await supabase
-    .from('training_approvals')
-    .select('id, worker_id, item_id, status, approved_by, approved_at')
-    .eq('worker_id', workerId);
-
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];
 
   // Build progress data for each training item

@@ -6,19 +6,19 @@ import OjtList from './ojt-list';
 export default async function OjtListPage() {
   const supabase = await createClient();
 
-  const { data: workers } = await supabase
-    .from('foreign_workers')
-    .select('*, facility:facilities(id, name)')
-    .order('name');
-
-  const { data: facilities } = await supabase
-    .from('facilities')
-    .select('id, name')
-    .order('name');
-
-  const { data: ojtUsers } = await supabase
-    .from('ojt_users')
-    .select('id, worker_id, ojt_status');
+  const [{ data: workers }, { data: facilities }, { data: ojtUsers }] = await Promise.all([
+    supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .order('name'),
+    supabase
+      .from('facilities')
+      .select('id, name')
+      .order('name'),
+    supabase
+      .from('ojt_users')
+      .select('id, worker_id, ojt_status'),
+  ]);
 
   const workerList = (workers ?? []) as (ForeignWorker & { facility: { id: string; name: string } | null })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];

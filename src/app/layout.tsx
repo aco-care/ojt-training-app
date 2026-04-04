@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ACO 研修・OJT マネージャー',
+  title: '吉兆 研修・OJT管理システム',
   description: '外国人介護人材の研修・OJT管理システム',
 };
 

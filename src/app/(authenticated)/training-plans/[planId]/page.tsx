@@ -15,27 +15,28 @@ export default async function PlanDetailPage({ params }: PlanDetailPageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, name, role')
-    .eq('id', user.id)
-    .single();
+  const [{ data: profile }, { data: plan }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, name, role')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('training_plans')
+      .select(`
+        *,
+        worker:foreign_workers(id, name, profile_id),
+        item:training_items(id, title, subtopics),
+        trainer:profiles!training_plans_trainer_id_fkey(id, name),
+        creator:profiles!training_plans_created_by_fkey(id, name)
+      `)
+      .eq('id', planId)
+      .single(),
+  ]);
+
   if (!profile) redirect('/login');
 
   const typedProfile = profile as Profile;
-
-  // Fetch plan with joins
-  const { data: plan } = await supabase
-    .from('training_plans')
-    .select(`
-      *,
-      worker:foreign_workers(id, name, profile_id),
-      item:training_items(id, title, subtopics),
-      trainer:profiles!training_plans_trainer_id_fkey(id, name),
-      creator:profiles!training_plans_created_by_fkey(id, name)
-    `)
-    .eq('id', planId)
-    .single();
 
   if (!plan) notFound();
 
