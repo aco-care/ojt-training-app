@@ -37,7 +37,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, subtopics')
+      .select('id, title, target_sessions, subtopics(id, title)')
       .order('sort_order'),
     supabase
       .from('ojt_users')
@@ -74,9 +74,7 @@ export default async function SchedulePage() {
   })[];
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
-  const trainingItems = (itemsData ?? []) as (TrainingItem & {
-    subtopics: { id: string; title: string }[];
-  })[];
+  const trainingItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
   const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[] }[];
