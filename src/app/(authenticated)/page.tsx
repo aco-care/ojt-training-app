@@ -159,6 +159,15 @@ export default async function DashboardPage() {
     status: TrainingStatus;
   };
 
+  // DEBUG: Log data counts
+  console.log('[DASHBOARD DEBUG] sessions count:', sessions.length, 'items count:', items.length, 'workers count:', workers.length);
+  if (sessions.length > 0) {
+    console.log('[DASHBOARD DEBUG] first session:', JSON.stringify(sessions[0]));
+  }
+  if (items.length > 0) {
+    console.log('[DASHBOARD DEBUG] first item subtopics count:', items[0].subtopics?.length ?? 'NO SUBTOPICS');
+  }
+
   const workerItemStatuses: WorkerItemStatus[] = [];
   for (const w of workers) {
     for (const item of items) {
@@ -174,6 +183,13 @@ export default async function DashboardPage() {
         item.target_hours,
         approval,
       );
+
+      // DEBUG: Log each computation
+      if (wSessions.length > 0) {
+        const completedIds = new Set(wSessions.flatMap((s) => s.completed_subtopics ?? []));
+        console.log(`[DASHBOARD DEBUG] ${w.name} - ${item.title}: sessions=${wSessions.length}, subtopics=${(item.subtopics??[]).length}, completedSubtopics=${completedIds.size}, targetHours=${item.target_hours}, status=${status}`);
+      }
+
       workerItemStatuses.push({
         workerId: w.id,
         itemId: item.id,
