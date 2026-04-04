@@ -130,6 +130,7 @@ export default async function EvaluationPage({ params }: EvaluationPageProps) {
           existingEvaluation={formData}
           prefilledSelf={prefilledSelf}
           prefilledTrainer={prefilledTrainer}
+          userRole={userRole}
         />
 
         {/* Approval section (admin/supervisor only) */}

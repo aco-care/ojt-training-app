@@ -5,6 +5,7 @@ import { OJT_STEPS, EVAL_LABELS, OJT_STATUS_LABELS, displayName } from '@/lib/ty
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import RecordForm from './record-form';
+import WorkerSelfEdit from './worker-self-edit';
 
 interface OjtStepRecordPageProps {
   params: Promise<{ workerId: string; userId: string }>;
@@ -68,6 +69,7 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
 
   const isManagerRole =
     currentProfile?.role === 'admin' || currentProfile?.role === 'supervisor';
+  const isWorkerRole = currentProfile?.role === 'worker';
 
   // Determine step status based on records
   const stepOrder = OJT_STEPS.map((s) => s.step);
@@ -369,6 +371,15 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
                     </div>
                   )}
 
+                  {record.worker_comment && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-blue-600">本人コメント:</span>{' '}
+                        {record.worker_comment}
+                      </p>
+                    </div>
+                  )}
+
                   {record.notes && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500">
@@ -376,6 +387,15 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
                         {record.notes}
                       </p>
                     </div>
+                  )}
+
+                  {/* Worker can edit self-evaluation and comment */}
+                  {isWorkerRole && (
+                    <WorkerSelfEdit
+                      recordId={record.id}
+                      checklistSelf={record.checklist_self ?? []}
+                      workerComment={record.worker_comment ?? ''}
+                    />
                   )}
                 </div>
               ))}

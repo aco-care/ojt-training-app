@@ -21,6 +21,7 @@ interface EvaluationFormProps {
   existingEvaluation: ExistingEvaluation | null;
   prefilledSelf: EvalRating[];
   prefilledTrainer: EvalRating[];
+  userRole?: string;
 }
 
 const RATING_OPTIONS: { value: EvalRating; label: string }[] = [
@@ -34,9 +35,15 @@ export default function EvaluationForm({
   existingEvaluation,
   prefilledSelf,
   prefilledTrainer,
+  userRole,
 }: EvaluationFormProps) {
   const router = useRouter();
   const isApproved = !!existingEvaluation?.approved_by;
+  const isWorker = userRole === 'worker';
+  // Worker can only edit self-evaluation; trainer/admin can edit both
+  const canEditSelf = !isApproved;
+  const canEditTrainer = !isApproved && !isWorker;
+  const canSubmit = !isWorker; // Workers can't submit the form, only edit self scores
 
   const [scoresSelf, setScoresSelf] = useState<EvalRating[]>(
     existingEvaluation?.scores_self ?? prefilledSelf,
@@ -161,7 +168,7 @@ export default function EvaluationForm({
                           value={opt.value}
                           checked={scoresSelf[idx] === opt.value}
                           onChange={() => handleSelfChange(idx, opt.value)}
-                          disabled={isApproved}
+                          disabled={!canEditSelf}
                           className="sr-only"
                         />
                         {opt.label}
@@ -187,7 +194,7 @@ export default function EvaluationForm({
                                 ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
                                 : 'border-red-500 bg-red-50 text-red-700'
                             : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
-                        } ${isApproved ? 'pointer-events-none opacity-60' : ''}`}
+                        } ${!canEditTrainer ? 'pointer-events-none opacity-60' : ''}`}
                       >
                         <input
                           type="radio"
@@ -195,7 +202,7 @@ export default function EvaluationForm({
                           value={opt.value}
                           checked={scoresTrainer[idx] === opt.value}
                           onChange={() => handleTrainerChange(idx, opt.value)}
-                          disabled={isApproved}
+                          disabled={!canEditTrainer}
                           className="sr-only"
                         />
                         {opt.label}
@@ -221,7 +228,7 @@ export default function EvaluationForm({
             rows={4}
             value={supervisorComment}
             onChange={(e) => setSupervisorComment(e.target.value)}
-            disabled={isApproved}
+            disabled={isApproved || isWorker}
             placeholder="指導責任者のコメントを入力してください"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
           />
@@ -241,7 +248,7 @@ export default function EvaluationForm({
         )}
 
         {/* Submit button */}
-        {!isApproved && (
+        {!isApproved && canSubmit && (
           <div className="border-t border-gray-200 px-4 py-3">
             <button
               type="submit"
@@ -254,6 +261,38 @@ export default function EvaluationForm({
                   ? '評価を更新'
                   : '評価を保存'}
             </button>
+          </div>
+        )}
+
+        {/* Worker-only: save self evaluation */}
+        {isWorker && !isApproved && existingEvaluation && (
+          <div className="border-t border-gray-200 px-4 py-3">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={async () => {
+                setIsSubmitting(true);
+                setMessage(null);
+                const supabase = createClient();
+                const { error } = await supabase
+                  .from('final_evaluations')
+                  .update({ scores_self: scoresSelf })
+                  .eq('id', existingEvaluation.id);
+                setIsSubmitting(false);
+                if (error) {
+                  setMessage({ type: 'error', text: `保存に失敗しました: ${error.message}` });
+                } else {
+                  setMessage({ type: 'success', text: '本人評価を保存しました' });
+                  router.refresh();
+                }
+              }}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? '保存中...' : '本人評価を保存'}
+            </button>
+            <p className="mt-1 text-center text-xs text-gray-400">
+              本人評価のみ編集・保存できます
+            </p>
           </div>
         )}
 

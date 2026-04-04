@@ -64,6 +64,7 @@ export interface ForeignWorker {
   birth_date: string | null;
   facility_id: string;
   experience_years: number;
+  profile_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -141,6 +142,7 @@ export interface OjtRecord {
   checklist_trainer: EvalRating[];
   result: OjtResult | null;
   manager_comment: string | null;
+  worker_comment: string | null;
   approved_by: string | null;
   notes: string | null;
   created_at: string;

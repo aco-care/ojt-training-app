@@ -53,6 +53,8 @@ export default function RecordForm({
   const [result, setResult] = useState<OjtResult>('pass');
   const [managerComment, setManagerComment] = useState('');
   const [notes, setNotes] = useState('');
+  const [workerComment, setWorkerComment] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const resetForm = () => {
     setStep(currentStep as OjtStep);
@@ -63,8 +65,10 @@ export default function RecordForm({
     setChecklistTrainer(Array(CHECKLIST_ITEMS.length).fill('good'));
     setResult('pass');
     setManagerComment('');
+    setWorkerComment('');
     setNotes('');
     setError(null);
+    setValidationErrors([]);
   };
 
   const updateChecklistSelf = (index: number, value: EvalRating) => {
@@ -79,10 +83,29 @@ export default function RecordForm({
     setChecklistTrainer(next);
   };
 
+  const validate = (): string[] => {
+    const errors: string[] = [];
+    if (!step) errors.push('ステップを選択してください');
+    if (!date) errors.push('実施日を入力してください');
+    if (!companionId) errors.push('同行者を選択してください');
+    if (!content.trim()) errors.push('実施内容を入力してください');
+    if (!result) errors.push('判定を選択してください');
+    if (isManager && !managerComment.trim()) errors.push('管理者コメントを入力してください');
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setValidationErrors([]);
     setError(null);
+
+    const errors = validate();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setLoading(true);
 
     const supabase = createClient();
 
@@ -109,6 +132,7 @@ export default function RecordForm({
       checklist_trainer: checklistTrainer,
       result,
       manager_comment: managerComment.trim() || null,
+      worker_comment: workerComment.trim() || null,
       notes: notes.trim() || null,
     });
 
@@ -188,6 +212,15 @@ export default function RecordForm({
               </button>
             </div>
 
+            {validationErrors.length > 0 && (
+              <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3">
+                <p className="text-sm font-medium text-red-700 mb-1">入力エラー</p>
+                <ul className="list-disc list-inside text-xs text-red-600 space-y-0.5">
+                  {validationErrors.map((err, i) => <li key={i}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
                 {error}
@@ -241,13 +274,16 @@ export default function RecordForm({
                   htmlFor="record-companion"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  同行者
+                  同行者 <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="record-companion"
                   value={companionId}
                   onChange={(e) => setCompanionId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  required
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    validationErrors.length > 0 && !companionId ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">選択してください</option>
                   {staff.map((s) => (
@@ -264,14 +300,17 @@ export default function RecordForm({
                   htmlFor="record-content"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  実施内容
+                  実施内容 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="record-content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={3}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  required
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    validationErrors.length > 0 && !content.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="実施した内容を記載してください"
                 />
               </div>
@@ -417,18 +456,39 @@ export default function RecordForm({
                     htmlFor="record-manager-comment"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    管理者コメント
+                    管理者コメント <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="record-manager-comment"
                     value={managerComment}
                     onChange={(e) => setManagerComment(e.target.value)}
                     rows={2}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    required
+                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                      validationErrors.length > 0 && isManager && !managerComment.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="管理者としてのコメントを記載してください"
                   />
                 </div>
               )}
+
+              {/* Worker comment */}
+              <div>
+                <label
+                  htmlFor="record-worker-comment"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  本人コメント
+                </label>
+                <textarea
+                  id="record-worker-comment"
+                  value={workerComment}
+                  onChange={(e) => setWorkerComment(e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="本人からのコメント（振り返り・気づき等）"
+                />
+              </div>
 
               {/* Notes */}
               <div>

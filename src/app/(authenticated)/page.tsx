@@ -716,7 +716,155 @@ export default async function DashboardPage() {
     );
   }
 
-  // ---------- fallback (worker or unknown role) ----------
+  // ---------- worker view ----------
+
+  if (role === 'worker') {
+    // Find which foreign_worker is linked to this profile
+    const { data: linkedWorker } = await supabase
+      .from('foreign_workers')
+      .select('*, facility:facilities(id, name)')
+      .eq('profile_id', user.id)
+      .single();
+
+    if (!linkedWorker) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <PageHeader title="マイページ" subtitle={`${userName}（実習生）`} />
+          <div className="px-4 py-6 sm:px-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
+              <p className="text-sm font-medium text-amber-800">アカウントが実習生情報に紐づけられていません</p>
+              <p className="mt-1 text-xs text-amber-600">管理者に連絡してアカウントを実習生情報にリンクしてもらってください。</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const workerId = linkedWorker.id;
+
+    // Fetch training items and sessions
+    const workerItems = items;
+    const workerSessions = sessions.filter((s) => s.worker_id === workerId);
+    const workerApprovals = (approvals ?? []).filter((a) => a.worker_id === workerId);
+
+    // Compute training status per item
+    const workerTrainingStatuses = workerItems.map((item) => {
+      const itemSessions = workerSessions.filter((s) => s.item_id === item.id);
+      const itemApproval = workerApprovals.find((a) => a.item_id === item.id);
+      const st = computeItemStatus(itemSessions, item.subtopics ?? [], item.target_hours, itemApproval);
+      return { item, status: st };
+    });
+    const trainingPct = workerItems.length > 0
+      ? Math.round((workerTrainingStatuses.filter((s) => s.status === 'completed').length / workerItems.length) * 100)
+      : 0;
+
+    // Fetch OJT data
+    const workerOjtUsers = ojtUsers.filter((u) => u.worker_id === workerId);
+    const workerOjtRecords = ojtRecords.filter((r) => r.worker_id === workerId);
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader title="マイページ" subtitle={`${userName}（実習生）`} />
+
+        <div className="px-4 py-6 sm:px-6 space-y-6">
+          {/* Progress overview */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm text-center">
+              <p className="text-xs text-gray-400">研修進捗</p>
+              <p className="mt-1 text-2xl font-bold text-green-600">{trainingPct}%</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm text-center">
+              <p className="text-xs text-gray-400">OJT利用者数</p>
+              <p className="mt-1 text-2xl font-bold text-blue-600">{workerOjtUsers.length}</p>
+            </div>
+          </div>
+
+          {/* Training status */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">研修進捗</h2>
+            <div className="mb-2">
+              <ProgressBar percentage={trainingPct} />
+            </div>
+            <div className="space-y-2">
+              {workerTrainingStatuses.map(({ item, status }, idx) => (
+                <Link
+                  key={item.id}
+                  href={`/training/${workerId}/${item.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <span className="text-sm text-gray-400">{ITEM_NUMBERS[idx]}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">{item.title}</p>
+                  </div>
+                  {statusDot(status)}
+                  <span className="text-xs text-gray-500">
+                    {status === 'completed' ? '完了' : status === 'in_progress' ? '進行中' : '未着手'}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* OJT status */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">OJT進捗</h2>
+            {workerOjtUsers.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center">
+                <p className="text-sm text-gray-500">OJT対象利用者はまだ登録されていません</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {workerOjtUsers.map((ojtUser) => {
+                  const userRecords = workerOjtRecords.filter((r) => r.ojt_user_id === ojtUser.id);
+                  const currentStep = getCurrentOjtStep(userRecords, ojtUser.id);
+                  return (
+                    <Link
+                      key={ojtUser.id}
+                      href={`/ojt/${workerId}/${ojtUser.id}`}
+                      className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                            {ojtUser.user_initial}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">利用者 {ojtUser.user_initial}</p>
+                            <p className="text-xs text-gray-500">{currentStep.label}</p>
+                          </div>
+                        </div>
+                        <StatusBadge status={ojtUser.ojt_status} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Links */}
+          <section>
+            <div className="flex flex-col gap-2">
+              <Link
+                href={`/evaluation/${workerId}`}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-blue-600 shadow-sm hover:bg-blue-50 transition-colors text-center"
+              >
+                最終到達目標評価を確認
+              </Link>
+              <Link
+                href={`/export/${workerId}`}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition-colors text-center"
+              >
+                PDF出力
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- fallback (unknown role) ----------
 
   return (
     <div className="min-h-screen bg-gray-50">
