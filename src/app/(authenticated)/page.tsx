@@ -18,6 +18,7 @@ import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import AdminDashboardContent from './dashboard-content';
+import FeedbackButton from '@/components/feedback-button';
 
 // ---------- helpers ----------
 
@@ -319,6 +320,7 @@ export default async function DashboardPage() {
             }}
           />
         </div>
+        <FeedbackButton />
       </div>
     );
   }
@@ -558,6 +560,7 @@ export default async function DashboardPage() {
             )}
           </section>
         </div>
+        <FeedbackButton />
       </div>
     );
   }
@@ -726,6 +729,7 @@ export default async function DashboardPage() {
             </div>
           </section>
         </div>
+        <FeedbackButton />
       </div>
     );
   }
@@ -874,6 +878,7 @@ export default async function DashboardPage() {
             </div>
           </section>
         </div>
+        <FeedbackButton />
       </div>
     );
   }

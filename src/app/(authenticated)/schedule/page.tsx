@@ -159,7 +159,7 @@ export default async function SchedulePage() {
     }
   }
 
-  const canCreate = userRole === 'admin' || userRole === 'supervisor';
+  const canCreate = userRole === 'admin' || userRole === 'supervisor' || userRole === 'trainer';
 
   return (
     <div className="min-h-screen bg-gray-50">

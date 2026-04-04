@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { FacilityMultiSelect } from '@/components/facility-multi-select';
+import type { Qualification } from '@/lib/types';
+import { QUALIFICATION_LABELS } from '@/lib/types';
 
 const NATIONALITIES = [
   'ネパール',
@@ -34,6 +36,7 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
   const [facilityIds, setFacilityIds] = useState<string[]>([]);
   const [primaryFacilityId, setPrimaryFacilityId] = useState('');
   const [experienceYears, setExperienceYears] = useState('0');
+  const [qualification, setQualification] = useState<Qualification>('none');
   const [notes, setNotes] = useState('');
 
   const resetForm = () => {
@@ -43,6 +46,7 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
     setFacilityIds([]);
     setPrimaryFacilityId('');
     setExperienceYears('0');
+    setQualification('none');
     setNotes('');
     setError(null);
   };
@@ -71,6 +75,7 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
         birth_date: birthDate || null,
         facility_id: primaryFacilityId,
         experience_years: parseInt(experienceYears, 10) || 0,
+        qualification,
         notes: notes.trim() || null,
       })
       .select('id')
@@ -196,6 +201,20 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
                   onChange={(e) => setExperienceYears(e.target.value)}
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="worker-qualification" className="block text-sm font-medium text-gray-700">資格情報</label>
+                <select
+                  id="worker-qualification"
+                  value={qualification}
+                  onChange={(e) => setQualification(e.target.value as Qualification)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {(Object.keys(QUALIFICATION_LABELS) as Qualification[]).map((q) => (
+                    <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

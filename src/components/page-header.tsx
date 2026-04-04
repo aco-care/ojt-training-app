@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import NotificationBell from '@/components/notification-bell';
 
 interface PageHeaderProps {
   title: string;
@@ -58,6 +59,7 @@ export default function PageHeader({
             </button>
           )}
           <div className="flex items-center gap-3 border-l border-gray-200 pl-3">
+            <NotificationBell />
             {userName && (
               <span className="hidden text-sm text-gray-700 sm:block">
                 {userName}

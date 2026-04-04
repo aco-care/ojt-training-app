@@ -40,10 +40,11 @@ export default function EvaluationForm({
   const router = useRouter();
   const isApproved = !!existingEvaluation?.approved_by;
   const isWorker = userRole === 'worker';
-  // Worker can only edit self-evaluation; trainer/admin can edit both
+  const isAdminOrSupervisor = userRole === 'admin' || userRole === 'supervisor';
+  // Worker can only edit self-evaluation; admin/supervisor can edit both
   const canEditSelf = !isApproved;
-  const canEditTrainer = !isApproved && !isWorker;
-  const canSubmit = !isWorker; // Workers can't submit the form, only edit self scores
+  const canEditTrainer = !isApproved && isAdminOrSupervisor;
+  const canSubmit = isAdminOrSupervisor; // Only admin/supervisor can submit the form
 
   const [scoresSelf, setScoresSelf] = useState<EvalRating[]>(
     existingEvaluation?.scores_self ?? prefilledSelf,

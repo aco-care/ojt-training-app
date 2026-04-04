@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession } from '@/lib/types';
-import { OJT_STATUS_LABELS, STATUS_LABELS, OJT_STEPS } from '@/lib/types';
+import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession, Qualification } from '@/lib/types';
+import { OJT_STATUS_LABELS, STATUS_LABELS, OJT_STEPS, QUALIFICATION_LABELS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import { FacilityBadges } from '@/components/facility-badges';
 import EditWorkerFacilities from './edit-worker-facilities';
+import EditQualification from './edit-qualification';
 import LinkProfile from './link-profile';
 
 interface WorkerDetailPageProps {
@@ -161,6 +162,10 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
               <dt className="text-xs font-medium text-gray-500">経験年数</dt>
               <dd className="mt-1 text-sm text-gray-900">{typedWorker.experience_years}年</dd>
             </div>
+            <EditQualification
+              workerId={id}
+              currentQualification={typedWorker.qualification ?? 'none'}
+            />
             <div>
               <dt className="text-xs font-medium text-gray-500">備考</dt>
               <dd className="mt-1 text-sm text-gray-900">{typedWorker.notes ?? 'なし'}</dd>

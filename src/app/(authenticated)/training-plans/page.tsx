@@ -53,7 +53,7 @@ export default async function TrainingPlansPage() {
   const items = (itemsData ?? []) as (TrainingItem & { subtopics: { id: string; title: string }[] })[];
   const trainers = (trainersData ?? []) as { id: string; name: string; role: string; qualification: string }[];
 
-  const canCreate = userRole === 'admin' || userRole === 'supervisor';
+  const canCreate = userRole === 'admin' || userRole === 'supervisor' || userRole === 'trainer';
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'supervisor')) {
     return NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
   }
 

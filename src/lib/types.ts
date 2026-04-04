@@ -66,6 +66,7 @@ export interface ForeignWorker {
   birth_date: string | null;
   facility_id: string;
   experience_years: number;
+  qualification: Qualification;
   profile_id: string | null;
   notes: string | null;
   created_at: string;
@@ -341,3 +342,43 @@ export const OJT_STATUS_LABELS: Record<OjtStatus, string> = {
   in_progress: '進行中',
   completed: '完了',
 };
+
+// フィードバック
+export type FeedbackCategory = 'ui' | 'feature' | 'bug' | 'other';
+export type FeedbackStatus = 'pending' | 'in_progress' | 'resolved';
+
+export const FEEDBACK_CATEGORY_LABELS: Record<FeedbackCategory, string> = {
+  ui: 'UI改善',
+  feature: '機能追加',
+  bug: 'バグ報告',
+  other: 'その他',
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  pending: '未対応',
+  in_progress: '対応中',
+  resolved: '対応済み',
+};
+
+export interface Feedback {
+  id: string;
+  sender_id: string;
+  category: FeedbackCategory;
+  content: string;
+  status: FeedbackStatus;
+  admin_response: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  link: string | null;
+  created_at: string;
+}

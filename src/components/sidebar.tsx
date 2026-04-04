@@ -89,7 +89,7 @@ const navItems: NavItem[] = [
 
 export default function Sidebar({ currentPath, userRole }: SidebarProps) {
   const filteredItems = navItems.filter((item) => {
-    if (item.adminOnly && userRole !== 'admin') return false;
+    if (item.adminOnly && userRole !== 'admin' && userRole !== 'supervisor') return false;
     // Worker role: only show dashboard (マイページ) - other pages accessed via links
     if (userRole === 'worker' && item.href !== '/') return false;
     return true;
