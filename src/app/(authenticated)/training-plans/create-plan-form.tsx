@@ -100,9 +100,9 @@ export default function CreatePlanForm({
               value={workerId}
               onChange={(e) => setWorkerId(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {workers.map((w) => (
                 <option key={w.id} value={w.id}>{w.name}</option>
               ))}
@@ -117,9 +117,9 @@ export default function CreatePlanForm({
               value={itemId}
               onChange={(e) => { setItemId(e.target.value); setSelectedSubtopics([]); }}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {items.map((item) => (
                 <option key={item.id} value={item.id}>{item.title}</option>
               ))}
@@ -134,9 +134,9 @@ export default function CreatePlanForm({
               value={trainerId}
               onChange={(e) => setTrainerId(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {trainers.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -153,7 +153,7 @@ export default function CreatePlanForm({
                 value={plannedDate}
                 onChange={(e) => setPlannedDate(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
             <div>
@@ -162,7 +162,7 @@ export default function CreatePlanForm({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
             <div>
@@ -171,7 +171,7 @@ export default function CreatePlanForm({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function CreatePlanForm({
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
               <option>対面</option>
               <option>OJT</option>

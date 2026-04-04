@@ -5,8 +5,9 @@ import { OJT_STEPS } from '@/lib/types';
 
 interface WeekSidebarProps {
   workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; subtopics: { id: string; title: string }[] }[];
+  trainingItems: { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
   completedSubtopicsByWorker: Record<string, string[]>;
+  sessionCountByWorkerItem: Record<string, number>;
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   currentUserRole: string;
   currentUserId: string;
@@ -16,6 +17,7 @@ export default function WeekSidebar({
   workers,
   trainingItems,
   completedSubtopicsByWorker,
+  sessionCountByWorkerItem,
   ojtUsers,
 }: WeekSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +63,12 @@ export default function WeekSidebar({
                   const doneCount = item.subtopics.filter((st) =>
                     completed.includes(st.id)
                   ).length;
-                  if (doneCount >= totalSubs) return null;
+                  const sessionCount = sessionCountByWorkerItem[`${worker.id}:${item.id}`] ?? 0;
+                  const allSubtopicsDone = doneCount >= totalSubs;
+                  const sessionsMetTarget = item.target_sessions > 0
+                    ? sessionCount >= item.target_sessions
+                    : true;
+                  if (allSubtopicsDone && sessionsMetTarget) return null;
 
                   return (
                     <div key={item.id} className="flex items-center justify-between text-xs">

@@ -51,7 +51,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_sessions')
-      .select('worker_id, completed_subtopics'),
+      .select('worker_id, item_id, completed_subtopics'),
     supabase
       .from('profiles')
       .select('id, name, role')
@@ -79,7 +79,7 @@ export default async function SchedulePage() {
   })[];
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
-  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; completed_subtopics: string[] }[];
+  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[] }[];
 
   // Transform to CalendarEvent[]
   let events: CalendarEvent[] = [
@@ -140,6 +140,13 @@ export default async function SchedulePage() {
     completedSubtopicsByWorker[k] = [...new Set(completedSubtopicsByWorker[k])];
   }
 
+  // Compute session count per worker+item (key: "workerId:itemId")
+  const sessionCountByWorkerItem: Record<string, number> = {};
+  for (const s of trainingSessions) {
+    const key = `${s.worker_id}:${s.item_id}`;
+    sessionCountByWorkerItem[key] = (sessionCountByWorkerItem[key] ?? 0) + 1;
+  }
+
   const canCreate = userRole === 'admin' || userRole === 'supervisor';
 
   return (
@@ -152,6 +159,7 @@ export default async function SchedulePage() {
           trainingItems={trainingItems.map((item) => ({
             id: item.id,
             title: item.title,
+            target_sessions: item.target_sessions,
             subtopics: (item.subtopics ?? []).map((st) => ({
               id: st.id,
               title: st.title,
@@ -160,6 +168,7 @@ export default async function SchedulePage() {
           ojtUsers={ojtUsers}
           staff={staffList.map((s) => ({ id: s.id, name: s.name }))}
           completedSubtopicsByWorker={completedSubtopicsByWorker}
+          sessionCountByWorkerItem={sessionCountByWorkerItem}
           currentUserId={user.id}
           currentUserRole={userRole}
           canCreate={canCreate}

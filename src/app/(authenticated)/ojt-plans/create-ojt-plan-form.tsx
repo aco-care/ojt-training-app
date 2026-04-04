@@ -93,9 +93,9 @@ export default function CreateOjtPlanForm({
               value={workerId}
               onChange={(e) => { setWorkerId(e.target.value); setOjtUserId(''); }}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {workers.filter((w) => ojtUsers.some((u) => u.worker_id === w.id)).map((w) => (
                 <option key={w.id} value={w.id}>{w.name}</option>
               ))}
@@ -111,9 +111,9 @@ export default function CreateOjtPlanForm({
                 value={ojtUserId}
                 onChange={(e) => setOjtUserId(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               >
-                <option value="">選択してください</option>
+                <option value="" className="text-gray-400">選択してください</option>
                 {filteredOjtUsers.map((u) => (
                   <option key={u.id} value={u.id}>利用者 {u.user_initial}</option>
                 ))}
@@ -129,9 +129,9 @@ export default function CreateOjtPlanForm({
               value={step}
               onChange={(e) => setStep(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {OJT_STEPS.map((s) => (
                 <option key={s.step} value={s.step}>{s.number} {s.label}</option>
               ))}
@@ -146,9 +146,9 @@ export default function CreateOjtPlanForm({
               value={companionId}
               onChange={(e) => setCompanionId(e.target.value)}
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
-              <option value="">選択してください</option>
+              <option value="" className="text-gray-400">選択してください</option>
               {staff.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -165,7 +165,7 @@ export default function CreateOjtPlanForm({
                 value={plannedDate}
                 onChange={(e) => setPlannedDate(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
             <div>
@@ -174,7 +174,7 @@ export default function CreateOjtPlanForm({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
             <div>
@@ -183,7 +183,7 @@ export default function CreateOjtPlanForm({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
           </div>

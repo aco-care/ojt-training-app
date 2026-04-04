@@ -25,10 +25,11 @@ import CreatePlanModal from './create-plan-modal';
 interface ScheduleCalendarProps {
   events: CalendarEvent[];
   workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; subtopics: { id: string; title: string }[] }[];
+  trainingItems: { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
+  sessionCountByWorkerItem: Record<string, number>;
   currentUserId: string;
   currentUserRole: string;
   canCreate: boolean;
@@ -56,6 +57,7 @@ export default function ScheduleCalendar({
   ojtUsers,
   staff,
   completedSubtopicsByWorker,
+  sessionCountByWorkerItem,
   currentUserId,
   currentUserRole,
   canCreate,
@@ -347,6 +349,7 @@ export default function ScheduleCalendar({
                 workers={workers}
                 trainingItems={trainingItems}
                 completedSubtopicsByWorker={completedSubtopicsByWorker}
+                sessionCountByWorkerItem={sessionCountByWorkerItem}
                 ojtUsers={ojtUsers}
                 currentUserRole={currentUserRole}
                 currentUserId={currentUserId}
@@ -416,6 +419,7 @@ export default function ScheduleCalendar({
           ojtUsers={ojtUsers}
           staff={staff}
           completedSubtopicsByWorker={completedSubtopicsByWorker}
+          sessionCountByWorkerItem={sessionCountByWorkerItem}
           currentUserId={currentUserId}
           initialDate={
             selectedDate ? toDateKey(selectedDate) : toDateKey(new Date())
