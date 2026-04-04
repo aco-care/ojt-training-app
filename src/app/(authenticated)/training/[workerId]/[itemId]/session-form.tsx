@@ -86,6 +86,30 @@ export default function SessionForm({
 
     try {
       const supabase = createClient();
+
+      // Check for time overlap with existing sessions for the same worker on the same date
+      const { data: existingSessions } = await supabase
+        .from('training_sessions')
+        .select('id, start_time, end_time')
+        .eq('worker_id', workerId)
+        .eq('date', date);
+
+      if (existingSessions && existingSessions.length > 0) {
+        const newStart = new Date(`2000-01-01T${startTime}`).getTime();
+        const newEnd = new Date(`2000-01-01T${endTime}`).getTime();
+        const overlap = existingSessions.find((s) => {
+          if (!s.start_time || !s.end_time) return false;
+          const sStart = new Date(`2000-01-01T${s.start_time}`).getTime();
+          const sEnd = new Date(`2000-01-01T${s.end_time}`).getTime();
+          return newStart < sEnd && newEnd > sStart;
+        });
+        if (overlap) {
+          setError(`この外国人は${date}の${overlap.start_time}〜${overlap.end_time}に既に研修が登録されています。時間帯が重複しています。`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const { error: insertError } = await supabase
         .from('training_sessions')
         .insert({

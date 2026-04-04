@@ -71,6 +71,66 @@ export default function CreatePlanModal({
     setStep('');
   };
 
+  // Check time overlap for the same worker on the same date across both plans and sessions
+  const checkOverlap = async (wid: string, pDate: string, sTime: string, eTime: string): Promise<string | null> => {
+    if (!sTime || !eTime) return null;
+    const supabase = createClient();
+    const newStart = new Date(`2000-01-01T${sTime}`).getTime();
+    const newEnd = new Date(`2000-01-01T${eTime}`).getTime();
+
+    // Check training_plans
+    const { data: plans } = await supabase
+      .from('training_plans')
+      .select('id, start_time, end_time')
+      .eq('worker_id', wid)
+      .eq('planned_date', pDate)
+      .neq('status', 'cancelled');
+
+    for (const p of plans ?? []) {
+      if (!p.start_time || !p.end_time) continue;
+      const pStart = new Date(`2000-01-01T${p.start_time}`).getTime();
+      const pEnd = new Date(`2000-01-01T${p.end_time}`).getTime();
+      if (newStart < pEnd && newEnd > pStart) {
+        return `${pDate}の${p.start_time}〜${p.end_time}に既に研修予定があります`;
+      }
+    }
+
+    // Check ojt_plans
+    const { data: oPlans } = await supabase
+      .from('ojt_plans')
+      .select('id, start_time, end_time')
+      .eq('worker_id', wid)
+      .eq('planned_date', pDate)
+      .neq('status', 'cancelled');
+
+    for (const p of oPlans ?? []) {
+      if (!p.start_time || !p.end_time) continue;
+      const pStart = new Date(`2000-01-01T${p.start_time}`).getTime();
+      const pEnd = new Date(`2000-01-01T${p.end_time}`).getTime();
+      if (newStart < pEnd && newEnd > pStart) {
+        return `${pDate}の${p.start_time}〜${p.end_time}に既にOJT予定があります`;
+      }
+    }
+
+    // Check training_sessions (already recorded)
+    const { data: sessions } = await supabase
+      .from('training_sessions')
+      .select('id, start_time, end_time')
+      .eq('worker_id', wid)
+      .eq('date', pDate);
+
+    for (const s of sessions ?? []) {
+      if (!s.start_time || !s.end_time) continue;
+      const sStart = new Date(`2000-01-01T${s.start_time}`).getTime();
+      const sEnd = new Date(`2000-01-01T${s.end_time}`).getTime();
+      if (newStart < sEnd && newEnd > sStart) {
+        return `${pDate}の${s.start_time}〜${s.end_time}に既に研修記録があります`;
+      }
+    }
+
+    return null;
+  };
+
   const handleSubmitTraining = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!workerId || !itemId || !trainerId || !plannedDate) {
@@ -79,6 +139,15 @@ export default function CreatePlanModal({
     }
     setLoading(true);
     setError('');
+
+    // Overlap check
+    const overlap = await checkOverlap(workerId, plannedDate, startTime, endTime);
+    if (overlap) {
+      setError(`この外国人の時間帯が重複しています: ${overlap}`);
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { error: insertError } = await supabase.from('training_plans').insert({
       worker_id: workerId,
@@ -109,6 +178,15 @@ export default function CreatePlanModal({
     }
     setLoading(true);
     setError('');
+
+    // Overlap check
+    const overlap = await checkOverlap(workerId, plannedDate, startTime, endTime);
+    if (overlap) {
+      setError(`この外国人の時間帯が重複しています: ${overlap}`);
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { error: insertError } = await supabase.from('ojt_plans').insert({
       worker_id: workerId,
