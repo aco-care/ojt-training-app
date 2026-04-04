@@ -234,7 +234,7 @@ export default function RecordForm({
                   id="record-step"
                   value={step}
                   onChange={(e) => setStep(e.target.value as OjtStep)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {OJT_STEPS.map((s) => (
                     <option key={s.step} value={s.step}>
@@ -257,7 +257,7 @@ export default function RecordForm({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -275,7 +275,7 @@ export default function RecordForm({
                   value={companionId}
                   onChange={(e) => setCompanionId(e.target.value)}
                   required
-                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                     validationErrors.length > 0 && !companionId ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                 >
@@ -302,7 +302,7 @@ export default function RecordForm({
                   onChange={(e) => setContent(e.target.value)}
                   rows={3}
                   required
-                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                     validationErrors.length > 0 && !content.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="実施した内容を記載してください"
@@ -458,7 +458,7 @@ export default function RecordForm({
                     onChange={(e) => setManagerComment(e.target.value)}
                     rows={2}
                     required
-                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                       validationErrors.length > 0 && isManager && !managerComment.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                     placeholder="管理者としてのコメントを記載してください"
@@ -479,7 +479,7 @@ export default function RecordForm({
                   value={workerComment}
                   onChange={(e) => setWorkerComment(e.target.value)}
                   rows={2}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="本人からのコメント（振り返り・気づき等）"
                 />
               </div>
@@ -497,7 +497,7 @@ export default function RecordForm({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="その他特記事項があれば記載してください"
                 />
               </div>

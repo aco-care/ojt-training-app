@@ -29,7 +29,7 @@ interface ScheduleCalendarProps {
   workers: { id: string; name: string }[];
   trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string }[];
+  staff: { id: string; name: string; qualification: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
   hoursByWorkerItem: Record<string, number>;

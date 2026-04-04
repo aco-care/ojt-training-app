@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { OJT_STEPS } from '@/lib/types';
+import { OJT_STEPS, QUALIFICATION_LABELS } from '@/lib/types';
 
 interface CreateOjtPlanFormProps {
   workers: { id: string; name: string }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string; role: string }[];
+  staff: { id: string; name: string; role: string; qualification: string }[];
   currentUserId: string;
   onClose: () => void;
 }
@@ -35,6 +35,11 @@ export default function CreateOjtPlanForm({
 
   // Filter OJT users by selected worker
   const filteredOjtUsers = ojtUsers.filter((u) => u.worker_id === workerId);
+
+  const sortedStaff = [...staff].sort((a, b) => {
+    const order: Record<string, number> = { kaigofukushishi: 0, shoninsya: 1, none: 2 };
+    return (order[a.qualification] ?? 2) - (order[b.qualification] ?? 2);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,9 +156,12 @@ export default function CreateOjtPlanForm({
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
               <option value="" className="text-gray-400">選択してください</option>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
+              {sortedStaff.map((s) => {
+                const badge = s.qualification === 'kaigofukushishi' ? '介福' : s.qualification === 'shoninsya' ? '初任' : '';
+                return (
+                  <option key={s.id} value={s.id}>{s.name}{badge ? ` [${badge}]` : ''}</option>
+                );
+              })}
             </select>
           </div>
 

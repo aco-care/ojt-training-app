@@ -50,14 +50,14 @@ export default async function OjtPlansPage() {
 
   const { data: staffData } = await supabase
     .from('profiles')
-    .select('id, name, role')
+    .select('id, name, role, qualification')
     .in('role', ['trainer', 'supervisor', 'admin'])
     .eq('is_archived', false)
     .order('name');
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  const staff = (staffData ?? []) as { id: string; name: string; role: string }[];
+  const staff = (staffData ?? []) as { id: string; name: string; role: string; qualification: string }[];
 
   const canCreate = userRole === 'admin' || userRole === 'supervisor';
 

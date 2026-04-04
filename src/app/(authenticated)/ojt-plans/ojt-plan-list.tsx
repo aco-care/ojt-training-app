@@ -14,7 +14,7 @@ interface OjtPlanListProps {
   })[];
   workers: { id: string; name: string }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string; role: string }[];
+  staff: { id: string; name: string; role: string; qualification: string }[];
   canCreate: boolean;
   currentUserId: string;
   userRole: UserRole;

@@ -45,7 +45,7 @@ export default async function SchedulePage() {
       .order('created_at'),
     supabase
       .from('profiles')
-      .select('id, name, role')
+      .select('id, name, role, qualification')
       .in('role', ['trainer', 'supervisor', 'admin'])
       .eq('is_archived', false)
       .order('name'),
@@ -83,7 +83,7 @@ export default async function SchedulePage() {
     subtopics: item.training_subtopics ?? [],
   }));
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
+  const staffList = (staffData ?? []) as { id: string; name: string; role: string; qualification: string }[];
   const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[]; start_time: string; end_time: string; break_minutes: number | null }[];
 
   // Transform to CalendarEvent[]
@@ -179,7 +179,7 @@ export default async function SchedulePage() {
             })),
           }))}
           ojtUsers={ojtUsers}
-          staff={staffList.map((s) => ({ id: s.id, name: s.name }))}
+          staff={staffList.map((s) => ({ id: s.id, name: s.name, qualification: s.qualification }))}
           completedSubtopicsByWorker={completedSubtopicsByWorker}
           sessionCountByWorkerItem={sessionCountByWorkerItem}
           hoursByWorkerItem={hoursByWorkerItem}

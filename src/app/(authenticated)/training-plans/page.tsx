@@ -44,14 +44,14 @@ export default async function TrainingPlansPage() {
 
   const { data: trainersData } = await supabase
     .from('profiles')
-    .select('id, name, role')
+    .select('id, name, role, qualification')
     .in('role', ['trainer', 'supervisor', 'admin'])
     .eq('is_archived', false)
     .order('name');
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
   const items = (itemsData ?? []) as (TrainingItem & { subtopics: { id: string; title: string }[] })[];
-  const trainers = (trainersData ?? []) as { id: string; name: string; role: string }[];
+  const trainers = (trainersData ?? []) as { id: string; name: string; role: string; qualification: string }[];
 
   const canCreate = userRole === 'admin' || userRole === 'supervisor';
 

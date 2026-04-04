@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   // 2. Parse request body
   const body = await request.json();
-  const { email, password, name, role, facility_id, facility_ids, primary_facility_id } = body;
+  const { email, password, name, role, qualification, facility_id, facility_ids, primary_facility_id } = body;
 
   if (!email || !password || !name || !role) {
     return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 });
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       email,
       name,
       role,
+      qualification: qualification || 'none',
       facility_id: resolvedPrimaryFacilityId,
     });
 

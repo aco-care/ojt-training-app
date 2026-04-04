@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { OJT_STEPS } from '@/lib/types';
-import type { CalendarEvent } from '@/lib/types';
+import { OJT_STEPS, QUALIFICATION_LABELS } from '@/lib/types';
+import type { CalendarEvent, Qualification } from '@/lib/types';
 
 interface CreatePlanModalProps {
   workers: { id: string; name: string }[];
   trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string }[];
+  staff: { id: string; name: string; qualification: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
   hoursByWorkerItem: Record<string, number>;
@@ -21,6 +21,22 @@ interface CreatePlanModalProps {
 }
 
 type PlanType = 'training' | 'ojt' | null;
+
+const QUALIFICATION_ORDER: Record<string, number> = {
+  kaigofukushishi: 0,
+  shoninsya: 1,
+  none: 2,
+};
+
+function sortByQualification(a: { qualification: string }, b: { qualification: string }): number {
+  return (QUALIFICATION_ORDER[a.qualification] ?? 2) - (QUALIFICATION_ORDER[b.qualification] ?? 2);
+}
+
+function qualificationShortLabel(q: string): string {
+  if (q === 'kaigofukushishi') return '介福';
+  if (q === 'shoninsya') return '初任';
+  return '';
+}
 
 export default function CreatePlanModal({
   workers,
@@ -399,9 +415,12 @@ export default function CreatePlanModal({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="" className="text-gray-400">選択してください</option>
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
+                {[...staff].sort(sortByQualification).map((s) => {
+                  const badge = qualificationShortLabel(s.qualification);
+                  return (
+                    <option key={s.id} value={s.id}>{s.name}{badge ? ` [${badge}]` : ''}</option>
+                  );
+                })}
               </select>
             </div>
 
@@ -635,9 +654,12 @@ export default function CreatePlanModal({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="" className="text-gray-400">選択してください</option>
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
+                {[...staff].sort(sortByQualification).map((s) => {
+                  const badge = qualificationShortLabel(s.qualification);
+                  return (
+                    <option key={s.id} value={s.id}>{s.name}{badge ? ` [${badge}]` : ''}</option>
+                  );
+                })}
               </select>
             </div>
 

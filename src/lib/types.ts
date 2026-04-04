@@ -3,6 +3,7 @@
 // ============================================================
 
 export type UserRole = 'admin' | 'trainer' | 'supervisor' | 'worker' | 'executive';
+export type Qualification = 'none' | 'shoninsya' | 'kaigofukushishi';
 export type TrainingFormat = 'classroom' | 'ojt' | 'roleplay' | 'simulation';
 export type TrainingStatus = 'not_started' | 'in_progress' | 'completed';
 export type OjtStep = 'matching' | 'explanation' | 'pre_training' | 'observation' | 'main' | 'independent' | 'completion';
@@ -24,6 +25,7 @@ export interface Profile {
   email: string;
   name: string;
   role: UserRole;
+  qualification: Qualification;
   facility_id: string | null;
   certifications: string[] | null;
   is_archived: boolean;
@@ -318,6 +320,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   supervisor: '指導責任者',
   worker: '特定技能外国人',
   executive: '経営側',
+};
+
+// 資格ラベル
+export const QUALIFICATION_LABELS: Record<Qualification, string> = {
+  none: '初任者研修未取得',
+  shoninsya: '初任者研修取得済',
+  kaigofukushishi: '介護福祉士取得済',
 };
 
 // ステータスラベル

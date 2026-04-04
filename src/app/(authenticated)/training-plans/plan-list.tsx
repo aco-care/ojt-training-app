@@ -16,7 +16,7 @@ interface PlanListProps {
   })[];
   workers: { id: string; name: string }[];
   items: (TrainingItem & { subtopics: { id: string; title: string }[] })[];
-  trainers: { id: string; name: string; role: string }[];
+  trainers: { id: string; name: string; role: string; qualification: string }[];
   canCreate: boolean;
   currentUserId: string;
   userRole: UserRole;

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { UserRole } from '@/lib/types';
-import { ROLE_LABELS } from '@/lib/types';
+import type { UserRole, Qualification } from '@/lib/types';
+import { ROLE_LABELS, QUALIFICATION_LABELS } from '@/lib/types';
 import { FacilityMultiSelect } from '@/components/facility-multi-select';
 import AddFacilityDialog from './add-facility-dialog';
 
@@ -12,6 +12,7 @@ interface CreateStaffFormProps {
 }
 
 const ROLES: UserRole[] = ['admin', 'trainer', 'supervisor', 'worker', 'executive'];
+const QUALIFICATIONS: Qualification[] = ['none', 'shoninsya', 'kaigofukushishi'];
 
 export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('trainer');
+  const [qualification, setQualification] = useState<Qualification>('none');
   const [facilityIds, setFacilityIds] = useState<string[]>([]);
   const [primaryFacilityId, setPrimaryFacilityId] = useState('');
 
@@ -32,6 +34,7 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
     setEmail('');
     setPassword('');
     setRole('trainer');
+    setQualification('none');
     setFacilityIds([]);
     setPrimaryFacilityId('');
     setError('');
@@ -52,6 +55,7 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
         email,
         password,
         role,
+        qualification,
         facility_ids: facilityIds.length > 0 ? facilityIds : null,
         primary_facility_id: primaryFacilityId || null,
       }),
@@ -187,6 +191,22 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="staff-qualification" className="block text-sm font-medium text-gray-700">
+                  資格
+                </label>
+                <select
+                  id="staff-qualification"
+                  value={qualification}
+                  onChange={(e) => setQualification(e.target.value as Qualification)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {QUALIFICATIONS.map((q) => (
+                    <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>
                   ))}
                 </select>
               </div>

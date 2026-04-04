@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { QUALIFICATION_LABELS } from '@/lib/types';
 import type { TrainingItem } from '@/lib/types';
 
 interface CreatePlanFormProps {
   workers: { id: string; name: string }[];
   items: (TrainingItem & { subtopics: { id: string; title: string }[] })[];
-  trainers: { id: string; name: string; role: string }[];
+  trainers: { id: string; name: string; role: string; qualification: string }[];
   currentUserId: string;
   onClose: () => void;
 }
@@ -33,6 +34,11 @@ export default function CreatePlanForm({
   const [method, setMethod] = useState('対面');
   const [breakMinutes, setBreakMinutes] = useState(0);
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
+
+  const sortedTrainers = [...trainers].sort((a, b) => {
+    const order: Record<string, number> = { kaigofukushishi: 0, shoninsya: 1, none: 2 };
+    return (order[a.qualification] ?? 2) - (order[b.qualification] ?? 2);
+  });
 
   const selectedItem = items.find((i) => i.id === itemId);
 
@@ -139,9 +145,12 @@ export default function CreatePlanForm({
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >
               <option value="" className="text-gray-400">選択してください</option>
-              {trainers.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              {sortedTrainers.map((t) => {
+                const badge = t.qualification === 'kaigofukushishi' ? '介福' : t.qualification === 'shoninsya' ? '初任' : '';
+                return (
+                  <option key={t.id} value={t.id}>{t.name}{badge ? ` [${badge}]` : ''}</option>
+                );
+              })}
             </select>
           </div>
 

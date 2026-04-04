@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { Profile, UserRole } from '@/lib/types';
-import { ROLE_LABELS } from '@/lib/types';
+import type { Profile, UserRole, Qualification } from '@/lib/types';
+import { ROLE_LABELS, QUALIFICATION_LABELS } from '@/lib/types';
 import { FacilityMultiSelect } from '@/components/facility-multi-select';
 import { FacilityBadges } from '@/components/facility-badges';
 import ResetPasswordDialog from './reset-password-dialog';
@@ -23,6 +23,15 @@ interface StaffManagerProps {
 }
 
 const ROLES: UserRole[] = ['admin', 'trainer', 'supervisor', 'worker', 'executive'];
+const QUALIFICATIONS: Qualification[] = ['none', 'shoninsya', 'kaigofukushishi'];
+
+function qualificationBadgeColor(q: Qualification): string {
+  switch (q) {
+    case 'kaigofukushishi': return 'bg-green-100 text-green-700';
+    case 'shoninsya': return 'bg-blue-100 text-blue-700';
+    default: return 'bg-gray-100 text-gray-500';
+  }
+}
 
 export default function StaffManager({ profiles, facilities }: StaffManagerProps) {
   const router = useRouter();
@@ -32,6 +41,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
   const [editRole, setEditRole] = useState<UserRole>('trainer');
   const [editFacilityIds, setEditFacilityIds] = useState<string[]>([]);
   const [editPrimaryFacilityId, setEditPrimaryFacilityId] = useState<string>('');
+  const [editQualification, setEditQualification] = useState<Qualification>('none');
   const [showArchived, setShowArchived] = useState(false);
 
   const activeProfiles = profiles.filter((p) => !p.is_archived);
@@ -41,6 +51,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
   const startEdit = (profile: StaffManagerProps['profiles'][number]) => {
     setEditingId(profile.id);
     setEditRole(profile.role);
+    setEditQualification((profile as Profile).qualification ?? 'none');
     const pf = profile.profile_facilities ?? [];
     setEditFacilityIds(pf.map((r) => r.facility_id));
     const primary = pf.find((r) => r.is_primary);
@@ -63,6 +74,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
       .from('profiles')
       .update({
         role: editRole,
+        qualification: editQualification,
         facility_id: editPrimaryFacilityId || null,
       })
       .eq('id', profileId);
@@ -227,6 +239,19 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                       </select>
                     </div>
                     <div>
+                      <label htmlFor={`qual-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">資格</label>
+                      <select
+                        id={`qual-mobile-${profile.id}`}
+                        value={editQualification}
+                        onChange={(e) => setEditQualification(e.target.value as Qualification)}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {QUALIFICATIONS.map((q) => (
+                          <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
                       <div className="flex items-center justify-between mb-1">
                         <span className="block text-xs font-medium text-gray-700">所属施設</span>
                         <AddFacilityDialog onCreated={handleFacilityCreated} />
@@ -260,10 +285,15 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                 ) : (
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className={`text-sm font-semibold ${profile.is_archived ? 'text-gray-400' : 'text-gray-900'}`}>
                           {profile.name}
                         </p>
+                        {(profile as Profile).qualification && (profile as Profile).qualification !== 'none' && (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${qualificationBadgeColor((profile as Profile).qualification)}`}>
+                            {QUALIFICATION_LABELS[(profile as Profile).qualification]}
+                          </span>
+                        )}
                         {profile.is_archived && (
                           <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
                             退職済み
@@ -347,6 +377,11 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
                       <div className="flex items-center gap-2">
                         {profile.name}
+                        {(profile as Profile).qualification && (profile as Profile).qualification !== 'none' && (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${qualificationBadgeColor((profile as Profile).qualification)}`}>
+                            {QUALIFICATION_LABELS[(profile as Profile).qualification]}
+                          </span>
+                        )}
                         {profile.is_archived && (
                           <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">退職済み</span>
                         )}
@@ -357,15 +392,26 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm">
                       {editingId === profile.id ? (
-                        <select
-                          value={editRole}
-                          onChange={(e) => setEditRole(e.target.value as UserRole)}
-                          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          {ROLES.map((role) => (
-                            <option key={role} value={role}>{ROLE_LABELS[role]}</option>
-                          ))}
-                        </select>
+                        <div className="space-y-1">
+                          <select
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value as UserRole)}
+                            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {ROLES.map((role) => (
+                              <option key={role} value={role}>{ROLE_LABELS[role]}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={editQualification}
+                            onChange={(e) => setEditQualification(e.target.value as Qualification)}
+                            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {QUALIFICATIONS.map((q) => (
+                              <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>
+                            ))}
+                          </select>
+                        </div>
                       ) : (
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           profile.is_archived ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'
