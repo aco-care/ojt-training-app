@@ -126,7 +126,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={typedWorker.name}
-        subtitle="実習生詳細"
+        subtitle="特定技能外国人詳細"
       />
 
       <div className="px-4 py-6 sm:px-6">

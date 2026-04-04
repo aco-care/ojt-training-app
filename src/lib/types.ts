@@ -161,6 +161,50 @@ export interface FinalEvaluation {
   approved_at: string | null;
 }
 
+// 研修予定（3者フロー）
+export type TrainingPlanStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface TrainingPlan {
+  id: string;
+  worker_id: string;
+  item_id: string;
+  trainer_id: string;
+  created_by: string;
+  planned_date: string;
+  planned_subtopics: string[];
+  status: TrainingPlanStatus;
+  trainer_completed_at: string | null;
+  trainer_checked_subtopics: string[];
+  trainer_eval: Record<string, EvalRating> | null;
+  trainer_comment: string | null;
+  trainer_custom_content: string | null;
+  worker_completed_at: string | null;
+  worker_checked_subtopics: string[];
+  worker_eval: Record<string, EvalRating> | null;
+  worker_comment: string | null;
+  worker_custom_content: string | null;
+  supervisor_comment_to_trainer: string | null;
+  supervisor_comment_to_worker: string | null;
+  supervisor_completed_at: string | null;
+  supervisor_id: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  method: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joins
+  worker?: ForeignWorker;
+  item?: TrainingItem;
+  trainer?: Profile;
+}
+
+export const PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
+  scheduled: '予定',
+  in_progress: '入力中',
+  completed: '完了',
+  cancelled: 'キャンセル',
+};
+
 // OJTステップ定義（報告書準拠）
 export const OJT_STEPS: { step: OjtStep; number: string; label: string; description: string }[] = [
   { step: 'matching', number: '①', label: '利用者の選定・マッチング', description: '管理者が利用者を選定し、特定技能外国人とマッチング' },

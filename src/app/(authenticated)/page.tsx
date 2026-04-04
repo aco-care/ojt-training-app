@@ -729,11 +729,11 @@ export default async function DashboardPage() {
     if (!linkedWorker) {
       return (
         <div className="min-h-screen bg-gray-50">
-          <PageHeader title="マイページ" subtitle={`${userName}（実習生）`} />
+          <PageHeader title="マイページ" subtitle={`${userName}（特定技能外国人）`} />
           <div className="px-4 py-6 sm:px-6">
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
-              <p className="text-sm font-medium text-amber-800">アカウントが実習生情報に紐づけられていません</p>
-              <p className="mt-1 text-xs text-amber-600">管理者に連絡してアカウントを実習生情報にリンクしてもらってください。</p>
+              <p className="text-sm font-medium text-amber-800">アカウントが特定技能外国人情報に紐づけられていません</p>
+              <p className="mt-1 text-xs text-amber-600">管理者に連絡してアカウントを特定技能外国人情報にリンクしてもらってください。</p>
             </div>
           </div>
         </div>
@@ -764,7 +764,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <PageHeader title="マイページ" subtitle={`${userName}（実習生）`} />
+        <PageHeader title="マイページ" subtitle={`${userName}（特定技能外国人）`} />
 
         <div className="px-4 py-6 sm:px-6 space-y-6">
           {/* Progress overview */}

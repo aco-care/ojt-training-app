@@ -45,6 +45,7 @@ export default function SessionForm({
   const [format, setFormat] = useState<TrainingFormat>('classroom');
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [customContent, setCustomContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +97,7 @@ export default function SessionForm({
           trainer_id: trainerId,
           format,
           completed_subtopics: selectedSubtopics,
+          custom_content: customContent.trim() || null,
           notes: notes.trim() || null,
         });
 
@@ -109,6 +111,7 @@ export default function SessionForm({
       setStartTime('09:00');
       setEndTime('10:00');
       setSelectedSubtopics([]);
+      setCustomContent('');
       setNotes('');
 
       router.refresh();
@@ -257,8 +260,9 @@ export default function SessionForm({
       {subtopics.length > 0 && (
         <fieldset>
           <legend className="block text-sm font-medium text-gray-700">
-            完了サブトピック
+            実施サブトピック
           </legend>
+          <p className="mt-1 text-xs text-gray-500">この回で実施した項目にチェックを入れてください（完了済み項目も再度チェック可能）</p>
           <div className="mt-2 space-y-2">
             {subtopics.map((st) => {
               const alreadyCompleted = completedSubtopicIds.includes(st.id);
@@ -266,24 +270,23 @@ export default function SessionForm({
               return (
                 <label
                   key={st.id}
-                  className={`flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
-                    alreadyCompleted
-                      ? 'border-green-200 bg-green-50 text-green-700'
-                      : isChecked
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  className={`flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors cursor-pointer ${
+                    isChecked
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : alreadyCompleted
+                        ? 'border-green-200 bg-green-50/50 text-gray-700'
                         : 'border-gray-200 bg-white text-gray-700'
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={isChecked || alreadyCompleted}
-                    disabled={alreadyCompleted}
+                    checked={isChecked}
                     onChange={() => handleSubtopicToggle(st.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span>{st.title}</span>
                   {alreadyCompleted && (
-                    <span className="ml-auto text-xs text-green-600">完了済み</span>
+                    <span className="ml-auto text-[10px] text-green-600 bg-green-100 rounded-full px-1.5 py-0.5">過去に完了</span>
                   )}
                 </label>
               );
@@ -291,6 +294,21 @@ export default function SessionForm({
           </div>
         </fieldset>
       )}
+
+      {/* Custom content */}
+      <div>
+        <label htmlFor="custom-content" className="block text-sm font-medium text-gray-700">
+          その他（自由記入）
+        </label>
+        <textarea
+          id="custom-content"
+          value={customContent}
+          onChange={(e) => setCustomContent(e.target.value)}
+          rows={2}
+          placeholder="サブトピック以外に実施した内容があれば記入..."
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </div>
 
       {/* Notes */}
       <div>

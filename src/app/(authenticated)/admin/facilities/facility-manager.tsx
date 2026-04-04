@@ -327,7 +327,7 @@ export default function FacilityManager({ facilities }: FacilityManagerProps) {
               <h3 className="text-lg font-semibold text-gray-900">施設を削除</h3>
             </div>
             <p className="mb-4 text-sm text-gray-500">
-              この施設を削除してもよろしいですか？この操作は取り消せません。関連する実習生やスタッフの所属情報にも影響する可能性があります。
+              この施設を削除してもよろしいですか？この操作は取り消せません。関連する特定技能外国人やスタッフの所属情報にも影響する可能性があります。
             </p>
             <div className="flex items-center justify-end gap-3">
               <button

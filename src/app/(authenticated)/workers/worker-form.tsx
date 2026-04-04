@@ -118,7 +118,7 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">実習生 新規登録</h3>
+              <h3 className="text-lg font-semibold text-gray-900">特定技能外国人 新規登録</h3>
               <button
                 type="button"
                 onClick={() => { setOpen(false); resetForm(); }}
