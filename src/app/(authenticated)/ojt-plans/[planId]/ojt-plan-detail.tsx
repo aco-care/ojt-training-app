@@ -39,6 +39,27 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showCancel, setShowCancel] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editDate, setEditDate] = useState(plan.planned_date);
+  const [editStartTime, setEditStartTime] = useState(plan.start_time ?? '');
+  const [editEndTime, setEditEndTime] = useState(plan.end_time ?? '');
+  const [editBreak, setEditBreak] = useState(plan.break_minutes ?? 0);
+
+  const saveEdit = async () => {
+    setLoading(true); setError('');
+    const supabase = createClient();
+    const { error: e } = await supabase.from('ojt_plans').update({
+      planned_date: editDate,
+      start_time: editStartTime || null,
+      end_time: editEndTime || null,
+      break_minutes: editBreak,
+    }).eq('id', plan.id);
+    setLoading(false);
+    if (e) { setError(e.message); return; }
+    setEditing(false);
+    setSuccess('予定を更新しました');
+    router.refresh();
+  };
 
   // Trainer state
   const [trainerEvals, setTrainerEvals] = useState<Record<number, EvalRating>>(
@@ -147,15 +168,54 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
 
       {/* Plan info */}
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div><span className="text-xs text-gray-500">ステップ</span><p className="font-medium">{getStepLabel(plan.step)}</p></div>
-          <div><span className="text-xs text-gray-500">予定日</span><p className="font-medium">{formatDate(plan.planned_date)}</p></div>
-          <div><span className="text-xs text-gray-500">同行者</span><p className="font-medium">{plan.companion.name}</p></div>
-          <div><span className="text-xs text-gray-500">時間</span><p className="font-medium">{plan.start_time ?? '—'} 〜 {plan.end_time ?? '—'}</p></div>
-          {(plan.break_minutes ?? 0) > 0 && (
-            <div><span className="text-xs text-gray-500">休憩時間</span><p className="font-medium">{plan.break_minutes}分</p></div>
-          )}
-        </div>
+        {!editing ? (
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div><span className="text-xs text-gray-500">ステップ</span><p className="font-medium">{getStepLabel(plan.step)}</p></div>
+            <div><span className="text-xs text-gray-500">予定日</span><p className="font-medium">{formatDate(plan.planned_date)}</p></div>
+            <div><span className="text-xs text-gray-500">同行者</span><p className="font-medium">{plan.companion.name}</p></div>
+            <div><span className="text-xs text-gray-500">時間</span><p className="font-medium">{plan.start_time ?? '—'} 〜 {plan.end_time ?? '—'}</p></div>
+            {(plan.break_minutes ?? 0) > 0 && (
+              <div><span className="text-xs text-gray-500">休憩時間</span><p className="font-medium">{plan.break_minutes}分</p></div>
+            )}
+            {planRole === 'supervisor' && plan.status === 'scheduled' && (
+              <div className="col-span-2">
+                <button onClick={() => setEditing(true)} className="text-xs font-medium text-blue-600 hover:text-blue-800">予定を編集</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-700">予定を編集</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500">予定日</label>
+                <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">開始</label>
+                <input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">終了</label>
+                <input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">休憩（分）</label>
+                <input type="number" min="0" step="5" value={editBreak} onChange={(e) => setEditBreak(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setEditing(false)} className="rounded px-3 py-1 text-xs text-gray-600 hover:bg-gray-100">キャンセル</button>
+              <button onClick={saveEdit} disabled={loading} className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                {loading ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 flex items-center gap-1">
           <div className={`flex-1 h-2 rounded-full ${trainerDone ? 'bg-green-400' : 'bg-gray-200'}`} />

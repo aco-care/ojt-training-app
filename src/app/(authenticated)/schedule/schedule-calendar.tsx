@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import type { CalendarEvent, CalendarViewMode } from '@/lib/types';
 import { PLAN_STATUS_LABELS } from '@/lib/types';
 import {
@@ -68,7 +70,9 @@ export default function ScheduleCalendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<CalendarEvent | null>(null);
   const [filterWorkerId, setFilterWorkerId] = useState('');
+  const router = useRouter();
 
   // Swipe state
   const touchStartX = useRef(0);
@@ -133,50 +137,100 @@ export default function ScheduleCalendar({
   );
   const weekDates = getWeekDates(currentDate);
 
+  const handleDeletePlan = async (event: CalendarEvent) => {
+    if (!confirm(`「${event.title}」（${event.workerName}）を削除しますか？この操作は取り消せません。`)) return;
+    const supabase = createClient();
+    const table = event.type === 'training' ? 'training_plans' : 'ojt_plans';
+    const planId = event.detailUrl.split('/').pop();
+    await supabase.from(table).delete().eq('id', planId);
+    router.refresh();
+  };
+
+  const handleDuplicate = (event: CalendarEvent) => {
+    setDuplicateSource(event);
+    setShowCreateModal(true);
+  };
+
   const renderEventCard = (event: CalendarEvent, compact = false) => (
-    <Link
+    <div
       key={event.id}
-      href={event.detailUrl}
-      className={`block rounded-lg border-l-4 bg-white p-3 shadow-sm transition-shadow hover:shadow-md ${eventBorderColor(event)} ${
+      className={`rounded-lg border-l-4 bg-white p-3 shadow-sm ${eventBorderColor(event)} ${
         event.status === 'cancelled' ? 'opacity-60' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className={`font-medium text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}>
-            {event.title}
-          </p>
-          <p className="mt-0.5 text-xs text-gray-500">{event.workerName}</p>
-          {!compact && (
-            <p className="text-xs text-gray-400">
-              {event.startTime && event.endTime
-                ? `${event.startTime}〜${event.endTime}`
-                : '時間未設定'}
-              {' / '}
-              {event.trainerName}
+      <Link href={event.detailUrl} className="block hover:opacity-80">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className={`font-medium text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}>
+              {event.title}
             </p>
+            <p className="mt-0.5 text-xs text-gray-500">{event.workerName}</p>
+            {!compact && (
+              <p className="text-xs text-gray-400">
+                {event.startTime && event.endTime
+                  ? `${event.startTime}〜${event.endTime}`
+                  : '時間未設定'}
+                {' / '}
+                {event.trainerName}
+              </p>
+            )}
+          </div>
+          <span
+            className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeColor(event.status)}`}
+          >
+            {PLAN_STATUS_LABELS[event.status] ?? event.status}
+          </span>
+        </div>
+        {!compact && event.status !== 'cancelled' && (
+          <div className="mt-1.5 flex gap-2 text-[10px]">
+            <span className={event.trainerDone ? 'text-green-600' : 'text-gray-400'}>
+              指導者{event.trainerDone ? '済' : '未'}
+            </span>
+            <span className={event.workerDone ? 'text-green-600' : 'text-gray-400'}>
+              本人{event.workerDone ? '済' : '未'}
+            </span>
+            <span className={event.supervisorDone ? 'text-green-600' : 'text-gray-400'}>
+              責任者{event.supervisorDone ? '済' : '未'}
+            </span>
+          </div>
+        )}
+      </Link>
+      {/* Action buttons */}
+      {!compact && canCreate && (
+        <div className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-2">
+          <Link
+            href={event.detailUrl}
+            className="text-[10px] font-medium text-blue-600 hover:text-blue-800"
+          >
+            詳細
+          </Link>
+          {event.status === 'scheduled' && (
+            <Link
+              href={`${event.detailUrl}?edit=true`}
+              className="text-[10px] font-medium text-gray-600 hover:text-gray-800"
+            >
+              編集
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => handleDuplicate(event)}
+            className="text-[10px] font-medium text-green-600 hover:text-green-800"
+          >
+            複製
+          </button>
+          {event.status === 'scheduled' && (
+            <button
+              type="button"
+              onClick={() => handleDeletePlan(event)}
+              className="text-[10px] font-medium text-red-500 hover:text-red-700"
+            >
+              削除
+            </button>
           )}
         </div>
-        <span
-          className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeColor(event.status)}`}
-        >
-          {PLAN_STATUS_LABELS[event.status] ?? event.status}
-        </span>
-      </div>
-      {!compact && event.status !== 'cancelled' && (
-        <div className="mt-1.5 flex gap-2 text-[10px]">
-          <span className={event.trainerDone ? 'text-green-600' : 'text-gray-400'}>
-            指導者{event.trainerDone ? '済' : '未'}
-          </span>
-          <span className={event.workerDone ? 'text-green-600' : 'text-gray-400'}>
-            本人{event.workerDone ? '済' : '未'}
-          </span>
-          <span className={event.supervisorDone ? 'text-green-600' : 'text-gray-400'}>
-            責任者{event.supervisorDone ? '済' : '未'}
-          </span>
-        </div>
       )}
-    </Link>
+    </div>
   );
 
   return (
@@ -427,7 +481,8 @@ export default function ScheduleCalendar({
           initialDate={
             selectedDate ? toDateKey(selectedDate) : toDateKey(new Date())
           }
-          onClose={() => setShowCreateModal(false)}
+          duplicateSource={duplicateSource}
+          onClose={() => { setShowCreateModal(false); setDuplicateSource(null); }}
         />
       )}
     </div>

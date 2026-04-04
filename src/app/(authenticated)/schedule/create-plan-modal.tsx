@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { OJT_STEPS } from '@/lib/types';
+import type { CalendarEvent } from '@/lib/types';
 
 interface CreatePlanModalProps {
   workers: { id: string; name: string }[];
@@ -15,6 +16,7 @@ interface CreatePlanModalProps {
   hoursByWorkerItem: Record<string, number>;
   currentUserId: string;
   initialDate: string;
+  duplicateSource?: CalendarEvent | null;
   onClose: () => void;
 }
 
@@ -30,20 +32,26 @@ export default function CreatePlanModal({
   hoursByWorkerItem,
   currentUserId,
   initialDate,
+  duplicateSource,
   onClose,
 }: CreatePlanModalProps) {
   const router = useRouter();
-  const [planType, setPlanType] = useState<PlanType>(null);
+
+  // Pre-fill from duplicateSource
+  const dupType = duplicateSource?.type ?? null;
+  const dupWorkerId = duplicateSource?.workerId ?? '';
+
+  const [planType, setPlanType] = useState<PlanType>(dupType);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Training form state
-  const [workerId, setWorkerId] = useState('');
+  const [workerId, setWorkerId] = useState(dupWorkerId);
   const [itemId, setItemId] = useState('');
   const [trainerId, setTrainerId] = useState('');
   const [plannedDate, setPlannedDate] = useState(initialDate);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [startTime, setStartTime] = useState(duplicateSource?.startTime ?? '09:00');
+  const [endTime, setEndTime] = useState(duplicateSource?.endTime ?? '10:00');
   const [method, setMethod] = useState('対面');
   const [breakMinutes, setBreakMinutes] = useState(0);
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
@@ -217,8 +225,8 @@ export default function CreatePlanModal({
             {planType === null
               ? '予定を作成'
               : planType === 'training'
-                ? '研修予定を作成'
-                : 'OJT予定を作成'}
+                ? `研修予定を${duplicateSource ? '複製' : '作成'}`
+                : `OJT予定を${duplicateSource ? '複製' : '作成'}`}
           </h3>
           <button
             onClick={onClose}
