@@ -129,7 +129,7 @@ export default async function DashboardPage() {
 
   const { data: sessionsData } = await supabase
     .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, companion_id');
+    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, companion_id, break_minutes');
   const sessions = (sessionsData ?? []) as unknown as TrainingSession[];
 
   const { data: approvalsData } = await supabase
