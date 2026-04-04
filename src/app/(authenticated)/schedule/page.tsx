@@ -51,7 +51,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_sessions')
-      .select('worker_id, item_id, completed_subtopics, start_time, end_time'),
+      .select('worker_id, item_id, completed_subtopics, start_time, end_time, break_minutes'),
     supabase
       .from('profiles')
       .select('id, name, role')
@@ -84,7 +84,7 @@ export default async function SchedulePage() {
   }));
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
-  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[]; start_time: string; end_time: string }[];
+  const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[]; start_time: string; end_time: string; break_minutes: number | null }[];
 
   // Transform to CalendarEvent[]
   let events: CalendarEvent[] = [
@@ -154,7 +154,7 @@ export default async function SchedulePage() {
     if (s.start_time && s.end_time) {
       const start = new Date(`2000-01-01T${s.start_time}`);
       const end = new Date(`2000-01-01T${s.end_time}`);
-      const diffH = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const diffH = (end.getTime() - start.getTime()) / (1000 * 60 * 60) - (s.break_minutes || 0) / 60;
       if (diffH > 0) hoursByWorkerItem[key] = (hoursByWorkerItem[key] ?? 0) + diffH;
     }
   }

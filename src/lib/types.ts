@@ -100,6 +100,7 @@ export interface TrainingSession {
   format: TrainingFormat;
   completed_subtopics: string[];
   notes: string | null;
+  break_minutes: number;
   facility_id?: string;
   created_at: string;
   updated_at: string;
@@ -190,6 +191,7 @@ export interface TrainingPlan {
   start_time: string | null;
   end_time: string | null;
   method: string | null;
+  break_minutes: number;
   cancel_reason: string | null;
   cancel_history: CancelHistoryEntry[];
   created_at: string;
@@ -251,6 +253,7 @@ export interface OjtPlan {
   status: TrainingPlanStatus;
   start_time: string | null;
   end_time: string | null;
+  break_minutes: number;
   trainer_completed_at: string | null;
   trainer_checked_items: string[];
   trainer_eval: Record<string, EvalRating> | null;

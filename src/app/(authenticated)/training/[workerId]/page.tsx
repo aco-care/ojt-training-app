@@ -22,7 +22,7 @@ const ITEM_NUMBERS = ['①', '②', '③', '④', '⑤'];
 function calculateSessionHours(session: TrainingSession): number {
   const start = new Date(`2000-01-01T${session.start_time}`);
   const end = new Date(`2000-01-01T${session.end_time}`);
-  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60) - (session.break_minutes || 0) / 60;
 }
 
 function computeStatus(
@@ -81,7 +81,7 @@ export default async function TrainingOverviewPage({
   // Fetch all training sessions for this worker
   const { data: trainingSessions } = await supabase
     .from('training_sessions')
-    .select('id, worker_id, item_id, date, start_time, end_time, completed_subtopics')
+    .select('id, worker_id, item_id, date, start_time, end_time, completed_subtopics, break_minutes')
     .eq('worker_id', workerId);
 
   const sessions = (trainingSessions ?? []) as TrainingSession[];

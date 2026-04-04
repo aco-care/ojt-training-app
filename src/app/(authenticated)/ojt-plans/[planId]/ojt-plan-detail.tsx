@@ -152,6 +152,9 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
           <div><span className="text-xs text-gray-500">予定日</span><p className="font-medium">{formatDate(plan.planned_date)}</p></div>
           <div><span className="text-xs text-gray-500">同行者</span><p className="font-medium">{plan.companion.name}</p></div>
           <div><span className="text-xs text-gray-500">時間</span><p className="font-medium">{plan.start_time ?? '—'} 〜 {plan.end_time ?? '—'}</p></div>
+          {(plan.break_minutes ?? 0) > 0 && (
+            <div><span className="text-xs text-gray-500">休憩時間</span><p className="font-medium">{plan.break_minutes}分</p></div>
+          )}
         </div>
 
         <div className="mt-4 flex items-center gap-1">

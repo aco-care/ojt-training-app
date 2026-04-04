@@ -22,7 +22,7 @@ interface TrainingItemDetailPageProps {
 function calculateSessionHours(session: TrainingSession): number {
   const start = new Date(`2000-01-01T${session.start_time}`);
   const end = new Date(`2000-01-01T${session.end_time}`);
-  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60) - (session.break_minutes || 0) / 60;
 }
 
 export default async function TrainingItemDetailPage({
@@ -302,7 +302,7 @@ export default async function TrainingItemDetailPage({
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500">
                           {formatTime(session.start_time)} - {formatTime(session.end_time)}
-                          {' '}({hours.toFixed(1)}h)
+                          {' '}({hours.toFixed(1)}h{(session.break_minutes || 0) > 0 ? ` 休憩${session.break_minutes}分除く` : ''})
                         </p>
                       </div>
                       <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">

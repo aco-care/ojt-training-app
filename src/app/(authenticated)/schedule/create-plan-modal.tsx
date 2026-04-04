@@ -45,6 +45,7 @@ export default function CreatePlanModal({
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [method, setMethod] = useState('対面');
+  const [breakMinutes, setBreakMinutes] = useState(0);
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
 
   // OJT form state
@@ -89,6 +90,7 @@ export default function CreatePlanModal({
       start_time: startTime || null,
       end_time: endTime || null,
       method: method || null,
+      break_minutes: breakMinutes,
     });
     setLoading(false);
     if (insertError) {
@@ -117,6 +119,7 @@ export default function CreatePlanModal({
       planned_date: plannedDate,
       start_time: startTime || null,
       end_time: endTime || null,
+      break_minutes: breakMinutes,
     });
     setLoading(false);
     if (insertError) {
@@ -337,6 +340,19 @@ export default function CreatePlanModal({
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
                 />
               </div>
+            </div>
+
+            {/* Break time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">休憩時間（分）</label>
+              <input
+                type="number"
+                min="0"
+                step="5"
+                value={breakMinutes}
+                onChange={(e) => setBreakMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
             </div>
 
             {/* Method */}
@@ -560,6 +576,19 @@ export default function CreatePlanModal({
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
                 />
               </div>
+            </div>
+
+            {/* Break time (OJT) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">休憩時間（分）</label>
+              <input
+                type="number"
+                min="0"
+                step="5"
+                value={breakMinutes}
+                onChange={(e) => setBreakMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
             </div>
 
             {/* Step description */}

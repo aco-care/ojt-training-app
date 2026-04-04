@@ -31,6 +31,7 @@ export default function CreateOjtPlanForm({
   const [plannedDate, setPlannedDate] = useState(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
+  const [breakMinutes, setBreakMinutes] = useState(0);
 
   // Filter OJT users by selected worker
   const filteredOjtUsers = ojtUsers.filter((u) => u.worker_id === workerId);
@@ -55,6 +56,7 @@ export default function CreateOjtPlanForm({
       planned_date: plannedDate,
       start_time: startTime || null,
       end_time: endTime || null,
+      break_minutes: breakMinutes,
     });
 
     setLoading(false);
@@ -186,6 +188,19 @@ export default function CreateOjtPlanForm({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               />
             </div>
+          </div>
+
+          {/* Break time */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">休憩時間（分）</label>
+            <input
+              type="number"
+              min="0"
+              step="5"
+              value={breakMinutes}
+              onChange={(e) => setBreakMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+            />
           </div>
 
           {step && (

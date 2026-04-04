@@ -46,6 +46,7 @@ export default function SessionForm({
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [customContent, setCustomContent] = useState('');
+  const [breakMinutes, setBreakMinutes] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,6 +100,7 @@ export default function SessionForm({
           completed_subtopics: selectedSubtopics,
           custom_content: customContent.trim() || null,
           notes: notes.trim() || null,
+          break_minutes: breakMinutes,
         });
 
       if (insertError) {
@@ -113,6 +115,7 @@ export default function SessionForm({
       setSelectedSubtopics([]);
       setCustomContent('');
       setNotes('');
+      setBreakMinutes(0);
 
       router.refresh();
     } catch {
@@ -198,12 +201,29 @@ export default function SessionForm({
         </div>
       </div>
 
+      {/* Break Time */}
+      <div>
+        <label htmlFor="break-minutes" className="block text-sm font-medium text-gray-700">
+          休憩時間（分）
+        </label>
+        <input
+          type="number"
+          id="break-minutes"
+          min="0"
+          step="5"
+          value={breakMinutes}
+          onChange={(e) => setBreakMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Duration Display */}
       {duration && (
         <p className="text-xs text-gray-500">
-          所要時間: {duration.hours > 0 ? `${duration.hours}時間` : ''}
-          {duration.minutes > 0 ? `${duration.minutes}分` : ''}
-          ({duration.totalHours.toFixed(1)}h)
+          {breakMinutes > 0
+            ? `所要時間: ${duration.totalHours.toFixed(1)}h（休憩${breakMinutes}分除く → 実質${(duration.totalHours - breakMinutes / 60).toFixed(1)}h）`
+            : `所要時間: ${duration.hours > 0 ? `${duration.hours}時間` : ''}${duration.minutes > 0 ? `${duration.minutes}分` : ''} (${duration.totalHours.toFixed(1)}h)`
+          }
         </p>
       )}
       {!duration && startTime && endTime && (

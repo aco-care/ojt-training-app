@@ -135,6 +135,9 @@ export default function PlanDetail({ plan, planRole, currentUserId }: PlanDetail
           <div><span className="text-xs text-gray-500">指導者</span><p className="font-medium">{plan.trainer.name}</p></div>
           <div><span className="text-xs text-gray-500">時間</span><p className="font-medium">{plan.start_time ?? '—'} 〜 {plan.end_time ?? '—'}</p></div>
           <div><span className="text-xs text-gray-500">形式</span><p className="font-medium">{plan.method ?? '—'}</p></div>
+          {(plan.break_minutes ?? 0) > 0 && (
+            <div><span className="text-xs text-gray-500">休憩時間</span><p className="font-medium">{plan.break_minutes}分</p></div>
+          )}
         </div>
 
         {/* 3-step progress */}
