@@ -205,6 +205,37 @@ export const PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
   cancelled: 'キャンセル',
 };
 
+// OJT予定（3者フロー）
+export interface OjtPlan {
+  id: string;
+  worker_id: string;
+  ojt_user_id: string;
+  step: string;
+  companion_id: string;
+  created_by: string;
+  planned_date: string;
+  status: TrainingPlanStatus;
+  start_time: string | null;
+  end_time: string | null;
+  trainer_completed_at: string | null;
+  trainer_checked_items: string[];
+  trainer_eval: Record<string, EvalRating> | null;
+  trainer_comment: string | null;
+  trainer_custom_content: string | null;
+  worker_completed_at: string | null;
+  worker_checked_items: string[];
+  worker_eval: Record<string, EvalRating> | null;
+  worker_comment: string | null;
+  worker_custom_content: string | null;
+  supervisor_comment_to_trainer: string | null;
+  supervisor_comment_to_worker: string | null;
+  supervisor_completed_at: string | null;
+  supervisor_id: string | null;
+  result: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // OJTステップ定義（報告書準拠）
 export const OJT_STEPS: { step: OjtStep; number: string; label: string; description: string }[] = [
   { step: 'matching', number: '①', label: '利用者の選定・マッチング', description: '管理者が利用者を選定し、特定技能外国人とマッチング' },

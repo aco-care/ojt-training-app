@@ -83,6 +83,7 @@ const navItems: NavItem[] = [
   { href: '/workers', label: '外国人一覧', icon: <WorkersIcon className="w-5 h-5" /> },
   { href: '/training-plans', label: '研修予定', icon: <PlanIcon className="w-5 h-5" /> },
   { href: '/training', label: '研修記録', icon: <TrainingIcon className="w-5 h-5" /> },
+  { href: '/ojt-plans', label: 'OJT予定', icon: <PlanIcon className="w-5 h-5" /> },
   { href: '/ojt', label: 'OJT記録', icon: <OjtIcon className="w-5 h-5" /> },
   { href: '/admin', label: '管理', icon: <AdminIcon className="w-5 h-5" />, adminOnly: true },
 ];
