@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { OjtPlan, EvalRating } from '@/lib/types';
 import { OJT_STEPS, CHECKLIST_ITEMS, PLAN_STATUS_LABELS } from '@/lib/types';
+import CancelPlanModal from '@/components/cancel-plan-modal';
 
 interface OjtPlanDetailProps {
   plan: OjtPlan & {
@@ -37,6 +38,7 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showCancel, setShowCancel] = useState(false);
 
   // Trainer state
   const [trainerEvals, setTrainerEvals] = useState<Record<number, EvalRating>>(
@@ -162,7 +164,32 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
           <span className="flex-1 text-center">{workerDone ? '✓ 本人' : '本人未入力'}</span>
           <span className="flex-1 text-center">{supervisorDone ? '✓ FB済' : 'FB未'}</span>
         </div>
+        {planRole === 'supervisor' && plan.status !== 'cancelled' && plan.status !== 'completed' && (
+          <div className="mt-3">
+            <button onClick={() => setShowCancel(true)} className="text-xs font-medium text-red-500 hover:text-red-700">
+              取り消し・延期
+            </button>
+          </div>
+        )}
+
+        {plan.status === 'cancelled' && (
+          <div className="mt-3 rounded-md bg-red-50 border border-red-200 p-2">
+            <p className="text-xs font-medium text-red-700">この予定は取り消されました</p>
+          </div>
+        )}
       </div>
+
+      {showCancel && (
+        <CancelPlanModal
+          planId={plan.id}
+          tableName="ojt_plans"
+          currentHistory={[]}
+          currentUserId={currentUserId}
+          currentUserName="管理者"
+          currentDate={plan.planned_date}
+          onClose={() => setShowCancel(false)}
+        />
+      )}
 
       {/* Trainer input */}
       {planRole === 'trainer' && !trainerDone && (

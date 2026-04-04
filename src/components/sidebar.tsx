@@ -81,9 +81,8 @@ function PlanIcon({ className }: { className?: string }) {
 const navItems: NavItem[] = [
   { href: '/', label: 'ダッシュボード', icon: <DashboardIcon className="w-5 h-5" /> },
   { href: '/workers', label: '外国人一覧', icon: <WorkersIcon className="w-5 h-5" /> },
-  { href: '/training-plans', label: '研修予定', icon: <PlanIcon className="w-5 h-5" /> },
+  { href: '/schedule', label: '予定管理', icon: <PlanIcon className="w-5 h-5" /> },
   { href: '/training', label: '研修記録', icon: <TrainingIcon className="w-5 h-5" /> },
-  { href: '/ojt-plans', label: 'OJT予定', icon: <PlanIcon className="w-5 h-5" /> },
   { href: '/ojt', label: 'OJT記録', icon: <OjtIcon className="w-5 h-5" /> },
   { href: '/admin', label: '管理', icon: <AdminIcon className="w-5 h-5" />, adminOnly: true },
 ];
@@ -98,6 +97,9 @@ export default function Sidebar({ currentPath, userRole }: SidebarProps) {
 
   const isActive = (href: string) => {
     if (href === '/') return currentPath === '/';
+    if (href === '/schedule') {
+      return currentPath.startsWith('/schedule') || currentPath.startsWith('/training-plans') || currentPath.startsWith('/ojt-plans');
+    }
     return currentPath.startsWith(href);
   };
 

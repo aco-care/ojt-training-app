@@ -190,6 +190,8 @@ export interface TrainingPlan {
   start_time: string | null;
   end_time: string | null;
   method: string | null;
+  cancel_reason: string | null;
+  cancel_history: CancelHistoryEntry[];
   created_at: string;
   updated_at: string;
   // Joins
@@ -204,6 +206,38 @@ export const PLAN_STATUS_LABELS: Record<TrainingPlanStatus, string> = {
   completed: '完了',
   cancelled: 'キャンセル',
 };
+
+// カレンダーイベント（統合型）
+export type CalendarViewMode = 'month' | 'week' | 'day';
+
+export interface CancelHistoryEntry {
+  date: string;
+  action: 'cancel' | 'postpone';
+  reason: string;
+  by: string;
+  byName: string;
+  previousDate?: string;
+  newDate?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  type: 'training' | 'ojt';
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  status: TrainingPlanStatus;
+  workerName: string;
+  workerId: string;
+  title: string;
+  trainerName: string;
+  detailUrl: string;
+  cancelReason?: string;
+  cancelHistory?: CancelHistoryEntry[];
+  trainerDone: boolean;
+  workerDone: boolean;
+  supervisorDone: boolean;
+}
 
 // OJT予定（3者フロー）
 export interface OjtPlan {

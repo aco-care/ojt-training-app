@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { TrainingItem, TrainingPlan, EvalRating } from '@/lib/types';
 import { PLAN_STATUS_LABELS, CHECKLIST_ITEMS } from '@/lib/types';
+import CancelPlanModal from '@/components/cancel-plan-modal';
 
 interface PlanDetailProps {
   plan: TrainingPlan & {
@@ -32,6 +33,7 @@ export default function PlanDetail({ plan, planRole, currentUserId }: PlanDetail
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showCancel, setShowCancel] = useState(false);
 
   const subtopics = plan.item.subtopics ?? [];
 
@@ -146,7 +148,48 @@ export default function PlanDetail({ plan, planRole, currentUserId }: PlanDetail
           <span className="flex-1 text-center">{workerDone ? '✓ 本人入力済' : '本人未入力'}</span>
           <span className="flex-1 text-center">{supervisorDone ? '✓ FB済' : 'FB未'}</span>
         </div>
+        {/* Cancel/Postpone button */}
+        {planRole === 'supervisor' && plan.status !== 'cancelled' && plan.status !== 'completed' && (
+          <div className="mt-3">
+            <button
+              onClick={() => setShowCancel(true)}
+              className="text-xs font-medium text-red-500 hover:text-red-700"
+            >
+              取り消し・延期
+            </button>
+          </div>
+        )}
+
+        {plan.status === 'cancelled' && plan.cancel_reason && (
+          <div className="mt-3 rounded-md bg-red-50 border border-red-200 p-2">
+            <p className="text-xs font-medium text-red-700">取り消し理由: {plan.cancel_reason}</p>
+          </div>
+        )}
+
+        {/* Cancel history */}
+        {plan.cancel_history && plan.cancel_history.length > 0 && (
+          <div className="mt-2">
+            <p className="text-[10px] font-medium text-gray-500 mb-1">変更履歴</p>
+            {plan.cancel_history.map((h, i) => (
+              <p key={i} className="text-[10px] text-gray-400">
+                {new Date(h.date).toLocaleDateString('ja-JP')} {h.action === 'cancel' ? '取消' : '延期'}: {h.reason} ({h.byName})
+              </p>
+            ))}
+          </div>
+        )}
       </div>
+
+      {showCancel && (
+        <CancelPlanModal
+          planId={plan.id}
+          tableName="training_plans"
+          currentHistory={plan.cancel_history ?? []}
+          currentUserId={currentUserId}
+          currentUserName="管理者"
+          currentDate={plan.planned_date}
+          onClose={() => setShowCancel(false)}
+        />
+      )}
 
       {/* ===== STEP 2: 当日入力 ===== */}
 
