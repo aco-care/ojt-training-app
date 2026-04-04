@@ -1,7 +1,11 @@
 /** Pure date utility functions for calendar */
 
+/** Format date as YYYY-MM-DD in local timezone (NOT UTC) */
 export function toDateKey(d: Date): string {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function addDays(d: Date, n: number): Date {
@@ -82,3 +86,8 @@ export function formatDayFull(d: Date): string {
 }
 
 export const WEEKDAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+
+/** Get today's date as YYYY-MM-DD in local timezone */
+export function todayKey(): string {
+  return toDateKey(new Date());
+}

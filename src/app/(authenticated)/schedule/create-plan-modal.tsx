@@ -79,14 +79,18 @@ export default function CreatePlanModal({
     setStep('');
   };
 
-  // Check time overlap for the same worker on the same date across both plans and sessions
+  // Check time overlap for the same worker on the same date
+  // Returns error message with suggestion, or null if no overlap
   const checkOverlap = async (wid: string, pDate: string, sTime: string, eTime: string): Promise<string | null> => {
+    // If no time is set, skip overlap check (time-unspecified plan is allowed)
     if (!sTime || !eTime) return null;
     const supabase = createClient();
     const newStart = new Date(`2000-01-01T${sTime}`).getTime();
     const newEnd = new Date(`2000-01-01T${eTime}`).getTime();
 
-    // Check training_plans
+    // Collect all occupied time slots for this worker on this date
+    const occupied: { start: string; end: string; label: string }[] = [];
+
     const { data: plans } = await supabase
       .from('training_plans')
       .select('id, start_time, end_time')
@@ -95,15 +99,11 @@ export default function CreatePlanModal({
       .neq('status', 'cancelled');
 
     for (const p of plans ?? []) {
-      if (!p.start_time || !p.end_time) continue;
-      const pStart = new Date(`2000-01-01T${p.start_time}`).getTime();
-      const pEnd = new Date(`2000-01-01T${p.end_time}`).getTime();
-      if (newStart < pEnd && newEnd > pStart) {
-        return `${pDate}の${p.start_time}〜${p.end_time}に既に研修予定があります`;
+      if (p.start_time && p.end_time) {
+        occupied.push({ start: p.start_time, end: p.end_time, label: '研修予定' });
       }
     }
 
-    // Check ojt_plans
     const { data: oPlans } = await supabase
       .from('ojt_plans')
       .select('id, start_time, end_time')
@@ -112,15 +112,11 @@ export default function CreatePlanModal({
       .neq('status', 'cancelled');
 
     for (const p of oPlans ?? []) {
-      if (!p.start_time || !p.end_time) continue;
-      const pStart = new Date(`2000-01-01T${p.start_time}`).getTime();
-      const pEnd = new Date(`2000-01-01T${p.end_time}`).getTime();
-      if (newStart < pEnd && newEnd > pStart) {
-        return `${pDate}の${p.start_time}〜${p.end_time}に既にOJT予定があります`;
+      if (p.start_time && p.end_time) {
+        occupied.push({ start: p.start_time, end: p.end_time, label: 'OJT予定' });
       }
     }
 
-    // Check training_sessions (already recorded)
     const { data: sessions } = await supabase
       .from('training_sessions')
       .select('id, start_time, end_time')
@@ -128,11 +124,26 @@ export default function CreatePlanModal({
       .eq('date', pDate);
 
     for (const s of sessions ?? []) {
-      if (!s.start_time || !s.end_time) continue;
-      const sStart = new Date(`2000-01-01T${s.start_time}`).getTime();
-      const sEnd = new Date(`2000-01-01T${s.end_time}`).getTime();
-      if (newStart < sEnd && newEnd > sStart) {
-        return `${pDate}の${s.start_time}〜${s.end_time}に既に研修記録があります`;
+      if (s.start_time && s.end_time) {
+        occupied.push({ start: s.start_time, end: s.end_time, label: '研修記録' });
+      }
+    }
+
+    // Check for overlaps
+    for (const o of occupied) {
+      const oStart = new Date(`2000-01-01T${o.start}`).getTime();
+      const oEnd = new Date(`2000-01-01T${o.end}`).getTime();
+      if (newStart < oEnd && newEnd > oStart) {
+        // Find next available slot
+        const sortedEnds = occupied
+          .map((x) => new Date(`2000-01-01T${x.end}`).getTime())
+          .sort((a, b) => a - b);
+        const latestEnd = sortedEnds[sortedEnds.length - 1];
+        const suggestedStart = new Date(latestEnd);
+        const hh = String(suggestedStart.getHours()).padStart(2, '0');
+        const mm = String(suggestedStart.getMinutes()).padStart(2, '0');
+
+        return `${o.start}〜${o.end}に${o.label}があり重複しています。空き: ${hh}:${mm}以降`;
       }
     }
 
