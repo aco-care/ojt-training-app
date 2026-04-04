@@ -231,7 +231,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         id={`role-mobile-${profile.id}`}
                         value={editRole}
                         onChange={(e) => setEditRole(e.target.value as UserRole)}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         {ROLES.map((role) => (
                           <option key={role} value={role}>{ROLE_LABELS[role]}</option>
@@ -244,7 +244,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         id={`qual-mobile-${profile.id}`}
                         value={editQualification}
                         onChange={(e) => setEditQualification(e.target.value as Qualification)}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         {QUALIFICATIONS.map((q) => (
                           <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>
@@ -396,7 +396,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           <select
                             value={editRole}
                             onChange={(e) => setEditRole(e.target.value as UserRole)}
-                            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             {ROLES.map((role) => (
                               <option key={role} value={role}>{ROLE_LABELS[role]}</option>
@@ -405,7 +405,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           <select
                             value={editQualification}
                             onChange={(e) => setEditQualification(e.target.value as Qualification)}
-                            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             {QUALIFICATIONS.map((q) => (
                               <option key={q} value={q}>{QUALIFICATION_LABELS[q]}</option>

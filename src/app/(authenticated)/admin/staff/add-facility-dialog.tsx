@@ -104,7 +104,7 @@ export default function AddFacilityDialog({ onCreated }: AddFacilityDialogProps)
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="例：ACO訪問介護ステーション"
                   autoFocus
                 />
@@ -116,9 +116,9 @@ export default function AddFacilityDialog({ onCreated }: AddFacilityDialogProps)
                   id="new-facility-type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value="">選択してください</option>
+                  <option value="" className="text-gray-400">選択してください</option>
                   {FACILITY_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
@@ -132,7 +132,7 @@ export default function AddFacilityDialog({ onCreated }: AddFacilityDialogProps)
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="例：東京都新宿区..."
                 />
               </div>

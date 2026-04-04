@@ -169,7 +169,7 @@ export default function SessionForm({
           required
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="" disabled>
+          <option value="" disabled className="text-gray-400">
             選択してください
           </option>
           {facilities.map((f) => (
@@ -268,7 +268,7 @@ export default function SessionForm({
           required
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="" disabled>
+          <option value="" disabled className="text-gray-400">
             選択してください
           </option>
           {trainers.map((trainer) => (
