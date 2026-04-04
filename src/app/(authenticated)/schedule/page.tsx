@@ -37,7 +37,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, target_sessions, subtopics(id, title)')
+      .select('id, title, target_sessions, training_subtopics(id, title)')
       .order('sort_order'),
     supabase
       .from('ojt_users')
@@ -74,7 +74,13 @@ export default async function SchedulePage() {
   })[];
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
-  const trainingItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
+  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; training_subtopics: { id: string; title: string }[] }[];
+  const trainingItems = rawItems.map((item) => ({
+    id: item.id,
+    title: item.title,
+    target_sessions: item.target_sessions,
+    subtopics: item.training_subtopics ?? [],
+  }));
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string }[];
   const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[] }[];
