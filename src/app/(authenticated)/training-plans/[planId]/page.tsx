@@ -17,7 +17,7 @@ export default async function PlanDetailPage({ params }: PlanDetailPageProps) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, name, role')
     .eq('id', user.id)
     .single();
   if (!profile) redirect('/login');

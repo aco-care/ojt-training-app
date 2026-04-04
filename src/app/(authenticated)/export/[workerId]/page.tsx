@@ -71,7 +71,7 @@ export default async function ExportPage({ params }: ExportPageProps) {
   // Fetch OJT users
   const { data: ojtUsersData } = await supabase
     .from('ojt_users')
-    .select('*')
+    .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
     .eq('worker_id', workerId)
     .order('created_at');
 

@@ -54,7 +54,7 @@ export default async function OjtOverviewPage({ params }: OjtOverviewPageProps) 
   // Fetch all OJT records for this worker to determine current step per user
   const { data: ojtRecords } = await supabase
     .from('ojt_records')
-    .select('*')
+    .select('id, worker_id, ojt_user_id, step, result, date')
     .eq('worker_id', workerId)
     .order('date', { ascending: false });
 

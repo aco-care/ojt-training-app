@@ -61,7 +61,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   // Fetch training items
   const { data: trainingItems } = await supabase
     .from('training_items')
-    .select('*')
+    .select('id, item_number, title, target_hours, target_sessions, sort_order')
     .order('sort_order');
 
   const items = (trainingItems ?? []) as TrainingItem[];
@@ -69,7 +69,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   // Fetch training sessions for this worker
   const { data: trainingSessions } = await supabase
     .from('training_sessions')
-    .select('*')
+    .select('id, worker_id, item_id, date, start_time, end_time')
     .eq('worker_id', id);
 
   const sessions = (trainingSessions ?? []) as TrainingSession[];
@@ -77,7 +77,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   // Fetch training approvals for this worker
   const { data: trainingApprovals } = await supabase
     .from('training_approvals')
-    .select('*')
+    .select('id, worker_id, item_id, status, approved_by, approved_at')
     .eq('worker_id', id);
 
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];
@@ -85,7 +85,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   // Fetch OJT users for this worker
   const { data: ojtUsers } = await supabase
     .from('ojt_users')
-    .select('*')
+    .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
     .eq('worker_id', id)
     .order('created_at', { ascending: false });
 

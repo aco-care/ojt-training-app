@@ -8,7 +8,7 @@ export default async function FacilitiesPage() {
 
   const { data: facilities } = await supabase
     .from('facilities')
-    .select('*')
+    .select('id, name, address, type, created_at, updated_at')
     .order('name');
 
   const facilityList = (facilities ?? []) as Facility[];

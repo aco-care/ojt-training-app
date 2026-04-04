@@ -60,7 +60,6 @@ export default function OjtUserForm({ workerId, facilities }: OjtUserFormProps) 
     resetForm();
     setOpen(false);
     router.refresh();
-    setTimeout(() => window.location.reload(), 300);
   };
 
   return (

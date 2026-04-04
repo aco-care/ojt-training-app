@@ -81,7 +81,7 @@ export default async function TrainingOverviewPage({
   // Fetch all training sessions for this worker
   const { data: trainingSessions } = await supabase
     .from('training_sessions')
-    .select('*')
+    .select('id, worker_id, item_id, date, start_time, end_time, completed_subtopics')
     .eq('worker_id', workerId);
 
   const sessions = (trainingSessions ?? []) as TrainingSession[];
@@ -89,7 +89,7 @@ export default async function TrainingOverviewPage({
   // Fetch training approvals for this worker
   const { data: trainingApprovals } = await supabase
     .from('training_approvals')
-    .select('*')
+    .select('id, worker_id, item_id, status, approved_by, approved_at')
     .eq('worker_id', workerId);
 
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];

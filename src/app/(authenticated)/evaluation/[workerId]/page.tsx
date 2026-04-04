@@ -29,7 +29,7 @@ export default async function EvaluationPage({ params }: EvaluationPageProps) {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, name, role')
     .eq('id', user.id)
     .single();
 
@@ -68,7 +68,7 @@ export default async function EvaluationPage({ params }: EvaluationPageProps) {
   // Fetch latest OJT records to pre-populate checklist data
   const { data: ojtRecordsData } = await supabase
     .from('ojt_records')
-    .select('*')
+    .select('id, worker_id, ojt_user_id, checklist_self, checklist_trainer, date')
     .eq('worker_id', workerId)
     .order('date', { ascending: false });
 

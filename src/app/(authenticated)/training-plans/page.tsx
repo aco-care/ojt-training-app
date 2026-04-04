@@ -12,7 +12,7 @@ export default async function TrainingPlansPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, name, role')
     .eq('id', user.id)
     .single();
 

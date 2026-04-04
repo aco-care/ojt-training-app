@@ -18,7 +18,7 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
   // Fetch OJT user
   const { data: ojtUser } = await supabase
     .from('ojt_users')
-    .select('*')
+    .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status')
     .eq('id', userId)
     .eq('worker_id', workerId)
     .single();

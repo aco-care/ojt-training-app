@@ -115,7 +115,6 @@ export default function SessionForm({
       setNotes('');
 
       router.refresh();
-      setTimeout(() => window.location.reload(), 300);
     } catch {
       setError('予期しないエラーが発生しました');
     } finally {

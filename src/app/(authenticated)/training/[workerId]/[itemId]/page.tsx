@@ -92,7 +92,7 @@ export default async function TrainingItemDetailPage({
   // Fetch approval for this worker + item
   const { data: approvalData } = await supabase
     .from('training_approvals')
-    .select('*')
+    .select('id, worker_id, item_id, status, approved_by, approved_at')
     .eq('worker_id', workerId)
     .eq('item_id', itemId)
     .single();

@@ -101,7 +101,7 @@ export default async function DashboardPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, name, role')
     .eq('id', user.id)
     .single();
 
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
 
   const { data: itemsData } = await supabase
     .from('training_items')
-    .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
+    .select('id, item_number, title, target_hours, target_sessions, sort_order, subtopics:training_subtopics(id, item_id, title, sort_order)')
     .order('sort_order');
   const items = (itemsData ?? []) as (TrainingItem & {
     subtopics: TrainingSubtopic[];
@@ -129,19 +129,19 @@ export default async function DashboardPage() {
 
   const { data: sessionsData } = await supabase
     .from('training_sessions')
-    .select('*');
-  const sessions = (sessionsData ?? []) as TrainingSession[];
+    .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, companion_id');
+  const sessions = (sessionsData ?? []) as unknown as TrainingSession[];
 
   const { data: approvalsData } = await supabase
     .from('training_approvals')
-    .select('*');
-  const approvals = (approvalsData ?? []) as TrainingApproval[];
+    .select('id, worker_id, item_id, status, approved_by, approved_at');
+  const approvals = (approvalsData ?? []) as unknown as TrainingApproval[];
 
   const { data: ojtUsersData } = await supabase
     .from('ojt_users')
-    .select('*')
+    .select('id, worker_id, facility_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
     .order('created_at', { ascending: false });
-  const ojtUsers = (ojtUsersData ?? []) as OjtUser[];
+  const ojtUsers = (ojtUsersData ?? []) as unknown as OjtUser[];
 
   const { data: ojtRecordsData } = await supabase
     .from('ojt_records')
@@ -556,7 +556,7 @@ export default async function DashboardPage() {
       ojtTotal > 0 ? Math.round((ojtCompleted / ojtTotal) * 100) : 0;
 
     // Fetch facilities for cross-facility breakdown
-    const { data: facilitiesData } = await supabase.from('facilities').select('*').order('name');
+    const { data: facilitiesData } = await supabase.from('facilities').select('id, name, address, type').order('name');
     const facilities = facilitiesData ?? [];
 
     // Fetch worker_facilities junction for multi-facility support
