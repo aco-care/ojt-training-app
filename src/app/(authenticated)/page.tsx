@@ -50,14 +50,27 @@ function computeItemStatus(
   approval: TrainingApproval | undefined,
 ): TrainingStatus {
   if (approval?.status === 'completed') return 'completed';
-  if (sessions.length === 0) return 'not_started';
-  const completedIds = new Set(sessions.flatMap((s) => s.completed_subtopics));
+  if (!sessions || sessions.length === 0) return 'not_started';
+  const completedIds = new Set(
+    sessions.flatMap((s) => {
+      // Handle both array and potentially null/undefined completed_subtopics
+      const cs = s.completed_subtopics;
+      if (Array.isArray(cs)) return cs;
+      return [];
+    })
+  );
   const allDone =
     subtopics.length > 0 && subtopics.every((st) => completedIds.has(st.id));
   const totalHours = sessions.reduce((acc, s) => {
-    const start = new Date(`2000-01-01T${s.start_time}`);
-    const end = new Date(`2000-01-01T${s.end_time}`);
-    return acc + (end.getTime() - start.getTime()) / 3_600_000;
+    try {
+      const start = new Date(`2000-01-01T${s.start_time}`);
+      const end = new Date(`2000-01-01T${s.end_time}`);
+      const breakH = (s.break_minutes || 0) / 60;
+      const diff = (end.getTime() - start.getTime()) / 3_600_000 - breakH;
+      return acc + (diff > 0 ? diff : 0);
+    } catch {
+      return acc;
+    }
   }, 0);
   if (allDone && totalHours >= targetHours) return 'completed';
   return 'in_progress';
@@ -127,9 +140,13 @@ export default async function DashboardPage() {
     subtopics: TrainingSubtopic[];
   })[];
 
-  const { data: sessionsData } = await supabase
+  const { data: sessionsData, error: sessionsError } = await supabase
     .from('training_sessions')
     .select('id, worker_id, item_id, date, start_time, end_time, trainer_id, completed_subtopics, companion_id, break_minutes');
+  if (sessionsError) {
+    console.error('[DASHBOARD] Failed to fetch training_sessions:', sessionsError.message);
+  }
+  console.log('[DASHBOARD] sessionsData count:', sessionsData?.length ?? 'NULL');
   const sessions = (sessionsData ?? []) as unknown as TrainingSession[];
 
   const { data: approvalsData } = await supabase
