@@ -229,13 +229,33 @@ CREATE POLICY "ojt_users_modify" ON ojt_users FOR ALL USING (
 
 -- OJT records
 CREATE POLICY "ojt_records_select" ON ojt_records FOR SELECT USING (true);
-CREATE POLICY "ojt_records_modify" ON ojt_records FOR ALL USING (
+CREATE POLICY "ojt_records_insert" ON ojt_records FOR INSERT WITH CHECK (
   get_user_role() IN ('admin', 'trainer', 'supervisor')
+);
+CREATE POLICY "ojt_records_update" ON ojt_records FOR UPDATE USING (
+  get_user_role() IN ('admin', 'trainer', 'supervisor')
+  OR (
+    get_user_role() = 'worker'
+    AND worker_id IN (SELECT id FROM foreign_workers WHERE profile_id = auth.uid())
+  )
+);
+CREATE POLICY "ojt_records_delete" ON ojt_records FOR DELETE USING (
+  get_user_role() IN ('admin', 'supervisor')
 );
 
 -- Final evaluations
 CREATE POLICY "evaluations_select" ON final_evaluations FOR SELECT USING (true);
-CREATE POLICY "evaluations_modify" ON final_evaluations FOR ALL USING (
+CREATE POLICY "evaluations_insert" ON final_evaluations FOR INSERT WITH CHECK (
+  get_user_role() IN ('admin', 'supervisor')
+);
+CREATE POLICY "evaluations_update" ON final_evaluations FOR UPDATE USING (
+  get_user_role() IN ('admin', 'supervisor')
+  OR (
+    get_user_role() = 'worker'
+    AND worker_id IN (SELECT id FROM foreign_workers WHERE profile_id = auth.uid())
+  )
+);
+CREATE POLICY "evaluations_delete" ON final_evaluations FOR DELETE USING (
   get_user_role() IN ('admin', 'supervisor')
 );
 
