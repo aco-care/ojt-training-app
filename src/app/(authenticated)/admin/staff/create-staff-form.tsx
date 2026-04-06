@@ -23,7 +23,6 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('trainer');
   const [qualification, setQualification] = useState<Qualification>('none');
   const [facilityIds, setFacilityIds] = useState<string[]>([]);
@@ -32,7 +31,6 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
   const reset = () => {
     setName('');
     setEmail('');
-    setPassword('');
     setRole('trainer');
     setQualification('none');
     setFacilityIds([]);
@@ -53,7 +51,6 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
       body: JSON.stringify({
         name,
         email,
-        password,
         role,
         qualification,
         facility_ids: facilityIds.length > 0 ? facilityIds : null,
@@ -69,7 +66,7 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
       return;
     }
 
-    setSuccess(`${data.name}（${ROLE_LABELS[data.role as UserRole]}）を作成しました`);
+    setSuccess(`${data.name}（${ROLE_LABELS[data.role as UserRole]}）を作成し、招待メールを送信しました`);
     reset();
     router.refresh();
 
@@ -163,23 +160,6 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
               </div>
 
               <div>
-                <label htmlFor="staff-password" className="block text-sm font-medium text-gray-700">
-                  初期パスワード <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="staff-password"
-                  type="text"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="6文字以上"
-                />
-                <p className="mt-1 text-xs text-gray-500">初回ログイン後にスタッフ自身で変更を推奨</p>
-              </div>
-
-              <div>
                 <label htmlFor="staff-role" className="block text-sm font-medium text-gray-700">
                   役割 <span className="text-red-500">*</span>
                 </label>
@@ -224,6 +204,11 @@ export default function CreateStaffForm({ facilities }: CreateStaffFormProps) {
                   label=""
                 />
               </div>
+            </div>
+
+            {/* Invite email notice */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <p className="text-xs text-blue-700">登録後、本人のメールアドレスにパスワード設定用のリンクが届きます。本人がリンクからパスワードを設定するとログインできるようになります。</p>
             </div>
 
             {/* Role description */}

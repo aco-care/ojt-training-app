@@ -24,12 +24,8 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { email, password, name, role, qualification, facility_id, facility_ids, primary_facility_id } = body;
 
-  if (!email || !password || !name || !role) {
+  if (!email || !name || !role) {
     return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 });
-  }
-
-  if (password.length < 6) {
-    return NextResponse.json({ error: 'パスワードは6文字以上で入力してください' }, { status: 400 });
   }
 
   const validRoles = ['admin', 'trainer', 'supervisor', 'worker', 'executive'];
@@ -56,12 +52,30 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data: newUser, error: createError } = await serviceClient.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { name },
-  });
+  // Use inviteUserByEmail to send an invitation email with password setup link.
+  // If a password is provided (legacy/fallback), use createUser with direct password instead.
+  let newUser;
+  let createError;
+
+  if (password) {
+    // Legacy flow: create user with password directly
+    const result = await serviceClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name },
+    });
+    newUser = result.data?.user ?? null;
+    createError = result.error;
+  } else {
+    // New flow: invite by email (sends password setup link)
+    const result = await serviceClient.auth.admin.inviteUserByEmail(email, {
+      data: { name },
+      redirectTo: `${request.nextUrl.origin}/auth/callback`,
+    });
+    newUser = result.data?.user ?? null;
+    createError = result.error;
+  }
 
   if (createError) {
     if (createError.message.includes('already been registered')) {
@@ -70,11 +84,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `ユーザー作成に失敗しました: ${createError.message}` }, { status: 500 });
   }
 
+  if (!newUser) {
+    return NextResponse.json({ error: 'ユーザー作成に失敗しました' }, { status: 500 });
+  }
+
   // 4. Create profile record (facility_id set to primary for backward compat)
   const { error: profileError } = await serviceClient
     .from('profiles')
     .insert({
-      id: newUser.user.id,
+      id: newUser.id,
       email,
       name,
       role,
@@ -84,14 +102,14 @@ export async function POST(request: NextRequest) {
 
   if (profileError) {
     // Rollback: delete the auth user
-    await serviceClient.auth.admin.deleteUser(newUser.user.id);
+    await serviceClient.auth.admin.deleteUser(newUser.id);
     return NextResponse.json({ error: `プロフィール作成に失敗しました: ${profileError.message}` }, { status: 500 });
   }
 
   // 5. Insert profile_facilities rows
   if (resolvedFacilityIds.length > 0) {
     const rows = resolvedFacilityIds.map((fid) => ({
-      profile_id: newUser.user.id,
+      profile_id: newUser.id,
       facility_id: fid,
       is_primary: fid === resolvedPrimaryFacilityId,
     }));
@@ -102,14 +120,14 @@ export async function POST(request: NextRequest) {
 
     if (pfError) {
       // Rollback: delete profile and auth user
-      await serviceClient.from('profiles').delete().eq('id', newUser.user.id);
-      await serviceClient.auth.admin.deleteUser(newUser.user.id);
+      await serviceClient.from('profiles').delete().eq('id', newUser.id);
+      await serviceClient.auth.admin.deleteUser(newUser.id);
       return NextResponse.json({ error: `施設割り当てに失敗しました: ${pfError.message}` }, { status: 500 });
     }
   }
 
   return NextResponse.json({
-    id: newUser.user.id,
+    id: newUser.id,
     email,
     name,
     role,
