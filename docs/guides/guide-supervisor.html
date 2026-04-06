@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指導責任者向けガイド - 吉兆 研修・OJT管理システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;line-height:1.8;color:#1f2937;max-width:680px;margin:0 auto;padding:2rem 1.5rem}
+@media print{body{padding:1rem;font-size:11pt;line-height:1.6}h1{font-size:16pt}h2{font-size:13pt}.no-print{display:none}}
+h1{font-size:1.5rem;font-weight:800;color:#1e40af;border-bottom:3px solid #2563eb;padding-bottom:.5rem;margin-bottom:1rem}
+.subtitle{font-size:.875rem;color:#6b7280;margin-bottom:1.5rem}
+h2{font-size:1.1rem;font-weight:700;color:#1f2937;margin:1.5rem 0 .75rem;display:flex;align-items:center;gap:.5rem}
+h2 .num{display:inline-flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:50%;background:#2563eb;color:#fff;font-size:.8rem;font-weight:700;flex-shrink:0}
+.card{background:#f0f9ff;border:1px solid #bfdbfe;border-radius:.75rem;padding:1rem;margin-bottom:1rem;font-size:.9rem}
+.card strong{color:#1e40af}
+.info{background:#eff6ff;border-left:4px solid #2563eb;padding:.75rem 1rem;margin:1rem 0;font-size:.875rem;border-radius:0 .5rem .5rem 0}
+.step{background:#fff;border:1px solid #e5e7eb;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:.5rem;font-size:.875rem}
+.step .path{color:#2563eb;font-size:.8rem;font-weight:500;margin-top:.25rem}
+.url-box{background:#1f2937;color:#e5e7eb;border-radius:.75rem;padding:1rem;font-family:"SF Mono",Consolas,monospace;font-size:.85rem;margin:1rem 0;word-break:break-all}
+.url-box .label{color:#9ca3af;font-size:.7rem;display:block;margin-bottom:.25rem}
+.url-box .url{color:#60a5fa;font-weight:600}
+.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5e7eb;font-size:.75rem;color:#9ca3af;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>吉兆 研修・OJT管理システム<br>指導責任者ガイド</h1>
+<p class="subtitle">このアプリは、特定技能外国人の研修・OJTを記録・管理するためのシステムです。</p>
+
+<div class="card">
+  <strong>あなたの役割：指導責任者（supervisor）</strong><br>
+  研修・OJTの予定作成と承認、最終評価の入力・承認、スタッフ管理、PDF出力ができます。
+</div>
+
+<div class="url-box">
+  <span class="label">アプリのURL（ブラウザでアクセス）</span>
+  <span class="url">https://ojt-training-app.vercel.app</span>
+</div>
+
+<div class="info">
+  <strong>初回ログイン：</strong>管理者からの招待メールに記載されたリンクからパスワードを設定してください。設定後、上記URLからメールアドレスとパスワードでログインできます。
+</div>
+
+<h2><span class="num">1</span>やってほしいこと</h2>
+
+<div class="step">
+  <strong>研修・OJTの予定を作成する</strong>
+  <p>カレンダーから研修予定やOJT予定を作成します。指導者と外国人を割り当てます。</p>
+  <p class="path">予定管理 → ＋ 予定追加</p>
+</div>
+
+<div class="step">
+  <strong>研修記録を確認・承認する</strong>
+  <p>指導者が入力した研修記録を確認し、全細目完了後に承認します。</p>
+  <p class="path">研修記録 → 外国人選択 → 項目選択 → 承認</p>
+</div>
+
+<div class="step">
+  <strong>OJT記録を確認する</strong>
+  <p>OJTのステップ①〜⑦の進捗を確認します。</p>
+  <p class="path">OJT記録 → 外国人選択 → 利用者選択</p>
+</div>
+
+<div class="step">
+  <strong>最終評価を入力・承認する</strong>
+  <p>8項目の到達目標評価を入力し、承認します。</p>
+  <p class="path">外国人一覧 → 対象者 → 最終評価</p>
+</div>
+
+<div class="step">
+  <strong>PDFを出力する</strong>
+  <p>巡回訪問用の研修記録票・OJT記録票・最終評価票をPDF出力します。</p>
+  <p class="path">外国人一覧 → 対象者 → PDF出力</p>
+</div>
+
+<h2><span class="num">2</span>指導者への展開</h2>
+<p style="font-size:.9rem;margin-bottom:.5rem">指導者（trainer）には別途「指導者向けガイド」をお渡しください。指導者は研修記録・OJT記録の入力が主な役割です。</p>
+
+<h2><span class="num">3</span>困ったとき</h2>
+<p style="font-size:.9rem">アプリ内の「ヘルプ」タブで操作方法を確認できます。解決しない場合は画面右下の青いボタンからフィードバックを送信してください。</p>
+
+<div class="footer">
+  吉兆 研修・OJT管理システム｜開発：CHAOS合同会社 / ACO_care
+</div>
+
+</body>
+</html>
