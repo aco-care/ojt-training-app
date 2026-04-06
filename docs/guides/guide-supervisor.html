@@ -34,8 +34,11 @@ h2 .num{display:inline-flex;align-items:center;justify-content:center;width:1.75
 </div>
 
 <div class="url-box">
-  <span class="label">アプリのURL（ブラウザでアクセス）</span>
-  <span class="url">https://ojt-training-app.vercel.app</span>
+  <span class="label">アプリのURL（ブラウザでアクセス / QRコードをスキャン）</span>
+  <div style="display:flex;align-items:center;gap:1rem;margin-top:.5rem">
+    <a href="https://ojt-training-app.vercel.app" class="url" style="text-decoration:underline">https://ojt-training-app.vercel.app</a>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://ojt-training-app.vercel.app" alt="QRコード" width="80" height="80" style="border-radius:6px;background:#fff;padding:4px;flex-shrink:0">
+  </div>
 </div>
 
 <div class="info">
