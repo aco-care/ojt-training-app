@@ -38,6 +38,8 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('trainer');
   const [editFacilityIds, setEditFacilityIds] = useState<string[]>([]);
   const [editPrimaryFacilityId, setEditPrimaryFacilityId] = useState<string>('');
@@ -50,6 +52,8 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
 
   const startEdit = (profile: StaffManagerProps['profiles'][number]) => {
     setEditingId(profile.id);
+    setEditName(profile.name);
+    setEditEmail(profile.email);
     setEditRole(profile.role);
     setEditQualification((profile as Profile).qualification ?? 'none');
     const pf = profile.profile_facilities ?? [];
@@ -73,6 +77,8 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
+        name: editName,
+        email: editEmail,
         role: editRole,
         qualification: editQualification,
         facility_id: editPrimaryFacilityId || null,
@@ -222,8 +228,24 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                 {editingId === profile.id ? (
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{profile.name}</p>
-                      <p className="text-xs text-gray-500">{profile.email}</p>
+                      <label htmlFor={`name-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">氏名</label>
+                      <input
+                        id={`name-mobile-${profile.id}`}
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`email-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">メールアドレス</label>
+                      <input
+                        id={`email-mobile-${profile.id}`}
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
                     </div>
                     <div>
                       <label htmlFor={`role-mobile-${profile.id}`} className="block text-xs font-medium text-gray-700">役割</label>
@@ -377,20 +399,38 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                 {displayedProfiles.map((profile) => (
                   <tr key={profile.id} className={`transition-colors ${profile.is_archived ? 'bg-gray-50 opacity-75' : 'hover:bg-gray-50'}`}>
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
-                      <div className="flex items-center gap-2">
-                        {profile.name}
-                        {(profile as Profile).qualification && (profile as Profile).qualification !== 'none' && (
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${qualificationBadgeColor((profile as Profile).qualification)}`}>
-                            {QUALIFICATION_LABELS[(profile as Profile).qualification]}
-                          </span>
-                        )}
-                        {profile.is_archived && (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">退職済み</span>
-                        )}
-                      </div>
+                      {editingId === profile.id ? (
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {profile.name}
+                          {(profile as Profile).qualification && (profile as Profile).qualification !== 'none' && (
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${qualificationBadgeColor((profile as Profile).qualification)}`}>
+                              {QUALIFICATION_LABELS[(profile as Profile).qualification]}
+                            </span>
+                          )}
+                          {profile.is_archived && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">退職済み</span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
-                      {profile.email}
+                      {editingId === profile.id ? (
+                        <input
+                          type="email"
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      ) : (
+                        profile.email
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm">
                       {editingId === profile.id ? (
