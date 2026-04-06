@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACO 研修・OJT マネージャー 操作マニュアル</title>
+<title>吉兆 研修・OJT管理システム 操作マニュアル</title>
 <style>
 /* ====== Base ====== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -268,7 +268,7 @@ code{
 
 <!-- ==================== HERO ==================== -->
 <header class="hero">
-  <h1>ACO 研修・OJT マネージャー<br>操作マニュアル</h1>
+  <h1>吉兆 研修・OJT管理システム<br>操作マニュアル</h1>
   <p>訪問系特定技能外国人向け 研修・OJT管理アプリ</p>
   <div class="meta">
     <span class="badge">対象：管理者・指導者</span>
@@ -286,16 +286,17 @@ code{
     <li><a href="#sec1">はじめに</a></li>
     <li><a href="#sec2">ログイン方法</a></li>
     <li><a href="#sec3">画面の見方（ナビゲーション）</a></li>
-    <li><a href="#sec4">管理者アカウントの初期設定</a></li>
-    <li><a href="#sec5">スタッフ・指導者アカウントの追加</a></li>
-    <li><a href="#sec6">事業所の登録・管理</a></li>
-    <li><a href="#sec7">特定技能外国人の登録</a></li>
+    <li><a href="#sec4">スタッフの追加・管理</a></li>
+    <li><a href="#sec5">事業所の登録・管理</a></li>
+    <li><a href="#sec6">特定技能外国人の登録</a></li>
+    <li><a href="#sec7">予定管理（カレンダー）</a></li>
     <li><a href="#sec8">研修記録の入力</a></li>
     <li><a href="#sec9">OJT記録の入力</a></li>
     <li><a href="#sec10">最終到達目標評価</a></li>
     <li><a href="#sec11">PDF出力（帳票印刷）</a></li>
     <li><a href="#sec12">ダッシュボードの使い方</a></li>
-    <li><a href="#sec13">よくあるご質問</a></li>
+    <li><a href="#sec13">通知・フィードバック・ヘルプ</a></li>
+    <li><a href="#sec14">よくあるご質問</a></li>
   </ol>
 </nav>
 
@@ -309,10 +310,13 @@ code{
     <strong>このアプリでできること</strong>
     <ul style="margin-top:.5rem;padding-left:1.25rem">
       <li>研修5大項目の実施記録・進捗管理</li>
-      <li>OJT（同行訪問）のステップ管理（ステップ②〜⑦）</li>
+      <li>OJT（同行訪問）のステップ管理（ステップ①〜⑦）</li>
       <li>到達目標8項目のチェックシート管理</li>
+      <li>研修・OJTの予定をカレンダーで管理</li>
       <li>巡回訪問時に提出する帳票のPDF出力</li>
       <li>指導者・管理者ごとの進捗ダッシュボード</li>
+      <li>スタッフの追加・パスワード管理</li>
+      <li>フィードバック（要望・不具合報告）の送信</li>
     </ul>
   </div>
 
@@ -351,7 +355,7 @@ code{
   <div class="screen">
     <div class="screen-body" style="padding-top:1.5rem">
       <div class="text-center mb-2">
-        <div class="font-bold" style="font-size:1rem;color:var(--gray-900)">ACO 研修・OJT マネージャー</div>
+        <div class="font-bold" style="font-size:1rem;color:var(--gray-900)">吉兆 研修・OJT管理システム</div>
         <div class="text-xs" style="color:var(--gray-500);margin-top:.25rem">アカウントにログインしてください</div>
       </div>
       <div class="field">
@@ -376,17 +380,19 @@ code{
 <section id="sec3">
   <h2 class="section-title"><span class="num">3</span>画面の見方（ナビゲーション）</h2>
 
-  <p>スマートフォンでは画面下部に<strong>5つのタブ</strong>が常に表示されます。</p>
+  <p>スマートフォンでは画面下部に<strong>7つのタブ</strong>が常に表示されます。</p>
 
   <div class="screen" style="margin-top:1rem">
     <div class="screen-body text-center" style="padding:2rem 1rem;color:var(--gray-400)">
       （メイン画面の内容）
     </div>
     <div class="screen-tab-bar">
-      <div class="screen-tab active"><span class="tab-icon">&#x1F3E0;</span>ダッシュボード</div>
-      <div class="screen-tab"><span class="tab-icon">&#x1F465;</span>外国人一覧</div>
-      <div class="screen-tab"><span class="tab-icon">&#x1F4D6;</span>研修記録</div>
-      <div class="screen-tab"><span class="tab-icon">&#x1F4CB;</span>OJT記録</div>
+      <div class="screen-tab active"><span class="tab-icon">&#x1F3E0;</span>ダッシュ</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F465;</span>外国人</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F4C5;</span>予定</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F4D6;</span>研修</div>
+      <div class="screen-tab"><span class="tab-icon">&#x1F4CB;</span>OJT</div>
+      <div class="screen-tab"><span class="tab-icon">&#x2753;</span>ヘルプ</div>
       <div class="screen-tab"><span class="tab-icon">&#x2699;&#xFE0F;</span>管理</div>
     </div>
   </div>
@@ -397,9 +403,22 @@ code{
       <tbody>
         <tr><td><strong>ダッシュボード</strong></td><td>ホーム画面。全体の進捗が一目で分かります</td></tr>
         <tr><td><strong>外国人一覧</strong></td><td>登録されている特定技能外国人の一覧</td></tr>
+        <tr><td><strong>予定管理</strong></td><td>研修・OJTの予定をカレンダーで管理</td></tr>
         <tr><td><strong>研修記録</strong></td><td>研修セッションの記録・進捗確認</td></tr>
         <tr><td><strong>OJT記録</strong></td><td>OJT（同行訪問）の記録・進捗確認</td></tr>
+        <tr><td><strong>ヘルプ</strong></td><td>よくある質問と使い方ガイド</td></tr>
         <tr><td><strong>管理</strong></td><td>事業所・スタッフの管理（管理者のみ）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>画面右上のアイコン</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>アイコン</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>通知ベル</strong></td><td>新しい通知がある場合、赤いバッジで件数が表示されます</td></tr>
+        <tr><td><strong>ログアウト</strong></td><td>アプリからログアウトします</td></tr>
       </tbody>
     </table>
   </div>
@@ -410,104 +429,78 @@ code{
   </div>
 </section>
 
-<!-- ==================== 4. 管理者アカウント初期設定 ==================== -->
+<!-- ==================== 4. スタッフの追加・管理 ==================== -->
 <section id="sec4">
-  <h2 class="section-title"><span class="num">4</span>管理者アカウントの初期設定</h2>
+  <h2 class="section-title"><span class="num">4</span>スタッフの追加・管理</h2>
 
   <div class="callout info">
     <span class="icon">&#x2139;&#xFE0F;</span>
-    <div>この手順は<strong>初回セットアップ時のみ</strong>必要です。通常はシステム担当者が行います。</div>
+    <div>この機能は<strong>管理者のみ</strong>使用できます。</div>
   </div>
 
-  <!-- Flow -->
-  <h3>設定の流れ</h3>
-  <div class="flow-chart">
-    <div class="flow-node neutral">Supabaseにログイン</div>
-    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
-    <div class="flow-node neutral">プロジェクト選択</div>
-    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
-    <div class="flow-node primary">Authentication でユーザー作成</div>
-    <div class="flow-arrow"><span class="arr">&#x25BC;</span><span class="lbl">User UID をメモ</span></div>
-    <div class="flow-node primary">Table Editor の profiles にレコード追加</div>
-    <div class="flow-arrow"><span class="arr">&#x25BC;</span></div>
-    <div class="flow-node success">アプリにログイン可能</div>
-  </div>
-
-  <h3>4-1. Supabaseにアクセス</h3>
+  <h3>4-1. 新しいスタッフを追加する</h3>
   <div class="steps">
-    <div class="step-card">ブラウザで <strong>https://supabase.com/dashboard</strong> を開きます</div>
-    <div class="step-card">Googleアカウントまたはメールでログインします</div>
-  </div>
-
-  <h3>4-2. 管理者ユーザーを作成</h3>
-  <div class="steps">
-    <div class="step-card">左メニューから「<strong>Authentication</strong>」をクリック</div>
-    <div class="step-card">「<strong>Users</strong>」タブを開き、右上の「<strong>Add user</strong>」→「<strong>Create new user</strong>」をクリック</div>
+    <div class="step-card">画面下の「<strong>管理</strong>」タブをタップ</div>
+    <div class="step-card">「<strong>新しいスタッフを追加</strong>」ボタンをタップ</div>
     <div class="step-card">
-      以下を入力して「<strong>Create user</strong>」をクリック
+      以下を入力して「<strong>登録</strong>」
       <div class="table-wrap">
         <table>
-          <thead><tr><th>項目</th><th>入力内容</th></tr></thead>
+          <thead><tr><th>項目</th><th>入力内容</th><th>必須</th></tr></thead>
           <tbody>
-            <tr><td>Email</td><td>管理者のメールアドレス</td></tr>
-            <tr><td>Password</td><td>パスワード（8文字以上）</td></tr>
-            <tr><td>Auto Confirm User</td><td><strong>ON</strong> にする</td></tr>
+            <tr><td>氏名</td><td>スタッフの名前</td><td>&#x25CB;</td></tr>
+            <tr><td>メールアドレス</td><td>ログインに使用するメールアドレス</td><td>&#x25CB;</td></tr>
+            <tr><td>初期パスワード</td><td>6文字以上（初回ログイン後に変更を推奨）</td><td>&#x25CB;</td></tr>
+            <tr><td>役割</td><td>下記の5つから選択</td><td>&#x25CB;</td></tr>
+            <tr><td>資格</td><td>未取得 / 初任者研修取得済 / 介護福祉士取得済</td><td>-</td></tr>
+            <tr><td>所属施設</td><td>複数選択可能。主な施設を1つ指定</td><td>-</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-    <div class="step-card">作成されたユーザーの <strong>User UID</strong>（長い英数字の文字列）をメモします</div>
   </div>
 
-  <h3>4-3. プロフィールを登録</h3>
-  <div class="steps">
-    <div class="step-card">左メニューから「<strong>Table Editor</strong>」→「<strong>profiles</strong>」テーブルを開きます</div>
-    <div class="step-card">「<strong>Insert row</strong>」をクリックし、以下を入力して保存します</div>
-  </div>
-
+  <h3>役割（ロール）の種類</h3>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>カラム</th><th>入力内容</th></tr></thead>
+      <thead><tr><th>役割</th><th>できること</th></tr></thead>
       <tbody>
-        <tr><td><code>id</code></td><td>先ほどメモした User UID</td></tr>
-        <tr><td><code>email</code></td><td>管理者のメールアドレス</td></tr>
-        <tr><td><code>name</code></td><td>名前（例：山下）</td></tr>
-        <tr><td><code>role</code></td><td><code>admin</code></td></tr>
-        <tr><td><code>facility_id</code></td><td>所属事業所のID</td></tr>
+        <tr><td><strong>管理者</strong></td><td>全データの閲覧・編集、スタッフ管理、PDF出力</td></tr>
+        <tr><td><strong>指導者</strong></td><td>担当外国人の研修・OJT記録の入力</td></tr>
+        <tr><td><strong>指導責任者</strong></td><td>研修・OJTの承認、最終評価の承認</td></tr>
+        <tr><td><strong>特定技能外国人</strong></td><td>自分の記録の閲覧、自己評価の入力</td></tr>
+        <tr><td><strong>経営側</strong></td><td>全事業所の進捗ダッシュボードの閲覧（読み取り専用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4-2. スタッフ情報の編集</h3>
+  <p>スタッフ一覧で「<strong>編集</strong>」ボタンをタップすると、役割・資格・所属施設を変更できます。</p>
+
+  <h3>4-3. パスワードのリセット</h3>
+  <p>スタッフ一覧で「<strong>PW変更</strong>」ボタンをタップし、新しいパスワード（6文字以上）を入力します。</p>
+
+  <div class="callout info">
+    <span class="icon">&#x1F511;</span>
+    <div>スタッフ本人がパスワードを忘れた場合、管理者がこの機能でリセットしてください。</div>
+  </div>
+
+  <h3>4-4. 退職・異動処理</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>操作</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>退職処理</strong></td><td>スタッフをアーカイブします。研修・OJT記録は保持されます</td></tr>
+        <tr><td><strong>異動処理</strong></td><td>他の事業所への異動として記録します</td></tr>
+        <tr><td><strong>復元</strong></td><td>「退職・異動済み」タブからアーカイブを解除できます</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<!-- ==================== 5. スタッフ追加 ==================== -->
+<!-- ==================== 5. 事業所管理 ==================== -->
 <section id="sec5">
-  <h2 class="section-title"><span class="num">5</span>スタッフ・指導者アカウントの追加</h2>
-
-  <p><a href="#sec4">セクション4</a>と同じ手順でSupabaseからユーザーを作成し、profilesテーブルの<code>role</code>に以下を設定します。</p>
-
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>ロール</th><th>設定値</th><th>対象者</th></tr></thead>
-      <tbody>
-        <tr><td>管理者</td><td><code>admin</code></td><td>事業所の管理者（山下さん等）</td></tr>
-        <tr><td>指導者</td><td><code>trainer</code></td><td>研修を実施する現場スタッフ</td></tr>
-        <tr><td>指導責任者</td><td><code>supervisor</code></td><td>研修計画の承認を行う責任者</td></tr>
-        <tr><td>経営側</td><td><code>executive</code></td><td>進捗を閲覧するのみ（あーちゃん等）</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h3>アプリ内で役割を変更する場合</h3>
-  <div class="steps">
-    <div class="step-card">画面下の「<strong>管理</strong>」タブをタップ</div>
-    <div class="step-card">「<strong>スタッフ管理</strong>」を開きます</div>
-    <div class="step-card">変更したいスタッフの行にある<strong>ロール選択</strong>ドロップダウンを変更します</div>
-  </div>
-</section>
-
-<!-- ==================== 6. 事業所管理 ==================== -->
-<section id="sec6">
-  <h2 class="section-title"><span class="num">6</span>事業所の登録・管理</h2>
+  <h2 class="section-title"><span class="num">5</span>事業所の登録・管理</h2>
 
   <div class="steps">
     <div class="step-card">画面下の「<strong>管理</strong>」タブ → 「<strong>事業所管理</strong>」を開きます</div>
@@ -534,8 +527,8 @@ code{
 </section>
 
 <!-- ==================== 7. 外国人登録 ==================== -->
-<section id="sec7">
-  <h2 class="section-title"><span class="num">7</span>特定技能外国人の登録</h2>
+<section id="sec6">
+  <h2 class="section-title"><span class="num">6</span>特定技能外国人の登録</h2>
 
   <div class="steps">
     <div class="step-card">「<strong>外国人一覧</strong>」タブをタップ</div>
@@ -559,6 +552,62 @@ code{
   </div>
 
   <p class="mt-2">登録後、一覧で名前をタップすると<strong>詳細画面</strong>が開きます。ここから<strong>研修記録・OJT記録・最終評価・PDF出力</strong>にアクセスできます。</p>
+</section>
+
+<!-- ==================== 7. 予定管理（カレンダー） ==================== -->
+<section id="sec7">
+  <h2 class="section-title"><span class="num">7</span>予定管理（カレンダー）</h2>
+
+  <p>研修やOJTの予定をカレンダー形式で管理できます。</p>
+
+  <h3>7-1. カレンダーの見方</h3>
+  <div class="card blue">
+    <ul style="padding-left:1.25rem">
+      <li><strong>月表示・週表示・日表示</strong>を切り替えられます</li>
+      <li>「前」「次」ボタンまたはスワイプで前後に移動</li>
+      <li>「今日」ボタンで今日に戻ります</li>
+    </ul>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>色</th><th>状態</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot dot-blue"></span> 青</td><td>予定（未実施）</td></tr>
+        <tr><td><span class="dot" style="background:var(--amber)"></span> 黄</td><td>入力中</td></tr>
+        <tr><td><span class="dot dot-green"></span> 緑</td><td>完了</td></tr>
+        <tr><td><span class="dot dot-gray"></span> グレー</td><td>キャンセル</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7-2. 予定を追加する</h3>
+  <div class="steps">
+    <div class="step-card">「<strong>予定管理</strong>」タブ → 「<strong>＋ 予定追加</strong>」をタップ</div>
+    <div class="step-card">予定の種類（<strong>研修予定</strong> or <strong>OJT予定</strong>）を選択</div>
+    <div class="step-card">
+      対象外国人・日時・指導者等を入力して「<strong>保存</strong>」
+    </div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x23F0;</span>
+    <div><strong>時間の重複チェック：</strong>同じ外国人に同じ日時で予定が入っている場合、警告が表示され次の空き時間が自動提案されます。</div>
+  </div>
+
+  <h3>7-3. 予定の編集・複製・削除</h3>
+  <p>カレンダー上の予定カードから操作できます：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ボタン</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>詳細</strong></td><td>予定の詳細画面を開きます</td></tr>
+        <tr><td><strong>編集</strong></td><td>予定の内容を変更します</td></tr>
+        <tr><td><strong>複製</strong></td><td>同じ内容で新しい予定を作成します</td></tr>
+        <tr><td><strong>削除</strong></td><td>予定を削除します（確認ダイアログ表示）</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <!-- ==================== 8. 研修記録 ==================== -->
@@ -888,9 +937,55 @@ code{
   </div>
 </section>
 
-<!-- ==================== 13. FAQ ==================== -->
+<!-- ==================== 13. 通知・フィードバック・ヘルプ ==================== -->
 <section id="sec13">
-  <h2 class="section-title"><span class="num">13</span>よくあるご質問</h2>
+  <h2 class="section-title"><span class="num">13</span>通知・フィードバック・ヘルプ</h2>
+
+  <h3>通知機能</h3>
+  <p>画面右上の<strong>通知ベル</strong>アイコンで、新しい通知を確認できます。</p>
+  <div class="card blue">
+    <ul style="padding-left:1.25rem">
+      <li>未読通知は赤いバッジで件数が表示されます</li>
+      <li>ベルをタップすると通知一覧が表示されます</li>
+      <li>未読の通知は青色の背景で表示されます</li>
+      <li>「既読にする」をタップすると既読になります</li>
+    </ul>
+  </div>
+
+  <h3>フィードバック（要望・不具合報告）</h3>
+  <p>アプリの改善要望や不具合の報告ができます。</p>
+
+  <div class="steps">
+    <div class="step-card">画面右下の<strong>青い丸ボタン</strong>をタップ</div>
+    <div class="step-card">
+      カテゴリを選択（UI改善 / 機能追加 / バグ報告 / その他）
+    </div>
+    <div class="step-card">内容を記入して「<strong>送信</strong>」をタップ</div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">&#x1F4E8;</span>
+    <div>送信すると管理者に通知が届きます。管理者が対応状況を更新すると、送信者に通知されます。</div>
+  </div>
+
+  <h3>フィードバック管理（管理者のみ）</h3>
+  <p>「管理」タブからフィードバック管理を開くと、全フィードバックの確認・対応ができます。ステータス（未対応/対応中/対応済み）の変更や返信が可能です。</p>
+
+  <h3>ヘルプページ</h3>
+  <p>画面下の「<strong>ヘルプ</strong>」タブから操作方法を確認できます。</p>
+  <div class="card green">
+    <ul style="padding-left:1.25rem">
+      <li>カテゴリ別のよくある質問が表示されます</li>
+      <li>上部の検索バーでキーワード検索ができます</li>
+      <li>質問をタップすると回答が展開されます</li>
+      <li>解決しない場合はフィードバックボタンからお問い合わせください</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 14. FAQ ==================== -->
+<section id="sec14">
+  <h2 class="section-title"><span class="num">14</span>よくあるご質問</h2>
 
   <div class="faq-item">
     <div class="faq-q">研修を複数回に分けて記録できますか？</div>
@@ -908,8 +1003,8 @@ code{
   </div>
 
   <div class="faq-item">
-    <div class="faq-q">スマートフォンで写真を撮って記録に添付できますか？</div>
-    <div class="faq-a">現在のバージョンでは写真の添付機能はありません。将来のアップデートで対応予定です。備考欄にテキストで記録してください。</div>
+    <div class="faq-q">カレンダーで予定の時間が重複したらどうなりますか？</div>
+    <div class="faq-a">同じ外国人に同じ日時で予定を入れようとすると、時間の重複が検出され警告が表示されます。次の空き時間が自動で提案されます。</div>
   </div>
 
   <div class="faq-item">
@@ -919,7 +1014,7 @@ code{
 
   <div class="faq-item">
     <div class="faq-q">パスワードを忘れました</div>
-    <div class="faq-a">管理者に連絡してください。Supabaseの管理画面からパスワードをリセットできます。</div>
+    <div class="faq-a">管理者に連絡してください。管理画面の「PW変更」ボタンからパスワードをリセットできます。</div>
   </div>
 
   <div class="faq-item">
@@ -928,24 +1023,12 @@ code{
   </div>
 </section>
 
-<!-- ==================== Login Info ==================== -->
-<section id="login-info">
-  <h2 class="section-title">ログイン情報（初期設定）</h2>
-
-  <div class="cred-box">
-    <span class="label">管理者</span>
-    メール: <span class="value">admin@aco-care.jp</span><br>
-    パスワード: <span class="value">Admin1234!</span>
-    <br><br>
-    <span class="label">指導者</span>
-    メール: <span class="value">trainer@aco-care.jp</span><br>
-    パスワード: <span class="value">Trainer1234!</span>
-  </div>
-
-  <div class="callout danger">
-    <span class="icon">&#x1F512;</span>
-    <div><strong>重要：</strong>運用開始前に必ずパスワードを変更してください。</div>
-  </div>
+<!-- ==================== Footer ==================== -->
+<section>
+  <p class="text-center text-sm" style="color:var(--gray-500);margin-top:2rem">
+    開発・運営: CHAOS合同会社 / ACO_careブランド<br>
+    本マニュアルは「訪問系サービスの要件に係る報告書」（厚生労働省）に準拠して作成されています。
+  </p>
 </section>
 
 </div><!-- /container -->
@@ -953,7 +1036,7 @@ code{
 <!-- Footer -->
 <footer style="text-align:center;padding:2rem 1rem;font-size:.75rem;color:var(--gray-500);border-top:1px solid var(--gray-200);margin-top:2rem">
   <p>本マニュアルは「訪問系サービスの要件に係る報告書」（厚生労働省）に準拠して作成されています。</p>
-  <p style="margin-top:.25rem">ACO 研修・OJT マネージャー &copy; 2026 ACO Care</p>
+  <p style="margin-top:.25rem">吉兆 研修・OJT管理システム &copy; 2026 ACO Care</p>
 </footer>
 
 <!-- TOC FAB -->
