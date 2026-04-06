@@ -315,43 +315,45 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         </p>
                       )}
                     </div>
-                    <div className="ml-2 flex flex-col items-end gap-1">
+                    <div className="ml-2 flex flex-col items-end gap-2">
                       {!profile.is_archived && (
-                        <>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => startEdit(profile)}
-                            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-blue-600"
+                            className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-blue-600"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                             </svg>
                           </button>
                           <ResetPasswordDialog userId={profile.id} userName={profile.name} />
-                        </>
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => toggleArchive(profile.id, profile.is_archived)}
-                        disabled={loading === profile.id}
-                        className={`text-xs font-medium ${
-                          profile.is_archived
-                            ? 'text-green-600 hover:text-green-800'
-                            : 'text-red-500 hover:text-red-700'
-                        } disabled:opacity-50`}
-                      >
-                        {loading === profile.id ? '処理中...' : profile.is_archived ? '復元' : '退職処理'}
-                      </button>
-                      {!profile.is_archived && (
+                      <div className="flex items-center gap-3 border-t border-gray-100 pt-1">
                         <button
                           type="button"
-                          onClick={() => toggleArchive(profile.id, false, '異動')}
+                          onClick={() => toggleArchive(profile.id, profile.is_archived)}
                           disabled={loading === profile.id}
-                          className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50"
+                          className={`rounded px-2 py-1 text-xs font-medium ${
+                            profile.is_archived
+                              ? 'text-green-600 hover:bg-green-50 hover:text-green-800'
+                              : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                          } disabled:opacity-50`}
                         >
-                          異動処理
+                          {loading === profile.id ? '処理中...' : profile.is_archived ? '復元' : '退職処理'}
                         </button>
-                      )}
+                        {!profile.is_archived && (
+                          <button
+                            type="button"
+                            onClick={() => toggleArchive(profile.id, false, '異動')}
+                            disabled={loading === profile.id}
+                            className="rounded px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 hover:text-amber-800 disabled:opacity-50"
+                          >
+                            異動処理
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -471,6 +473,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                               </button>
                             </>
                           )}
+                          <span className="mx-1 text-gray-200">|</span>
                           <button
                             type="button"
                             onClick={() => toggleArchive(profile.id, profile.is_archived)}

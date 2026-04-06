@@ -197,36 +197,40 @@ export default function ScheduleCalendar({
       </Link>
       {/* Action buttons */}
       {!compact && canCreate && (
-        <div className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-2">
-          <Link
-            href={event.detailUrl}
-            className="text-[10px] font-medium text-blue-600 hover:text-blue-800"
-          >
-            詳細
-          </Link>
-          {event.status === 'scheduled' && (
+        <div className="mt-2 border-t border-gray-100 pt-2">
+          <div className="flex items-center gap-3">
             <Link
-              href={`${event.detailUrl}?edit=true`}
-              className="text-[10px] font-medium text-gray-600 hover:text-gray-800"
+              href={event.detailUrl}
+              className="rounded px-1.5 py-1 text-[10px] font-medium text-blue-600 hover:bg-blue-50 hover:text-blue-800"
             >
-              編集
+              詳細
             </Link>
-          )}
-          <button
-            type="button"
-            onClick={() => handleDuplicate(event)}
-            className="text-[10px] font-medium text-green-600 hover:text-green-800"
-          >
-            複製
-          </button>
-          {event.status === 'scheduled' && (
+            {event.status === 'scheduled' && (
+              <Link
+                href={`${event.detailUrl}?edit=true`}
+                className="rounded px-1.5 py-1 text-[10px] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              >
+                編集
+              </Link>
+            )}
             <button
               type="button"
-              onClick={() => handleDeletePlan(event)}
-              className="text-[10px] font-medium text-red-500 hover:text-red-700"
+              onClick={() => handleDuplicate(event)}
+              className="rounded px-1.5 py-1 text-[10px] font-medium text-green-600 hover:bg-green-50 hover:text-green-800"
             >
-              削除
+              複製
             </button>
+          </div>
+          {event.status === 'scheduled' && (
+            <div className="mt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleDeletePlan(event)}
+                className="rounded px-1.5 py-1 text-[10px] font-medium text-red-500 hover:bg-red-50 hover:text-red-700"
+              >
+                削除
+              </button>
+            </div>
           )}
         </div>
       )}
