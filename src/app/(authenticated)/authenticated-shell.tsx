@@ -15,7 +15,6 @@ interface AuthenticatedShellProps {
 export default function AuthenticatedShell({
   currentPath,
   userRole,
-  userName,
   children,
 }: AuthenticatedShellProps) {
   const pathname = usePathname();

@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { TrainingItem, TrainingPlan, EvalRating } from '@/lib/types';
-import { PLAN_STATUS_LABELS, CHECKLIST_ITEMS } from '@/lib/types';
+import type { TrainingItem, TrainingPlan } from '@/lib/types';
 import CancelPlanModal from '@/components/cancel-plan-modal';
 
 interface PlanDetailProps {
@@ -18,11 +17,7 @@ interface PlanDetailProps {
   currentUserId: string;
 }
 
-const EVAL_OPTIONS: { value: EvalRating; label: string; color: string }[] = [
-  { value: 'good', label: '○', color: 'bg-green-500 text-white' },
-  { value: 'fair', label: '△', color: 'bg-yellow-500 text-white' },
-  { value: 'poor', label: '×', color: 'bg-red-500 text-white' },
-];
+
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });

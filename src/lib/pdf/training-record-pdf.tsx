@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, colors } from '@/lib/pdf-styles';
+import { styles } from '@/lib/pdf-styles';
 import { FORMAT_LABELS, type TrainingFormat } from '@/lib/types';
 
 // ---------------------------------------------------------------------------

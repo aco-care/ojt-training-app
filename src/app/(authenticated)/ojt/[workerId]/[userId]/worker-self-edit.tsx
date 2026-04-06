@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { EvalRating } from '@/lib/types';
-import { CHECKLIST_ITEMS, EVAL_LABELS } from '@/lib/types';
+import { CHECKLIST_ITEMS } from '@/lib/types';
 
 interface WorkerSelfEditProps {
   recordId: string;

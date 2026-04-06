@@ -13,7 +13,7 @@ import type {
   OjtRecord,
   OjtStep,
 } from '@/lib/types';
-import { OJT_STEPS, OJT_STATUS_LABELS, ROLE_LABELS } from '@/lib/types';
+import { OJT_STEPS, ROLE_LABELS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';

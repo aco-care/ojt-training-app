@@ -1,7 +1,7 @@
 'use client';
 
 import type { CalendarEvent } from '@/lib/types';
-import { isToday, isSameDay } from '@/lib/date-utils';
+import { isToday } from '@/lib/date-utils';
 
 interface DayCellProps {
   date: Date;

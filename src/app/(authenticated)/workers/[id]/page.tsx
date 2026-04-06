@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession, Qualification } from '@/lib/types';
-import { OJT_STATUS_LABELS, STATUS_LABELS, OJT_STEPS, QUALIFICATION_LABELS } from '@/lib/types';
+import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession } from '@/lib/types';
+import { OJT_STATUS_LABELS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
@@ -105,12 +105,6 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
       percentage,
     };
   });
-
-  // Get current OJT step label
-  const getOjtStepLabel = (status: string): string => {
-    const step = OJT_STEPS.find((s) => s.step === status);
-    return step ? `${step.number} ${step.label}` : status;
-  };
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '未設定';

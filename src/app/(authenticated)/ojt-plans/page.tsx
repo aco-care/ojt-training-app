@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { Profile, OjtPlan, OjtUser } from '@/lib/types';
+import type { Profile, OjtPlan } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import OjtPlanList from './ojt-plan-list';
 

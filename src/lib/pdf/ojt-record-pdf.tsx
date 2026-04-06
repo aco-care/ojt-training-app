@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, colors } from '@/lib/pdf-styles';
+import { styles } from '@/lib/pdf-styles';
 import {
   CHECKLIST_ITEMS,
   EVAL_LABELS,
@@ -77,14 +77,6 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
   ojtUser,
   records,
 }) => {
-  // Group records by step
-  const stepOrder: OjtStep[] = ['explanation', 'pre_training', 'observation', 'main', 'independent', 'completion'];
-  const recordsByStep = stepOrder.map((step) => {
-    const stepInfo = OJT_STEPS.find((s) => s.step === step);
-    const stepRecords = records.filter((r) => r.step === step);
-    return { step, stepInfo, records: stepRecords };
-  });
-
   // Determine step statuses for the timeline
   function stepStatus(step: OjtStep): string {
     const recs = records.filter((r) => r.step === step);

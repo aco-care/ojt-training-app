@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { QUALIFICATION_LABELS } from '@/lib/types';
 import type { TrainingItem } from '@/lib/types';
 
 interface CreatePlanFormProps {

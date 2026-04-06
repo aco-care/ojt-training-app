@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Notification } from '@/lib/types';
 
@@ -9,6 +10,7 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -73,14 +75,14 @@ export default function NotificationBell() {
     );
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = useCallback((notification: Notification) => {
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
     if (notification.link) {
-      window.location.href = notification.link;
+      router.push(notification.link);
     }
-  };
+  }, [router]);
 
   return (
     <div className="relative" ref={dropdownRef}>

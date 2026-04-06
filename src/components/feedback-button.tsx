@@ -73,7 +73,7 @@ export default function FeedbackButton() {
         setSuccess(false);
         setIsOpen(false);
       }, 2000);
-    } catch (err) {
+    } catch {
       setError('送信に失敗しました。もう一度お試しください。');
     } finally {
       setSubmitting(false);

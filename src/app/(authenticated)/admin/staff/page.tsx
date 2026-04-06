@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Profile, Facility } from '@/lib/types';
+import type { Profile } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StaffManager from './staff-manager';
 import CreateStaffForm from './create-staff-form';

@@ -27,6 +27,16 @@ export default function OjtList({ workers, facilities, userCountMap, completedCo
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setDisplayCount(PAGE_SIZE);
+  }, []);
+
+  const handleFacilityChange = useCallback((facilityId: string | null) => {
+    setSelectedFacilityId(facilityId);
+    setDisplayCount(PAGE_SIZE);
+  }, []);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return workers.filter((w) => {
@@ -44,10 +54,6 @@ export default function OjtList({ workers, facilities, userCountMap, completedCo
       return true;
     });
   }, [workers, search, selectedFacilityId]);
-
-  useEffect(() => {
-    setDisplayCount(PAGE_SIZE);
-  }, [search, selectedFacilityId]);
 
   const displayed = filtered.slice(0, displayCount);
   const hasMore = displayCount < filtered.length;
@@ -83,7 +89,7 @@ export default function OjtList({ workers, facilities, userCountMap, completedCo
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="氏名・国籍・施設名で検索..."
           className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
@@ -92,7 +98,7 @@ export default function OjtList({ workers, facilities, userCountMap, completedCo
       {/* Facility filter pills */}
       <div className="mb-4 flex flex-wrap gap-2">
         <button
-          onClick={() => setSelectedFacilityId(null)}
+          onClick={() => handleFacilityChange(null)}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             selectedFacilityId === null
               ? 'bg-blue-600 text-white shadow-sm'
@@ -104,7 +110,7 @@ export default function OjtList({ workers, facilities, userCountMap, completedCo
         {facilities.map((f) => (
           <button
             key={f.id}
-            onClick={() => setSelectedFacilityId(f.id)}
+            onClick={() => handleFacilityChange(f.id)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               selectedFacilityId === f.id
                 ? 'bg-blue-600 text-white shadow-sm'

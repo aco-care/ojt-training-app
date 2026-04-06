@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import type { TrainingItem, TrainingPlan, TrainingPlanStatus, UserRole } from '@/lib/types';
 import { PLAN_STATUS_LABELS } from '@/lib/types';
 import CreatePlanForm from './create-plan-form';

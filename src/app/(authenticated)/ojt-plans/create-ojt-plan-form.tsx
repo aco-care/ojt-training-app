@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { OJT_STEPS, QUALIFICATION_LABELS } from '@/lib/types';
+import { OJT_STEPS } from '@/lib/types';
 
 interface CreateOjtPlanFormProps {
   workers: { id: string; name: string }[];

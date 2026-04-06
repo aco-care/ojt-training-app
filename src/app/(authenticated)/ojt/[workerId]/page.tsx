@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { ForeignWorker, OjtUser, OjtRecord } from '@/lib/types';
-import { OJT_STEPS, OJT_STATUS_LABELS } from '@/lib/types';
+import { OJT_STEPS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import OjtUserForm from './ojt-user-form';

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { OjtPlan, EvalRating } from '@/lib/types';
-import { OJT_STEPS, CHECKLIST_ITEMS, PLAN_STATUS_LABELS } from '@/lib/types';
+import { OJT_STEPS, CHECKLIST_ITEMS } from '@/lib/types';
 import CancelPlanModal from '@/components/cancel-plan-modal';
 
 interface OjtPlanDetailProps {

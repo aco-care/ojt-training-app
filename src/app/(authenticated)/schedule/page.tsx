@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { Profile, TrainingItem, TrainingPlan, OjtPlan } from '@/lib/types';
+import type { Profile, TrainingPlan, OjtPlan } from '@/lib/types';
 import { OJT_STEPS } from '@/lib/types';
 import type { CalendarEvent } from '@/lib/types';
 import dynamic from 'next/dynamic';

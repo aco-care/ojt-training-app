@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { Profile, ForeignWorker, TrainingItem, TrainingPlan } from '@/lib/types';
+import type { Profile, TrainingItem, TrainingPlan } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import PlanList from './plan-list';
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { OjtStep, OjtResult, EvalRating, OjtStatus, Profile } from '@/lib/types';
-import { OJT_STEPS, CHECKLIST_ITEMS, EVAL_LABELS } from '@/lib/types';
+import { OJT_STEPS, CHECKLIST_ITEMS } from '@/lib/types';
 
 interface RecordFormProps {
   workerId: string;
