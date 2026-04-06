@@ -77,7 +77,7 @@ export function FacilityMultiSelect({
                 onChange={() => handleToggle(facility.id)}
                 className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="flex-1 text-sm">{facility.name}</span>
+              <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>{facility.name}</span>
               {isSelected && selectedIds.length > 1 && (
                 <button
                   type="button"
