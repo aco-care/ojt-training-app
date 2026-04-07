@@ -32,18 +32,24 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Use generateLink to create an invite link and send via Resend/SMTP
-  const { error: resetError } = await serviceClient.auth.admin.generateLink({
-    type: 'invite',
-    email,
-    options: {
-      redirectTo: `${request.nextUrl.origin}/auth/callback`,
-    },
+  // Re-send invite email. inviteUserByEmail will re-send if user already exists.
+  const { error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${request.nextUrl.origin}/auth/callback`,
   });
 
-  if (resetError) {
-    return NextResponse.json({ error: `招待メールの再送に失敗しました: ${resetError.message}` }, { status: 500 });
+  if (inviteError) {
+    // If user already confirmed, use resetPasswordForEmail instead
+    if (inviteError.message.includes('already confirmed') || inviteError.message.includes('already been registered')) {
+      const { error: resetError } = await serviceClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${request.nextUrl.origin}/auth/callback`,
+      });
+      if (resetError) {
+        return NextResponse.json({ error: `メール再送に失敗しました: ${resetError.message}` }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, type: 'reset' });
+    }
+    return NextResponse.json({ error: `招待メールの再送に失敗しました: ${inviteError.message}` }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, type: 'invite' });
 }
