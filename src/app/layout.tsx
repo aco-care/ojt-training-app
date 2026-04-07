@@ -15,12 +15,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: '吉兆 研修・OJT管理システム',
   description: '外国人介護人材の研修・OJT管理システム',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '吉兆OJT',
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
