@@ -4,7 +4,26 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-const FACILITY_TYPES = ['訪問介護', '通所介護', '特別養護老人ホーム', '介護老人保健施設', 'グループホーム', 'その他'];
+const FACILITY_TYPES = [
+  '訪問介護',
+  '居宅介護',
+  '重度訪問介護',
+  '同行援護',
+  '行動援護',
+  '通所介護（デイサービス）',
+  '通所リハビリ（デイケア）',
+  '短期入所（ショートステイ）',
+  '特別養護老人ホーム',
+  '介護老人保健施設',
+  'グループホーム（認知症対応型）',
+  '小規模多機能型居宅介護',
+  '定期巡回・随時対応型訪問介護看護',
+  '看護小規模多機能型居宅介護',
+  '有料老人ホーム',
+  'サービス付き高齢者向け住宅',
+  '障害福祉サービス事業所',
+  'その他',
+];
 
 interface AddFacilityDialogProps {
   onCreated?: (id: string, name: string) => void;
