@@ -40,7 +40,7 @@ export default async function OjtPlanDetailPage({ params }: OjtPlanDetailPagePro
 
   const typedPlan = plan as OjtPlan & {
     worker: { id: string; name: string; profile_id: string | null };
-    ojt_user: { id: string; user_initial: string; ojt_status: string };
+    ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
     creator: { id: string; name: string };
   };
@@ -61,7 +61,7 @@ export default async function OjtPlanDetailPage({ params }: OjtPlanDetailPagePro
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={`${typedPlan.worker.name} のOJT`}
-        subtitle={`利用者 ${typedPlan.ojt_user.user_initial}`}
+        subtitle={typedPlan.ojt_user ? `利用者 ${typedPlan.ojt_user.user_initial}` : undefined}
       />
       <div className="px-4 py-6 sm:px-6">
         <OjtPlanDetail

@@ -10,7 +10,7 @@ import CancelPlanModal from '@/components/cancel-plan-modal';
 interface OjtPlanDetailProps {
   plan: OjtPlan & {
     worker: { id: string; name: string; profile_id: string | null };
-    ojt_user: { id: string; user_initial: string; ojt_status: string };
+    ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
     creator: { id: string; name: string };
   };

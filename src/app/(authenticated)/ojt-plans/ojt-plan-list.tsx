@@ -9,7 +9,7 @@ import CreateOjtPlanForm from './create-ojt-plan-form';
 interface OjtPlanListProps {
   plans: (OjtPlan & {
     worker: { id: string; name: string };
-    ojt_user: { id: string; user_initial: string; ojt_status: string };
+    ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
   })[];
   workers: { id: string; name: string }[];
@@ -124,7 +124,7 @@ export default function OjtPlanList({
                   <div>
                     <p className="text-sm font-semibold text-gray-900">{plan.worker.name}</p>
                     <p className="text-xs text-gray-500">
-                      利用者 {plan.ojt_user.user_initial} ・ {getStepLabel(plan.step)}
+                      {plan.ojt_user ? `利用者 ${plan.ojt_user.user_initial} ・ ` : ''}{getStepLabel(plan.step)}
                     </p>
                   </div>
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[plan.status as TrainingPlanStatus]}`}>

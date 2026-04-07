@@ -54,7 +54,7 @@ export default async function OjtPlansPage() {
 
   const plans = (plansData ?? []) as (OjtPlan & {
     worker: { id: string; name: string };
-    ojt_user: { id: string; user_initial: string; ojt_status: string };
+    ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
   })[];
   const workers = (workersData ?? []) as { id: string; name: string }[];

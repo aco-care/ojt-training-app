@@ -248,7 +248,7 @@ export interface CalendarEvent {
 export interface OjtPlan {
   id: string;
   worker_id: string;
-  ojt_user_id: string;
+  ojt_user_id: string | null;
   step: string;
   companion_id: string;
   created_by: string;

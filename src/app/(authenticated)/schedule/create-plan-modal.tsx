@@ -207,7 +207,7 @@ export default function CreatePlanModal({
 
   const handleSubmitOjt = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!workerId || !ojtUserId || !step || !companionId || !plannedDate) {
+    if (!workerId || !step || !companionId || !plannedDate) {
       setError('必須項目を入力してください');
       return;
     }
@@ -225,7 +225,7 @@ export default function CreatePlanModal({
     const supabase = createClient();
     const { error: insertError } = await supabase.from('ojt_plans').insert({
       worker_id: workerId,
-      ojt_user_id: ojtUserId,
+      ojt_user_id: ojtUserId || null,
       step,
       companion_id: companionId,
       created_by: currentUserId,
@@ -566,9 +566,7 @@ export default function CreatePlanModal({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="" className="text-gray-400">選択してください</option>
-                {workers
-                  .filter((w) => ojtUsers.some((u) => u.worker_id === w.id))
-                  .map((w) => (
+                {workers.map((w) => (
                     <option key={w.id} value={w.id}>{w.name}</option>
                   ))}
               </select>
@@ -608,19 +606,24 @@ export default function CreatePlanModal({
             {workerId && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  対象利用者 <span className="text-red-500">*</span>
+                  対象利用者
                 </label>
-                <select
-                  value={ojtUserId}
-                  onChange={(e) => setOjtUserId(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
-                >
-                  <option value="" className="text-gray-400">選択してください</option>
-                  {filteredOjtUsers.map((u) => (
-                    <option key={u.id} value={u.id}>利用者 {u.user_initial}</option>
-                  ))}
-                </select>
+                {filteredOjtUsers.length > 0 ? (
+                  <select
+                    value={ojtUserId}
+                    onChange={(e) => setOjtUserId(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                  >
+                    <option value="" className="text-gray-400">未指定</option>
+                    {filteredOjtUsers.map((u) => (
+                      <option key={u.id} value={u.id}>利用者 {u.user_initial}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500">
+                    利用者が未登録です。OJT記録ページで利用者を追加できます。
+                  </p>
+                )}
               </div>
             )}
 
