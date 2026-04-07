@@ -52,6 +52,33 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  // 3a. Check if this email already exists as an archived profile
+  const { data: existingProfile } = await serviceClient
+    .from('profiles')
+    .select('id, name, is_archived')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (existingProfile) {
+    if (existingProfile.is_archived) {
+      return NextResponse.json({
+        error: 'このメールアドレスは退職・異動済みとして登録されています。スタッフリストの「退職・異動済み」タブから復元してください。',
+      }, { status: 409 });
+    }
+    return NextResponse.json({
+      error: 'このメールアドレスは既に登録されています。',
+    }, { status: 409 });
+  }
+
+  // 3b. Check if auth user already exists (profile may have been deleted but auth remains)
+  const { data: existingUsers } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
+  const existingAuthUser = existingUsers?.users?.find((u) => u.email === email);
+  if (existingAuthUser) {
+    return NextResponse.json({
+      error: 'このメールアドレスは既に登録されています。スタッフリストの「退職・異動済み」タブを確認してください。',
+    }, { status: 409 });
+  }
+
   // Use inviteUserByEmail to send an invitation email with password setup link.
   // If a password is provided (legacy/fallback), use createUser with direct password instead.
   let newUser;
@@ -79,7 +106,7 @@ export async function POST(request: NextRequest) {
 
   if (createError) {
     if (createError.message.includes('already been registered')) {
-      return NextResponse.json({ error: 'このメールアドレスは既に登録されています' }, { status: 409 });
+      return NextResponse.json({ error: 'このメールアドレスは既に登録されています。' }, { status: 409 });
     }
     return NextResponse.json({ error: `ユーザー作成に失敗しました: ${createError.message}` }, { status: 500 });
   }
@@ -101,7 +128,14 @@ export async function POST(request: NextRequest) {
     });
 
   if (profileError) {
-    // Rollback: delete the auth user
+    // Only rollback if this is a NEW user we just created (not an existing one)
+    // Check if the error is a duplicate key violation - if so, don't delete the existing user
+    if (profileError.code === '23505') {
+      return NextResponse.json({
+        error: 'このアカウントは既に存在します。スタッフリストから確認してください。',
+      }, { status: 409 });
+    }
+    // For other errors, rollback the newly created auth user
     await serviceClient.auth.admin.deleteUser(newUser.id);
     return NextResponse.json({ error: `プロフィール作成に失敗しました: ${profileError.message}` }, { status: 500 });
   }

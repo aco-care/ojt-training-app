@@ -155,6 +155,26 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
     router.refresh();
   };
 
+  const resendInvite = async (email: string) => {
+    if (!confirm(`${email} に招待メールを再送しますか？`)) return;
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '再送に失敗しました');
+        return;
+      }
+      alert('招待メールを再送しました');
+    } catch {
+      setError('招待メールの再送に失敗しました');
+    }
+  };
+
   const handleFacilityChange = (selectedIds: string[], newPrimaryId: string) => {
     setEditFacilityIds(selectedIds);
     setEditPrimaryFacilityId(newPrimaryId);
@@ -504,6 +524,13 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           {!profile.is_archived && (
                             <>
                               <ResetPasswordDialog userId={profile.id} userName={profile.name} />
+                              <button
+                                type="button"
+                                onClick={() => resendInvite(profile.email)}
+                                className="text-xs font-medium text-green-600 hover:text-green-800"
+                              >
+                                招待再送
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => startEdit(profile)}
