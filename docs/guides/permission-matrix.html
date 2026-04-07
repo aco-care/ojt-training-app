@@ -17,9 +17,12 @@ h2{font-size:1.1rem;font-weight:700;color:#1f2937;margin:1.5rem 0 .5rem;padding-
 table{width:100%;border-collapse:collapse;font-size:.8rem}
 thead{background:#1e40af;color:#fff}
 th{padding:8px 10px;text-align:center;font-weight:600;white-space:nowrap}
-th:first-child{text-align:left;min-width:200px}
+th:first-child{text-align:left;width:340px;min-width:240px}
 td{padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:middle}
 td:first-child{text-align:left;font-weight:500;color:#374151}
+.desc-table th,.desc-table td{text-align:left!important}
+.desc-table th:first-child{width:120px;min-width:100px}
+.desc-table th:nth-child(2){width:130px;min-width:100px}
 tbody tr:hover{background:#f0f9ff}
 .cat{background:#f3f4f6;font-weight:700;color:#1e40af;font-size:.85rem}
 .cat td{padding:8px 10px;border-bottom:2px solid #2563eb}
@@ -44,7 +47,7 @@ tbody tr:hover{background:#f0f9ff}
 
 <h2>ロール（役割）の説明</h2>
 <div class="table-wrap">
-<table>
+<table class="desc-table">
   <thead>
     <tr><th style="text-align:left;width:120px">ロール</th><th style="text-align:left;width:130px">日本語名</th><th style="text-align:left">役割の概要</th></tr>
   </thead>
