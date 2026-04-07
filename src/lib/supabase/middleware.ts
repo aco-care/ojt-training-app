@@ -34,11 +34,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+  // Redirect authenticated users away from login (but not if they have a hash fragment from reset link)
+  if (user && request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.hash) {
+    // Don't redirect if there are error/type params (password reset flow)
+    const hasResetParams = request.nextUrl.searchParams.has('type') || request.nextUrl.hash;
+    if (!hasResetParams) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

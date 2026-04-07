@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -13,6 +13,32 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Check if user arrived via password reset/invite link (session in URL fragment)
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (session) {
+          // User came from reset/invite link - redirect to password setting page
+          if (event === 'PASSWORD_RECOVERY') {
+            router.push('/auth/set-password');
+            return;
+          }
+          // Check if user has never signed in (invited but no password set)
+          const lastSignIn = session.user?.last_sign_in_at;
+          const createdAt = session.user?.created_at;
+          if (lastSignIn === createdAt || !lastSignIn) {
+            router.push('/auth/set-password');
+            return;
+          }
+          router.push('/');
+        }
+      }
+      setCheckingSession(false);
+    });
+  }, [router]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +84,14 @@ export default function LoginPage() {
     router.refresh();
     router.push('/');
   };
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-sm text-gray-500">読み込み中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
