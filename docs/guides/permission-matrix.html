@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>権限表（詳細） - 吉兆 研修・OJT管理システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;line-height:1.7;color:#1f2937;max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+@media print{body{padding:0.5rem;font-size:9pt;line-height:1.4;max-width:100%}h1{font-size:14pt}h2{font-size:11pt;margin-top:1rem}table{font-size:8pt}.legend,.note{font-size:8pt}.no-print{display:none}td,th{padding:4px 6px}}
+h1{font-size:1.4rem;font-weight:800;color:#1e40af;border-bottom:3px solid #2563eb;padding-bottom:.5rem;margin-bottom:.5rem}
+.subtitle{font-size:.8rem;color:#6b7280;margin-bottom:1.5rem}
+h2{font-size:1.1rem;font-weight:700;color:#1f2937;margin:1.5rem 0 .5rem;padding-left:.5rem;border-left:4px solid #2563eb}
+.legend{display:flex;flex-wrap:wrap;gap:1rem;margin:1rem 0;font-size:.8rem;padding:.75rem 1rem;background:#f0f9ff;border-radius:.5rem;border:1px solid #bfdbfe}
+.legend span{display:inline-flex;align-items:center;gap:.25rem}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.5rem 0}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead{background:#1e40af;color:#fff}
+th{padding:8px 10px;text-align:center;font-weight:600;white-space:nowrap}
+th:first-child{text-align:left;min-width:200px}
+td{padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:middle}
+td:first-child{text-align:left;font-weight:500;color:#374151}
+tbody tr:hover{background:#f0f9ff}
+.cat{background:#f3f4f6;font-weight:700;color:#1e40af;font-size:.85rem}
+.cat td{padding:8px 10px;border-bottom:2px solid #2563eb}
+.y{color:#16a34a;font-weight:700}
+.n{color:#d1d5db}
+.p{color:#2563eb;font-size:.7rem;font-weight:500}
+.note{font-size:.75rem;color:#6b7280;margin:.5rem 0 1rem;padding:.5rem .75rem;background:#f9fafb;border-radius:.375rem;border:1px solid #e5e7eb}
+.role-header{font-size:.65rem;font-weight:400;display:block;color:#bfdbfe}
+.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5e7eb;font-size:.7rem;color:#9ca3af;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>吉兆 研修・OJT管理システム<br>権限表（詳細）</h1>
+<p class="subtitle">各ロール（役割）ごとに、どの機能が使えるかを一覧にしたものです。<br>最終更新：2026年4月7日</p>
+
+<div class="legend">
+  <span class="y">◯ = できる</span>
+  <span class="n">— = できない</span>
+  <span class="p">注記あり = 条件付き</span>
+</div>
+
+<h2>ロール（役割）の説明</h2>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="text-align:left">ロール</th><th style="text-align:left">日本語名</th><th style="text-align:left">役割の概要</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>admin</td><td>管理者</td><td>全機能の閲覧・編集・承認・削除が可能。フィードバック管理も含む最高権限</td></tr>
+    <tr><td>supervisor</td><td>指導責任者</td><td>adminとほぼ同等。研修・OJTの承認、予定管理、スタッフ管理が可能。フィードバック管理のみ不可</td></tr>
+    <tr><td>trainer</td><td>指導者</td><td>研修・OJTの記録入力と、自分の予定管理が中心。承認・削除は不可</td></tr>
+    <tr><td>worker</td><td>特定技能外国人</td><td>自分の進捗確認と自己評価の入力のみ。ダッシュボードとヘルプが使える</td></tr>
+    <tr><td>executive</td><td>経営側</td><td>全事業所の進捗ダッシュボードの閲覧とPDF出力。編集・入力は全て不可</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>画面の表示・アクセス</h2>
+<div class="note">下部のナビゲーションバー（スマホ）やサイドバー（PC）に表示されるメニューです。表示されないメニューにはアクセスできません。</div>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>画面</th>
+      <th>admin<span class="role-header">管理者</span></th>
+      <th>supervisor<span class="role-header">指導責任者</span></th>
+      <th>trainer<span class="role-header">指導者</span></th>
+      <th>worker<span class="role-header">外国人</span></th>
+      <th>executive<span class="role-header">経営側</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>ダッシュボード</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+    <tr><td>外国人一覧</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>予定管理（カレンダー）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>研修記録</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>OJT記録</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>ヘルプ</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+    <tr><td>管理メニュー</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>ダッシュボード — 表示内容</h2>
+<div class="note">ログイン後に最初に表示される画面です。ロールによって見える情報が異なります。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>表示内容</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>全外国人の研修進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>全外国人のOJT進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>未実施アラート</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>担当外国人の進捗のみ</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>未指導の細目一覧</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>自分の研修進捗のみ</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td></tr>
+    <tr><td>自分のOJT状況のみ</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td></tr>
+    <tr><td>全事業所横断サマリー</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>事業所別の進捗比較</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>予定管理（カレンダー）</h2>
+<div class="note">研修予定・OJT予定の作成・編集・取消を行う画面です。予定時間を過ぎてもステータスが「予定」なら編集可能です。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>予定の作成（研修・OJT）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>全員の予定を閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>自分の予定のみ閲覧</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>予定の編集（指導者変更等）</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>予定の複製</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>予定の削除</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>予定の取消・延期</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>予定の3者フロー（研修予定・OJT予定の詳細画面）</h2>
+<div class="note">予定の詳細画面では、指導責任者・指導者・外国人の3者がそれぞれ入力する「3者フロー」があります。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>指導者としての入力（実施記録）</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>外国人としての入力（振り返り）</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td></tr>
+    <tr><td>指導責任者のフィードバック</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>研修記録</h2>
+<div class="note">研修5大項目（①訪問系サービスの基本事項〜⑤緊急時の対応）の記録管理です。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>研修セッションの追加</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>自分が入力したセッションの編集</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>他の人が入力したセッションの編集</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>研修項目の承認</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>研修記録の閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>OJT記録</h2>
+<div class="note">OJTステップ①〜⑦の記録管理です。利用者ごとにステップを進めていきます。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>OJT対象利用者の追加</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>OJT記録の入力（実施記録・チェックシート）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>自己評価（○△×）の入力</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y p">◯ 自分のみ</td><td class="n">—</td></tr>
+    <tr><td>振り返りコメントの入力</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y p">◯ 自分のみ</td><td class="n">—</td></tr>
+    <tr><td>OJT記録の閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y p">◯ 自分のみ</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>最終到達目標評価</h2>
+<div class="note">8項目の到達目標について、本人評価と指導者評価を入力し、承認するプロセスです。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>指導者評価（○△×）の入力</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>本人評価（○△×）の入力</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y p">◯ 自分のみ</td><td class="n">—</td></tr>
+    <tr><td>総合コメントの入力</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>評価の承認</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>評価の閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y p">◯ 自分のみ</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="note">※ 承認後は全ロールで編集不可になります。</div>
+
+<h2>PDF出力（帳票印刷）</h2>
+<div class="note">巡回訪問用の研修記録票・OJT記録票・最終評価票をPDF出力します。</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>研修記録票の出力</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>OJT記録票の出力</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+    <tr><td>最終評価票の出力</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>外国人の登録・管理</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>特定技能外国人の新規登録</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>外国人情報の編集</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>外国人一覧の閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="note">※ workerロールでスタッフ作成した場合、外国人一覧にも自動で登録されます。</div>
+
+<h2>管理機能（スタッフ・施設・フィードバック）</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr class="cat"><td colspan="6">スタッフ管理</td></tr>
+    <tr><td>スタッフの新規追加（招待メール送信）</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>スタッフ情報の編集（氏名・メール・役割・資格・施設）</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>パスワードリセット</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>退職処理（アーカイブ）</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>異動処理</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>退職者の復元</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr class="cat"><td colspan="6">施設管理</td></tr>
+    <tr><td>事業所の新規追加</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>事業所情報の編集</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>事業所の削除</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr class="cat"><td colspan="6">フィードバック</td></tr>
+    <tr><td>フィードバック（要望・不具合）の送信</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+    <tr><td>フィードバックの管理・対応（ステータス変更・返信）</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr class="cat"><td colspan="6">通知</td></tr>
+    <tr><td>通知の受信・確認</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>アカウント関連</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
+  <tbody>
+    <tr><td>ログイン（メール＋パスワード）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+    <tr><td>パスワードを忘れた場合のリセット</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td></tr>
+    <tr><td>他のスタッフのパスワードリセット</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="note">※ 招待メールからパスワードを設定する前でも、予定の「指導者」や「対象外国人」として割り当て可能です。</div>
+
+<div class="footer">
+  吉兆 研修・OJT管理システム｜開発：CHAOS合同会社 / ACO_care<br>
+  この権限表はシステム実装に基づいて作成されています。
+</div>
+
+</body>
+</html>
