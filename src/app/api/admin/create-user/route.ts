@@ -126,6 +126,35 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // 6. If role is 'worker', also create a foreign_workers record and link profile
+  if (role === 'worker' && resolvedPrimaryFacilityId) {
+    const { data: fwData, error: fwError } = await serviceClient
+      .from('foreign_workers')
+      .insert({
+        name,
+        facility_id: resolvedPrimaryFacilityId,
+        profile_id: newUser.id,
+        nationality: body.nationality || null,
+        qualification: qualification || 'none',
+      })
+      .select('id')
+      .single();
+
+    if (fwError) {
+      // Non-fatal: profile was created but foreign_worker entry failed
+      console.error('foreign_workers insert failed:', fwError.message);
+    }
+
+    // Also insert worker_facilities for all assigned facilities
+    if (fwData && resolvedFacilityIds.length > 0) {
+      const wfRows = resolvedFacilityIds.map((fid) => ({
+        worker_id: fwData.id,
+        facility_id: fid,
+      }));
+      await serviceClient.from('worker_facilities').insert(wfRows);
+    }
+  }
+
   return NextResponse.json({
     id: newUser.id,
     email,
