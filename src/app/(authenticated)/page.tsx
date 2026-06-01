@@ -219,12 +219,15 @@ export default async function DashboardPage() {
       ? Math.round((completedCombinations / totalCombinations) * 100)
       : 0;
 
-  const ojtInProgress = ojtUsers.filter(
-    (u) => u.ojt_status === 'in_progress',
-  ).length;
-  const ojtCompleted = ojtUsers.filter(
-    (u) => u.ojt_status === 'completed',
-  ).length;
+  const ojtInProgress = ojtUsers.filter((u) => {
+    const userRecs = ojtRecords.filter((r) => r.ojt_user_id === u.id);
+    const hasIndependent = userRecs.some((r) => r.step === 'independent');
+    return (u.ojt_status === 'in_progress' || userRecs.length > 0) && !hasIndependent && u.ojt_status !== 'completed';
+  }).length;
+  const ojtCompleted = ojtUsers.filter((u) => {
+    const userRecs = ojtRecords.filter((r) => r.ojt_user_id === u.id);
+    return u.ojt_status === 'completed' || userRecs.some((r) => r.step === 'independent');
+  }).length;
 
   // ---------- admin / supervisor view ----------
 
@@ -298,14 +301,22 @@ export default async function DashboardPage() {
       title: i.title,
     }));
 
-    const ojtUserDataForClient = ojtUsersEnriched.map((u) => ({
-      id: u.id,
-      worker_id: u.worker_id,
-      facility_id: u.facility_id,
-      user_initial: u.user_initial,
-      ojt_status: u.ojt_status,
-      facilityName: u.facility?.name ?? null,
-    }));
+    const ojtUserDataForClient = ojtUsersEnriched.map((u) => {
+      const userRecords = ojtRecords.filter((r) => r.ojt_user_id === u.id);
+      const hasIndependent = userRecords.some((r) => r.step === 'independent');
+      const hasAnyRecord = userRecords.length > 0;
+      const computedStatus = u.ojt_status === 'completed' || hasIndependent
+        ? 'completed' as const
+        : hasAnyRecord ? 'in_progress' as const : u.ojt_status;
+      return {
+        id: u.id,
+        worker_id: u.worker_id,
+        facility_id: u.facility_id,
+        user_initial: u.user_initial,
+        ojt_status: computedStatus,
+        facilityName: u.facility?.name ?? null,
+      };
+    });
 
     return (
       <div className="min-h-screen bg-gray-50">
