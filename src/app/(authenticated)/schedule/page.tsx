@@ -32,10 +32,12 @@ export default async function SchedulePage() {
     supabase
       .from('training_plans')
       .select('*, worker:foreign_workers(id, name), item:training_items(id, title), trainer:profiles!training_plans_trainer_id_fkey(id, name)')
+      .neq('is_archived', true)
       .order('planned_date', { ascending: false }),
     supabase
       .from('ojt_plans')
       .select('*, worker:foreign_workers(id, name), companion:profiles!ojt_plans_companion_id_fkey(id, name)')
+      .neq('is_archived', true)
       .order('planned_date', { ascending: false }),
     supabase
       .from('foreign_workers')

@@ -535,6 +535,23 @@ export default function PlanDetail({ plan, planRole, currentUserId, currentUserN
           </div>
         )}
 
+        {/* Archive button */}
+        {planRole === 'supervisor' && (
+          <div className="mt-3">
+            <button
+              onClick={async () => {
+                if (!confirm('この予定をアーカイブしますか？\nカレンダーから非表示になりますが、研修データは保持されます。')) return;
+                const supabase = createClient();
+                await supabase.from('training_plans').update({ is_archived: true }).eq('id', plan.id);
+                router.push('/schedule');
+              }}
+              className="text-xs font-medium text-gray-400 hover:text-red-600"
+            >
+              アーカイブ
+            </button>
+          </div>
+        )}
+
         {plan.status === 'cancelled' && plan.cancel_reason && (
           <div className="mt-3 rounded-md bg-red-50 border border-red-200 p-2">
             <p className="text-xs font-medium text-red-700">取り消し理由: {plan.cancel_reason}</p>

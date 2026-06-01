@@ -152,12 +152,12 @@ export default function ScheduleCalendar({
   );
   const weekDates = getWeekDates(currentDate);
 
-  const handleDeletePlan = async (event: CalendarEvent) => {
-    if (!confirm(`「${event.title}」（${event.workerName}）を削除しますか？この操作は取り消せません。`)) return;
+  const handleArchivePlan = async (event: CalendarEvent) => {
+    if (!confirm(`「${event.title}」（${event.workerName}）をアーカイブしますか？\nカレンダーから非表示になりますが、研修データは保持されます。`)) return;
     const supabase = createClient();
     const table = event.type === 'training' ? 'training_plans' : 'ojt_plans';
     const planId = event.detailUrl.split('/').pop();
-    await supabase.from(table).delete().eq('id', planId);
+    await supabase.from(table).update({ is_archived: true }).eq('id', planId);
     router.refresh();
   };
 
@@ -236,17 +236,15 @@ export default function ScheduleCalendar({
               複製
             </button>
           </div>
-          {event.status === 'scheduled' && (
-            <div className="mt-1 flex justify-end">
-              <button
-                type="button"
-                onClick={() => handleDeletePlan(event)}
-                className="rounded px-1.5 py-1 text-[10px] font-medium text-red-500 hover:bg-red-50 hover:text-red-700"
-              >
-                削除
-              </button>
-            </div>
-          )}
+          <div className="mt-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => handleArchivePlan(event)}
+              className="rounded px-1.5 py-1 text-[10px] font-medium text-gray-400 hover:bg-red-50 hover:text-red-600"
+            >
+              アーカイブ
+            </button>
+          </div>
         </div>
       )}
     </div>
