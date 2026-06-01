@@ -160,7 +160,16 @@ export default function ScheduleCalendar({
       await supabase.from('training_sessions').delete().eq('training_plan_id', planId);
       await supabase.from('training_plans').update({ is_archived: true }).eq('id', planId);
     } else {
+      const { data: plan } = await supabase.from('ojt_plans').select('ojt_user_id').eq('id', planId).single();
       await supabase.from('ojt_plans').update({ is_archived: true }).eq('id', planId);
+      // Clean up ojt_user if no active plans or records remain
+      if (plan?.ojt_user_id) {
+        const { count: activePlans } = await supabase.from('ojt_plans').select('id', { count: 'exact', head: true }).eq('ojt_user_id', plan.ojt_user_id).neq('is_archived', true);
+        const { count: records } = await supabase.from('ojt_records').select('id', { count: 'exact', head: true }).eq('ojt_user_id', plan.ojt_user_id);
+        if ((activePlans ?? 0) === 0 && (records ?? 0) === 0) {
+          await supabase.from('ojt_users').delete().eq('id', plan.ojt_user_id);
+        }
+      }
     }
     router.refresh();
   };
