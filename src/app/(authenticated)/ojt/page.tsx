@@ -6,7 +6,7 @@ import OjtList from './ojt-list';
 export default async function OjtListPage() {
   const supabase = await createClient();
 
-  const [{ data: workers }, { data: facilities }, { data: ojtUsers }] = await Promise.all([
+  const [{ data: workers }, { data: facilities }, { data: ojtUsers }, { data: ojtRecords }] = await Promise.all([
     supabase
       .from('foreign_workers')
       .select('*, facility:facilities(id, name)')
@@ -18,18 +18,24 @@ export default async function OjtListPage() {
     supabase
       .from('ojt_users')
       .select('id, worker_id, ojt_status'),
+    supabase
+      .from('ojt_records')
+      .select('ojt_user_id, step'),
   ]);
 
   const workerList = (workers ?? []) as (ForeignWorker & { facility: { id: string; name: string } | null })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];
   const ojtUserList = (ojtUsers ?? []) as Pick<OjtUser, 'id' | 'worker_id' | 'ojt_status'>[];
+  const recordList = (ojtRecords ?? []) as { ojt_user_id: string; step: string }[];
 
-  // Build maps per worker
+  // Build maps per worker — use ojt_status OR check if independent step exists
   const userCountMap: Record<string, number> = {};
   const completedCountMap: Record<string, number> = {};
   for (const u of ojtUserList) {
     userCountMap[u.worker_id] = (userCountMap[u.worker_id] ?? 0) + 1;
-    if (u.ojt_status === 'completed') {
+    const userRecords = recordList.filter((r) => r.ojt_user_id === u.id);
+    const hasIndependent = userRecords.some((r) => r.step === 'independent');
+    if (u.ojt_status === 'completed' || hasIndependent) {
       completedCountMap[u.worker_id] = (completedCountMap[u.worker_id] ?? 0) + 1;
     }
   }

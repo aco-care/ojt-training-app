@@ -43,7 +43,7 @@ function computeStatus(
     subtopics.length > 0 && subtopics.every((st) => completedSubtopicIds.has(st.id));
   const hoursComplete = totalHours >= targetHours;
 
-  if (allSubtopicsComplete && hoursComplete) return 'completed';
+  if (hoursComplete) return 'completed';
   return 'in_progress';
 }
 

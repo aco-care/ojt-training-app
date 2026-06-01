@@ -20,24 +20,45 @@ export default async function TrainingListPage() {
 
   const { data: items } = await supabase
     .from('training_items')
-    .select('id')
+    .select('id, target_hours')
     .order('sort_order');
 
   const { data: approvals } = await supabase
     .from('training_approvals')
     .select('worker_id, item_id, status');
 
+  const { data: sessions } = await supabase
+    .from('training_sessions')
+    .select('worker_id, item_id, start_time, end_time, break_minutes');
+
   const workerList = (workers ?? []) as (ForeignWorker & { facility: { id: string; name: string } | null })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];
-  const totalItems = (items ?? []).length || 5;
+  const itemList = (items ?? []) as { id: string; target_hours: number }[];
+  const totalItems = itemList.length || 5;
   const approvalList = (approvals ?? []) as { worker_id: string; item_id: string; status: string }[];
+  const sessionList = (sessions ?? []) as { worker_id: string; item_id: string; start_time: string; end_time: string; break_minutes: number }[];
 
-  // Build a map: workerId -> number of completed items
+  // Build a map: workerId -> number of completed items (based on hours OR approval)
   const completedMap: Record<string, number> = {};
-  for (const a of approvalList) {
-    if (a.status === 'completed') {
-      completedMap[a.worker_id] = (completedMap[a.worker_id] ?? 0) + 1;
+  for (const w of workerList) {
+    let completed = 0;
+    for (const item of itemList) {
+      const approval = approvalList.find((a) => a.worker_id === w.id && a.item_id === item.id);
+      if (approval?.status === 'completed') { completed++; continue; }
+      const itemSessions = sessionList.filter((s) => s.worker_id === w.id && s.item_id === item.id);
+      if (itemSessions.length === 0) continue;
+      const totalHours = itemSessions.reduce((acc, s) => {
+        try {
+          const start = new Date(`2000-01-01T${s.start_time}`);
+          const end = new Date(`2000-01-01T${s.end_time}`);
+          const breakH = (s.break_minutes || 0) / 60;
+          const diff = (end.getTime() - start.getTime()) / 3_600_000 - breakH;
+          return acc + (diff > 0 ? diff : 0);
+        } catch { return acc; }
+      }, 0);
+      if (totalHours >= item.target_hours) completed++;
     }
+    if (completed > 0) completedMap[w.id] = completed;
   }
 
   return (

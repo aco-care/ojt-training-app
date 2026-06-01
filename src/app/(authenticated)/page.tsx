@@ -79,7 +79,7 @@ function computeItemStatus(
       return acc;
     }
   }, 0);
-  if (allDone && totalHours >= targetHours) return 'completed';
+  if (totalHours >= targetHours) return 'completed';
   return 'in_progress';
 }
 
