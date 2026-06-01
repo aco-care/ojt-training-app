@@ -24,17 +24,26 @@ export default async function OjtPlanDetailPage({ params }: OjtPlanDetailPagePro
 
   const typedProfile = profile as Profile;
 
-  const { data: plan } = await supabase
-    .from('ojt_plans')
-    .select(`
-      *,
-      worker:foreign_workers(id, name, profile_id),
-      ojt_user:ojt_users(id, user_initial, ojt_status),
-      companion:profiles!ojt_plans_companion_id_fkey(id, name),
-      creator:profiles!ojt_plans_created_by_fkey(id, name)
-    `)
-    .eq('id', planId)
-    .single();
+  const [{ data: plan }, { data: staffData }] = await Promise.all([
+    supabase
+      .from('ojt_plans')
+      .select(`
+        *,
+        worker:foreign_workers(id, name, profile_id),
+        ojt_user:ojt_users(id, user_initial, ojt_status),
+        companion:profiles!ojt_plans_companion_id_fkey(id, name),
+        creator:profiles!ojt_plans_created_by_fkey(id, name)
+      `)
+      .eq('id', planId)
+      .single(),
+    supabase
+      .from('profiles')
+      .select('id, name')
+      .in('role', ['trainer', 'supervisor', 'admin'])
+      .eq('is_archived', false)
+      .order('name'),
+  ]);
+  const staffList = (staffData ?? []) as { id: string; name: string }[];
 
   if (!plan) notFound();
 
@@ -48,6 +57,7 @@ export default async function OjtPlanDetailPage({ params }: OjtPlanDetailPagePro
   // Determine role in this plan
   type PlanRole = 'supervisor' | 'trainer' | 'worker' | 'viewer';
   let planRole: PlanRole = 'viewer';
+  const isAlsoTrainer = user.id === typedPlan.companion_id;
 
   if (typedProfile.role === 'admin' || typedProfile.role === 'supervisor') {
     planRole = 'supervisor';
@@ -68,6 +78,9 @@ export default async function OjtPlanDetailPage({ params }: OjtPlanDetailPagePro
           plan={typedPlan}
           planRole={planRole}
           currentUserId={user.id}
+          currentUserName={typedProfile.name}
+          isAlsoTrainer={isAlsoTrainer}
+          staffList={staffList}
         />
       </div>
     </div>

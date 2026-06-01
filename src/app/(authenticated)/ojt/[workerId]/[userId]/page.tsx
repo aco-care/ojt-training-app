@@ -4,7 +4,7 @@ import type { OjtUser, OjtRecord, OjtStep, Profile } from '@/lib/types';
 import { OJT_STEPS, EVAL_LABELS, OJT_STATUS_LABELS, displayName } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
-import RecordForm from './record-form';
+import Link from 'next/link';
 import WorkerSelfEdit from './worker-self-edit';
 
 interface OjtStepRecordPageProps {
@@ -272,16 +272,13 @@ export default async function OjtStepRecordPage({ params }: OjtStepRecordPagePro
           </div>
         </div>
 
-        {/* Add Record Button + Form */}
-        <div className="mb-6">
-          <RecordForm
-            workerId={workerId}
-            userId={userId}
-            currentStep={currentStepKey}
-            staff={staff}
-            isManager={isManagerRole}
-            ojtStatus={user.ojt_status}
-          />
+        {/* Guidance Banner */}
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <p className="text-sm font-medium text-green-800">OJT記録は予定管理から入力してください</p>
+          <p className="mt-1 text-xs text-green-600">予定を作成 → OJT実施 → 3者フロー入力で記録が登録されます</p>
+          <Link href="/schedule" className="mt-2 inline-block rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">
+            予定管理へ
+          </Link>
         </div>
 
         {/* Record History */}

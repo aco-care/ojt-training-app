@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { CancelHistoryEntry } from '@/lib/types';
+import { writeAuditLog, formatDateShort } from '@/lib/audit-log';
+import { todayKey } from '@/lib/date-utils';
 
 interface CancelPlanModalProps {
   planId: string;
@@ -11,6 +13,7 @@ interface CancelPlanModalProps {
   currentHistory: CancelHistoryEntry[];
   currentUserId: string;
   currentUserName: string;
+  workerName: string;
   currentDate: string;
   onClose: () => void;
 }
@@ -21,6 +24,7 @@ export default function CancelPlanModal({
   currentHistory,
   currentUserId,
   currentUserName,
+  workerName,
   currentDate,
   onClose,
 }: CancelPlanModalProps) {
@@ -76,6 +80,28 @@ export default function CancelPlanModal({
     if (e) {
       setError(`保存に失敗しました: ${e.message}`);
       return;
+    }
+
+    if (action === 'cancel') {
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'cancel',
+        targetTable: tableName,
+        targetId: planId,
+        targetLabel: workerName,
+        description: `${workerName}の予定をキャンセルしました（理由: ${reason.trim()}）`,
+      });
+    } else {
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'update',
+        targetTable: tableName,
+        targetId: planId,
+        targetLabel: workerName,
+        description: `${workerName}の予定を ${formatDateShort(currentDate)} → ${formatDateShort(newDate)} に延期しました`,
+      });
     }
 
     onClose();
@@ -135,7 +161,7 @@ export default function CancelPlanModal({
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               required
-              min={new Date().toISOString().split('T')[0]}
+              min={todayKey()}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
           </div>

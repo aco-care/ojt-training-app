@@ -1,18 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ResetPasswordDialogProps {
   userId: string;
   userName: string;
+  defaultOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function ResetPasswordDialog({ userId, userName }: ResetPasswordDialogProps) {
-  const [open, setOpen] = useState(false);
+export default function ResetPasswordDialog({ userId, userName, defaultOpen = false, onClose }: ResetPasswordDialogProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      setOpen(true);
+      setPassword('');
+      setError('');
+      setSuccess(false);
+    }
+  }, [defaultOpen]);
+
+  const handleClose = () => {
+    setOpen(false);
+    onClose?.();
+  };
 
   const handleReset = async () => {
     if (password.length < 6) {
@@ -39,7 +55,7 @@ export default function ResetPasswordDialog({ userId, userName }: ResetPasswordD
 
     setSuccess(true);
     setTimeout(() => {
-      setOpen(false);
+      handleClose();
       setSuccess(false);
       setPassword('');
     }, 2000);
@@ -58,7 +74,7 @@ export default function ResetPasswordDialog({ userId, userName }: ResetPasswordD
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
       <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-semibold text-gray-900">パスワードリセット</h3>
         <p className="mt-1 text-sm text-gray-500">{userName} の新しいパスワードを設定</p>
@@ -91,7 +107,7 @@ export default function ResetPasswordDialog({ userId, userName }: ResetPasswordD
 
             <div className="mt-4 flex justify-end gap-2">
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 キャンセル

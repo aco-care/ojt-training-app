@@ -28,7 +28,8 @@ function formatDate(dateStr: string | null): string {
 }
 
 function today(): string {
-  return formatDate(new Date().toISOString());
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
 function ratingSymbol(rating: string | undefined): string {

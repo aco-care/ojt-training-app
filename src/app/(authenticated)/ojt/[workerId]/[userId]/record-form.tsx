@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { OjtStep, OjtResult, EvalRating, OjtStatus, Profile } from '@/lib/types';
 import { OJT_STEPS, CHECKLIST_ITEMS } from '@/lib/types';
+import { todayKey } from '@/lib/date-utils';
 
 interface RecordFormProps {
   workerId: string;
@@ -41,7 +42,7 @@ export default function RecordForm({
   const [error, setError] = useState<string | null>(null);
 
   const [step, setStep] = useState<OjtStep>(currentStep as OjtStep);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayKey());
   const [companionId, setCompanionId] = useState('');
   const [content, setContent] = useState('');
   const [checklistSelf, setChecklistSelf] = useState<EvalRating[]>(
@@ -58,7 +59,7 @@ export default function RecordForm({
 
   const resetForm = () => {
     setStep(currentStep as OjtStep);
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(todayKey());
     setCompanionId('');
     setContent('');
     setChecklistSelf(Array(CHECKLIST_ITEMS.length).fill('good'));

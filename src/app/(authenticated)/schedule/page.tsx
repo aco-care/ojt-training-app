@@ -43,7 +43,7 @@ export default async function SchedulePage() {
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, target_sessions, target_hours, training_subtopics(id, title)')
+      .select('id, title, target_sessions, target_hours, training_subtopics(id, title, group_label, sort_order)')
       .order('sort_order'),
     supabase
       .from('ojt_users')
@@ -81,13 +81,15 @@ export default async function SchedulePage() {
   })[];
 
   const workers = (workersData ?? []) as { id: string; name: string }[];
-  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; target_hours: number; training_subtopics: { id: string; title: string }[] }[];
+  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; target_hours: number; training_subtopics: { id: string; title: string; group_label: string | null; sort_order: number }[] }[];
   const trainingItems = rawItems.map((item) => ({
     id: item.id,
     title: item.title,
     target_sessions: item.target_sessions,
     target_hours: item.target_hours,
-    subtopics: item.training_subtopics ?? [],
+    subtopics: (item.training_subtopics ?? [])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((st) => ({ id: st.id, title: st.title, groupLabel: st.group_label })),
   }));
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   const staffList = (staffData ?? []) as { id: string; name: string; role: string; qualification: string }[];
@@ -183,6 +185,7 @@ export default async function SchedulePage() {
             subtopics: (item.subtopics ?? []).map((st) => ({
               id: st.id,
               title: st.title,
+              groupLabel: st.groupLabel ?? null,
             })),
           }))}
           ojtUsers={ojtUsers}
@@ -191,6 +194,7 @@ export default async function SchedulePage() {
           sessionCountByWorkerItem={sessionCountByWorkerItem}
           hoursByWorkerItem={hoursByWorkerItem}
           currentUserId={user.id}
+          currentUserName={profile.name}
           currentUserRole={userRole}
           canCreate={canCreate}
         />

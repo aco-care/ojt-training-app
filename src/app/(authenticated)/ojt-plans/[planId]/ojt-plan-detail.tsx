@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { OjtPlan, EvalRating } from '@/lib/types';
 import { OJT_STEPS, CHECKLIST_ITEMS } from '@/lib/types';
 import CancelPlanModal from '@/components/cancel-plan-modal';
+import { writeAuditLog, formatDateShort } from '@/lib/audit-log';
 
 interface OjtPlanDetailProps {
   plan: OjtPlan & {
@@ -16,6 +17,9 @@ interface OjtPlanDetailProps {
   };
   planRole: 'supervisor' | 'trainer' | 'worker' | 'viewer';
   currentUserId: string;
+  currentUserName: string;
+  isAlsoTrainer: boolean;
+  staffList: { id: string; name: string }[];
 }
 
 const EVAL_OPTIONS: { value: EvalRating; label: string }[] = [
@@ -33,7 +37,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
 }
 
-export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlanDetailProps) {
+export default function OjtPlanDetail({ plan, planRole, currentUserId, currentUserName, isAlsoTrainer, staffList }: OjtPlanDetailProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +48,8 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
   const [editStartTime, setEditStartTime] = useState(plan.start_time ?? '');
   const [editEndTime, setEditEndTime] = useState(plan.end_time ?? '');
   const [editBreak, setEditBreak] = useState(plan.break_minutes ?? 0);
+  const [editCompanionId, setEditCompanionId] = useState(plan.companion_id);
+  const [editStep, setEditStep] = useState(plan.step ?? '');
 
   const saveEdit = async () => {
     setLoading(true); setError('');
@@ -53,9 +59,29 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
       start_time: editStartTime || null,
       end_time: editEndTime || null,
       break_minutes: editBreak,
+      companion_id: editCompanionId,
+      step: editStep || null,
     }).eq('id', plan.id);
     setLoading(false);
     if (e) { setError(e.message); return; }
+    const stepLabel = getStepLabel(plan.step ?? '');
+    const changes: string[] = [];
+    if (editDate !== plan.planned_date) changes.push(`予定日を ${formatDateShort(plan.planned_date)} → ${formatDateShort(editDate)} に変更`);
+    if (editStartTime !== (plan.start_time ?? '')) changes.push(`開始時間を変更`);
+    if (editEndTime !== (plan.end_time ?? '')) changes.push(`終了時間を変更`);
+    if (editCompanionId !== plan.companion_id) {
+      const newName = staffList.find((s) => s.id === editCompanionId)?.name ?? '';
+      changes.push(`同行者を ${plan.companion.name} → ${newName} に変更`);
+    }
+    if (editStep !== (plan.step ?? '')) changes.push(`ステップを ${stepLabel} → ${getStepLabel(editStep)} に変更`);
+    if (changes.length > 0) {
+      writeAuditLog({
+        actorId: currentUserId, actorName: currentUserName,
+        action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+        targetLabel: plan.worker.name,
+        description: `${plan.worker.name}のOJT予定（${stepLabel}）を編集: ${changes.join('、')}`,
+      });
+    }
     setEditing(false);
     setSuccess('予定を更新しました');
     router.refresh();
@@ -89,7 +115,19 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
   const supervisorDone = !!plan.supervisor_completed_at;
   const bothDone = trainerDone && workerDone;
 
+  // Check if current time is before planned end time
+  const isBeforeEndTime = () => {
+    if (!plan.end_time || !plan.planned_date) return false;
+    const now = new Date();
+    const endDateTime = new Date(`${plan.planned_date}T${plan.end_time}`);
+    return now < endDateTime;
+  };
+
   const saveTrainer = async () => {
+    if (isBeforeEndTime()) {
+      setError(`研修終了時間（${plan.end_time?.slice(0, 5)}）以降に入力してください`);
+      return;
+    }
     setLoading(true); setError('');
     const supabase = createClient();
     const { error: e } = await supabase.from('ojt_plans').update({
@@ -98,15 +136,43 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
       trainer_custom_content: trainerCustom.trim() || null,
       trainer_completed_at: new Date().toISOString(),
       result: trainerResult,
-      status: plan.worker_completed_at ? 'completed' : 'in_progress',
+      status: 'in_progress',
     }).eq('id', plan.id);
     setLoading(false);
     if (e) { setError(e.message); return; }
+    writeAuditLog({
+      actorId: currentUserId, actorName: currentUserName,
+      action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+      targetLabel: plan.worker.name,
+      description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）に同行者入力を完了`,
+    });
+    if (plan.worker_completed_at) {
+      const { data: supervisors } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('role', ['admin', 'supervisor'])
+        .eq('is_archived', false);
+      if (supervisors && supervisors.length > 0) {
+        await supabase.from('notifications').insert(
+          supervisors.map((s) => ({
+            user_id: s.id,
+            title: 'OJT記録の確認依頼',
+            message: `${plan.worker.name}のOJT（${getStepLabel(plan.step ?? '')}）の同行者・本人入力が完了しました。確認・承認をお願いします。`,
+            is_read: false,
+            link: `/ojt-plans/${plan.id}`,
+          }))
+        );
+      }
+    }
     setSuccess('同行者の入力を保存しました');
     router.refresh();
   };
 
   const saveWorker = async () => {
+    if (isBeforeEndTime()) {
+      setError(`研修終了時間（${plan.end_time?.slice(0, 5)}）以降に入力してください`);
+      return;
+    }
     setLoading(true); setError('');
     const supabase = createClient();
     const { error: e } = await supabase.from('ojt_plans').update({
@@ -114,10 +180,34 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
       worker_comment: workerComment.trim() || null,
       worker_custom_content: workerCustom.trim() || null,
       worker_completed_at: new Date().toISOString(),
-      status: plan.trainer_completed_at ? 'completed' : 'in_progress',
+      status: 'in_progress',
     }).eq('id', plan.id);
     setLoading(false);
     if (e) { setError(e.message); return; }
+    writeAuditLog({
+      actorId: currentUserId, actorName: currentUserName,
+      action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+      targetLabel: plan.worker.name,
+      description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）に本人入力を完了`,
+    });
+    if (plan.trainer_completed_at) {
+      const { data: supervisors } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('role', ['admin', 'supervisor'])
+        .eq('is_archived', false);
+      if (supervisors && supervisors.length > 0) {
+        await supabase.from('notifications').insert(
+          supervisors.map((s) => ({
+            user_id: s.id,
+            title: 'OJT記録の確認依頼',
+            message: `${plan.worker.name}のOJT（${getStepLabel(plan.step ?? '')}）の同行者・本人入力が完了しました。確認・承認をお願いします。`,
+            is_read: false,
+            link: `/ojt-plans/${plan.id}`,
+          }))
+        );
+      }
+    }
     setSuccess('本人の入力を保存しました');
     router.refresh();
   };
@@ -134,8 +224,121 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
     }).eq('id', plan.id);
     setLoading(false);
     if (e) { setError(e.message); return; }
+    // Auto-create ojt_record from 3-step flow
+    if (plan.ojt_user_id) {
+      const { data: existingRecord } = await supabase
+        .from('ojt_records')
+        .select('id')
+        .eq('ojt_plan_id', plan.id)
+        .maybeSingle();
+      if (!existingRecord) {
+        // Calculate attempt number
+        const { count } = await supabase
+          .from('ojt_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('ojt_user_id', plan.ojt_user_id)
+          .eq('step', plan.step);
+        await supabase.from('ojt_records').insert({
+          worker_id: plan.worker_id,
+          ojt_user_id: plan.ojt_user_id,
+          step: plan.step,
+          attempt_number: (count ?? 0) + 1,
+          date: plan.planned_date,
+          companion_id: plan.companion_id,
+          content: plan.trainer_custom_content ?? '',
+          checklist_self: plan.worker_eval ? Object.values(plan.worker_eval as Record<string, string>) : [],
+          checklist_trainer: plan.trainer_eval ? Object.values(plan.trainer_eval as Record<string, string>) : [],
+          result: plan.result ?? 'pass',
+          manager_comment: plan.supervisor_comment_to_worker ?? null,
+          worker_comment: plan.worker_comment ?? null,
+          notes: '3者フローより自動登録',
+          ojt_plan_id: plan.id,
+        });
+      }
+    }
+
+    writeAuditLog({
+      actorId: currentUserId, actorName: currentUserName,
+      action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+      targetLabel: plan.worker.name,
+      description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）に指導責任者フィードバックを完了`,
+    });
     setSuccess('フィードバックを保存しました');
     router.refresh();
+  };
+
+  // Format completion datetime
+  const fmtDateTime = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  // Check early completion
+  const isEarlyCompletion = (completedAt: string | null) => {
+    if (!completedAt || !plan.end_time || !plan.planned_date) return false;
+    const completed = new Date(completedAt);
+    const endDateTime = new Date(`${plan.planned_date}T${plan.end_time}`);
+    return completed < endDateTime;
+  };
+
+  // Undo trainer (companion) completion
+  const undoTrainerCompletion = async () => {
+    if (!confirm('同行者の入力を取り消しますか？入力内容はリセットされます。')) return;
+    setLoading(true);
+    const supabase = createClient();
+    const newHistory1 = [
+      ...(plan.cancel_history ?? []),
+      { date: new Date().toISOString(), action: 'undo_trainer', reason: '同行者の記録入力を取り消し', by: currentUserId, byName: currentUserName },
+    ];
+    const { error: e } = await supabase.from('ojt_plans').update({
+      trainer_completed_at: null,
+      trainer_eval: null,
+      trainer_comment: null,
+      trainer_custom_content: null,
+      result: null,
+      status: 'scheduled',
+      cancel_history: newHistory1,
+    }).eq('id', plan.id);
+    setLoading(false);
+    if (e) { setError(e.message); return; }
+    writeAuditLog({
+      actorId: currentUserId, actorName: currentUserName,
+      action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+      targetLabel: plan.worker.name,
+      description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）の同行者記録入力を取り消し`,
+    });
+    setSuccess('同行者の入力を取り消しました');
+    window.location.reload();
+  };
+
+  // Undo worker completion
+  const undoWorkerCompletion = async () => {
+    if (!confirm('本人の入力を取り消しますか？入力内容はリセットされます。')) return;
+    setLoading(true);
+    const supabase = createClient();
+    const newHistory2 = [
+      ...(plan.cancel_history ?? []),
+      { date: new Date().toISOString(), action: 'undo_worker', reason: '本人の記録入力を取り消し', by: currentUserId, byName: currentUserName },
+    ];
+    const { error: e } = await supabase.from('ojt_plans').update({
+      worker_completed_at: null,
+      worker_eval: null,
+      worker_comment: null,
+      worker_custom_content: null,
+      status: plan.trainer_completed_at ? 'in_progress' : 'scheduled',
+      cancel_history: newHistory2,
+    }).eq('id', plan.id);
+    setLoading(false);
+    if (e) { setError(e.message); return; }
+    writeAuditLog({
+      actorId: currentUserId, actorName: currentUserName,
+      action: 'update', targetTable: 'ojt_plans', targetId: plan.id,
+      targetLabel: plan.worker.name,
+      description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）の本人記録入力を取り消し`,
+    });
+    setSuccess('本人の入力を取り消しました');
+    window.location.reload();
   };
 
   function EvalSelector({ value, onChange }: { value: EvalRating | undefined; onChange: (v: EvalRating) => void }) {
@@ -208,6 +411,26 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
                   className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
               </div>
             </div>
+            {/* Companion selector */}
+            <div>
+              <label className="text-xs text-gray-500">同行者</label>
+              <select value={editCompanionId} onChange={(e) => setEditCompanionId(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+                {staffList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            {/* Step selector */}
+            <div>
+              <label className="text-xs text-gray-500">OJTステップ</label>
+              <select value={editStep} onChange={(e) => setEditStep(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+                {OJT_STEPS.map((s) => (
+                  <option key={s.step} value={s.step}>{s.number} {s.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2">
               <button onClick={() => setEditing(false)} className="rounded px-3 py-1 text-xs text-gray-600 hover:bg-gray-100">キャンセル</button>
               <button onClick={saveEdit} disabled={loading} className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50">
@@ -218,15 +441,53 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
         )}
 
         <div className="mt-4 flex items-center gap-1">
-          <div className={`flex-1 h-2 rounded-full ${trainerDone ? 'bg-green-400' : 'bg-gray-200'}`} />
-          <div className={`flex-1 h-2 rounded-full ${workerDone ? 'bg-green-400' : 'bg-gray-200'}`} />
-          <div className={`flex-1 h-2 rounded-full ${supervisorDone ? 'bg-green-400' : 'bg-gray-200'}`} />
+          <div className={`flex-1 h-2 rounded-full ${plan.status === 'cancelled' ? 'bg-gray-200' : trainerDone ? 'bg-green-400' : 'bg-gray-200'}`} />
+          <div className={`flex-1 h-2 rounded-full ${plan.status === 'cancelled' ? 'bg-gray-200' : workerDone ? 'bg-green-400' : 'bg-gray-200'}`} />
+          <div className={`flex-1 h-2 rounded-full ${plan.status === 'cancelled' ? 'bg-gray-200' : supervisorDone ? 'bg-green-400' : 'bg-gray-200'}`} />
         </div>
-        <div className="mt-1 flex text-[10px] text-gray-400">
-          <span className="flex-1 text-center">{trainerDone ? '✓ 同行者' : '同行者未入力'}</span>
-          <span className="flex-1 text-center">{workerDone ? '✓ 本人' : '本人未入力'}</span>
-          <span className="flex-1 text-center">{supervisorDone ? '✓ FB済' : 'FB未'}</span>
-        </div>
+        {plan.status === 'cancelled' ? (
+          <p className="mt-1 text-center text-[10px] text-gray-400">この予定は取り消されました</p>
+        ) : (
+          <div className="mt-1 flex text-[10px] text-gray-400">
+            <span className="flex-1 text-center">{trainerDone ? '✓ 同行者' : '同行者未入力'}</span>
+            <span className="flex-1 text-center">{workerDone ? '✓ 本人' : '本人未入力'}</span>
+            <span className="flex-1 text-center">{supervisorDone ? '✓ 責任者確認済' : '責任者確認待ち'}</span>
+          </div>
+        )}
+
+        {/* Supervisor: completion details + undo + early warning (not shown for cancelled plans) */}
+        {planRole === 'supervisor' && plan.status !== 'cancelled' && (
+          <div className="mt-3 space-y-1.5 rounded-md border border-gray-100 bg-gray-50 p-2.5">
+            <div className="flex items-center justify-between">
+              <span className={`text-[11px] ${trainerDone ? 'text-green-700' : 'text-gray-400'}`}>
+                {trainerDone ? `✓ 同行者: ${fmtDateTime(plan.trainer_completed_at)}` : '同行者: 未入力'}
+              </span>
+              {trainerDone && !supervisorDone && (
+                <button onClick={undoTrainerCompletion} disabled={loading} className="text-[10px] font-medium text-red-500 hover:text-red-700 disabled:opacity-50">取り消す</button>
+              )}
+            </div>
+            {trainerDone && isEarlyCompletion(plan.trainer_completed_at) && (
+              <p className="text-[10px] text-amber-600">⚠ 予定終了時間（{plan.end_time?.slice(0, 5)}）より前に入力完了</p>
+            )}
+            <div className="flex items-center justify-between">
+              <span className={`text-[11px] ${workerDone ? 'text-green-700' : 'text-gray-400'}`}>
+                {workerDone ? `✓ 本人: ${fmtDateTime(plan.worker_completed_at)}` : '本人: 未入力'}
+              </span>
+              {workerDone && !supervisorDone && (
+                <button onClick={undoWorkerCompletion} disabled={loading} className="text-[10px] font-medium text-red-500 hover:text-red-700 disabled:opacity-50">取り消す</button>
+              )}
+            </div>
+            {workerDone && isEarlyCompletion(plan.worker_completed_at) && (
+              <p className="text-[10px] text-amber-600">⚠ 予定終了時間（{plan.end_time?.slice(0, 5)}）より前に入力完了</p>
+            )}
+            <div>
+              <span className={`text-[11px] ${supervisorDone ? 'text-green-700' : 'text-gray-400'}`}>
+                {supervisorDone ? `✓ 責任者確認: ${fmtDateTime(plan.supervisor_completed_at)}` : '責任者確認: 未'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {planRole === 'supervisor' && plan.status !== 'cancelled' && plan.status !== 'completed' && (
           <div className="mt-3">
             <button onClick={() => setShowCancel(true)} className="text-xs font-medium text-red-500 hover:text-red-700">
@@ -248,14 +509,15 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
           tableName="ojt_plans"
           currentHistory={[]}
           currentUserId={currentUserId}
-          currentUserName="管理者"
+          currentUserName={currentUserName}
+          workerName={plan.worker.name}
           currentDate={plan.planned_date}
           onClose={() => setShowCancel(false)}
         />
       )}
 
       {/* Trainer input */}
-      {planRole === 'trainer' && !trainerDone && (
+      {(planRole === 'trainer' || (planRole === 'supervisor' && isAlsoTrainer)) && !trainerDone && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h3 className="mb-3 text-sm font-semibold text-blue-800">同行者入力</h3>
           <p className="mb-3 text-xs text-blue-600">到達目標チェックシートに評価を入力してください。</p>
@@ -339,7 +601,7 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId }: OjtPlan
       )}
 
       {/* Waiting messages */}
-      {planRole === 'trainer' && trainerDone && !bothDone && (
+      {(planRole === 'trainer' || (planRole === 'supervisor' && isAlsoTrainer)) && trainerDone && !bothDone && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-center">
           <p className="text-sm text-gray-500">同行者の入力は完了しています。本人の入力を待っています。</p>
         </div>

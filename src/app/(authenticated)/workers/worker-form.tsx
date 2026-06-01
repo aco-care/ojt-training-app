@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { FacilityMultiSelect } from '@/components/facility-multi-select';
 import type { Qualification } from '@/lib/types';
 import { QUALIFICATION_LABELS } from '@/lib/types';
+import { writeAuditLog } from '@/lib/audit-log';
 
 const NATIONALITIES = [
   'ネパール',
@@ -22,9 +23,11 @@ const NATIONALITIES = [
 
 interface WorkerFormProps {
   facilities: { id: string; name: string }[];
+  currentUserId: string;
+  currentUserName: string;
 }
 
-export default function WorkerForm({ facilities }: WorkerFormProps) {
+export default function WorkerForm({ facilities, currentUserId, currentUserName }: WorkerFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,6 +106,16 @@ export default function WorkerForm({ facilities }: WorkerFormProps) {
       setError(`施設の紐付けに失敗しました: ${facilitiesError.message}`);
       return;
     }
+
+    writeAuditLog({
+      actorId: currentUserId,
+      actorName: currentUserName,
+      action: 'insert',
+      targetTable: 'foreign_workers',
+      targetId: inserted.id,
+      targetLabel: name.trim(),
+      description: `特定技能外国人「${name.trim()}」を登録しました`,
+    });
 
     resetForm();
     setOpen(false);

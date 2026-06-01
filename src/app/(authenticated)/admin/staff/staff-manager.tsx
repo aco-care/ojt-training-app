@@ -7,6 +7,7 @@ import type { Profile, UserRole, Qualification } from '@/lib/types';
 import { ROLE_LABELS, QUALIFICATION_LABELS } from '@/lib/types';
 import { FacilityMultiSelect } from '@/components/facility-multi-select';
 import { FacilityBadges } from '@/components/facility-badges';
+import { writeAuditLog, roleLabel, qualificationLabel } from '@/lib/audit-log';
 import ResetPasswordDialog from './reset-password-dialog';
 import AddFacilityDialog from './add-facility-dialog';
 
@@ -20,6 +21,8 @@ interface ProfileFacility {
 interface StaffManagerProps {
   profiles: (Profile & { facility: { id: string; name: string } | null; profile_facilities: ProfileFacility[] })[];
   facilities: { id: string; name: string }[];
+  currentUserId: string;
+  currentUserName: string;
 }
 
 const ROLES: UserRole[] = ['admin', 'trainer', 'supervisor', 'worker', 'executive'];
@@ -33,7 +36,7 @@ function qualificationBadgeColor(q: Qualification): string {
   }
 }
 
-export default function StaffManager({ profiles, facilities }: StaffManagerProps) {
+export default function StaffManager({ profiles, facilities, currentUserId, currentUserName }: StaffManagerProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,8 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
   const [editPrimaryFacilityId, setEditPrimaryFacilityId] = useState<string>('');
   const [editQualification, setEditQualification] = useState<Qualification>('none');
   const [showArchived, setShowArchived] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [resetPwProfile, setResetPwProfile] = useState<{ id: string; name: string } | null>(null);
 
   const activeProfiles = profiles.filter((p) => !p.is_archived);
   const archivedProfiles = profiles.filter((p) => p.is_archived);
@@ -122,6 +127,27 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
       }
     }
 
+    // Audit log: compare old vs new values
+    const target = profiles.find((p) => p.id === profileId);
+    if (target) {
+      const changes: string[] = [];
+      if (editName !== target.name) changes.push(`氏名を ${target.name} → ${editName} に変更`);
+      if (editRole !== target.role) changes.push(`役職を ${roleLabel(target.role)} → ${roleLabel(editRole)} に変更`);
+      const oldQual = (target as Profile).qualification ?? 'none';
+      if (editQualification !== oldQual) changes.push(`資格を ${qualificationLabel(oldQual)} → ${qualificationLabel(editQualification)} に変更`);
+      if (changes.length > 0) {
+        writeAuditLog({
+          actorId: currentUserId,
+          actorName: currentUserName,
+          action: 'update',
+          targetTable: 'profiles',
+          targetId: profileId,
+          targetLabel: target.name,
+          description: `${target.name}の${changes.join('、')}`,
+        });
+      }
+    }
+
     setLoading(null);
     setEditingId(null);
     router.refresh();
@@ -150,6 +176,23 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
     if (updateError) {
       setError(`${action}に失敗しました: ${updateError.message}`);
       return;
+    }
+
+    // Audit log
+    const target = profiles.find((p) => p.id === profileId);
+    if (target) {
+      const desc = currentlyArchived
+        ? `${target.name}を復元しました`
+        : `${target.name}を退職処理しました`;
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'archive',
+        targetTable: 'profiles',
+        targetId: profileId,
+        targetLabel: target.name,
+        description: desc,
+      });
     }
 
     router.refresh();
@@ -344,7 +387,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                       </div>
                       <p className="mt-0.5 text-xs text-gray-500">{profile.email}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
                           profile.is_archived ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'
                         }`}>
                           {ROLE_LABELS[profile.role]}
@@ -404,31 +447,38 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
           </div>
 
           {/* Desktop table */}
-          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm sm:block">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm sm:block">
+            <table className="w-full divide-y divide-gray-200 table-fixed text-xs">
+              <colgroup>
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '38%' }} />
+                <col style={{ width: '4%' }} />
+              </colgroup>
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">氏名</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">メール</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">役割</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">所属施設</th>
-                  <th scope="col" className="relative px-4 py-3"><span className="sr-only">操作</span></th>
+                  <th scope="col" className="px-2 py-2 text-left text-[11px] font-semibold text-gray-500">氏名</th>
+                  <th scope="col" className="px-2 py-2 text-left text-[11px] font-semibold text-gray-500">メール</th>
+                  <th scope="col" className="px-2 py-2 text-left text-[11px] font-semibold text-gray-500">役割</th>
+                  <th scope="col" className="px-2 py-2 text-left text-[11px] font-semibold text-gray-500">所属施設</th>
+                  <th scope="col" className="relative px-1 py-2"><span className="sr-only">操作</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {displayedProfiles.map((profile) => (
                   <tr key={profile.id} className={`transition-colors ${profile.is_archived ? 'bg-gray-50 opacity-75' : 'hover:bg-gray-50'}`}>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
+                    <td className="px-2 py-2 font-medium text-gray-900">
                       {editingId === profile.id ? (
                         <input
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
-                        <div className="flex items-center gap-2">
-                          {profile.name}
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span>{profile.name}</span>
                           {(profile as Profile).qualification && (profile as Profile).qualification !== 'none' && (
                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${qualificationBadgeColor((profile as Profile).qualification)}`}>
                               {QUALIFICATION_LABELS[(profile as Profile).qualification]}
@@ -440,19 +490,19 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         </div>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                    <td className="px-2 py-2 text-gray-500 break-all">
                       {editingId === profile.id ? (
                         <input
                           type="email"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
                         profile.email
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm">
+                    <td className="px-2 py-2">
                       {editingId === profile.id ? (
                         <div className="space-y-1">
                           <select
@@ -475,14 +525,14 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           </select>
                         </div>
                       ) : (
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
                           profile.is_archived ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'
                         }`}>
                           {ROLE_LABELS[profile.role]}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-2 py-2 text-gray-500">
                       {editingId === profile.id ? (
                         <div>
                           <div className="flex items-center justify-between mb-1">
@@ -500,7 +550,7 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                         <FacilityBadges facilities={getBadgesData(profile.profile_facilities ?? [])} />
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+                    <td className="px-1 py-2 text-right">
                       {editingId === profile.id ? (
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -520,48 +570,35 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-end gap-3">
-                          {!profile.is_archived && (
-                            <>
-                              <ResetPasswordDialog userId={profile.id} userName={profile.name} />
-                              <button
-                                type="button"
-                                onClick={() => resendInvite(profile.email)}
-                                className="text-xs font-medium text-green-600 hover:text-green-800"
-                              >
-                                招待再送
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => startEdit(profile)}
-                                className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                              >
-                                編集
-                              </button>
-                            </>
-                          )}
-                          <span className="mx-1 text-gray-200">|</span>
+                        <div className="relative">
                           <button
                             type="button"
-                            onClick={() => toggleArchive(profile.id, profile.is_archived)}
-                            disabled={loading === profile.id}
-                            className={`text-xs font-medium ${
-                              profile.is_archived
-                                ? 'text-green-600 hover:text-green-800'
-                                : 'text-red-500 hover:text-red-700'
-                            } disabled:opacity-50`}
+                            onClick={() => setMenuOpenId(menuOpenId === profile.id ? null : profile.id)}
+                            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            title="操作メニュー"
                           >
-                            {loading === profile.id ? '...' : profile.is_archived ? '復元' : '退職処理'}
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                            </svg>
                           </button>
-                          {!profile.is_archived && (
-                            <button
-                              type="button"
-                              onClick={() => toggleArchive(profile.id, false, '異動')}
-                              disabled={loading === profile.id}
-                              className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50"
-                            >
-                              異動処理
-                            </button>
+                          {menuOpenId === profile.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
+                              <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                                {!profile.is_archived && (
+                                  <>
+                                    <button type="button" onClick={() => { setMenuOpenId(null); startEdit(profile); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">編集</button>
+                                    <button type="button" onClick={() => { setMenuOpenId(null); resendInvite(profile.email); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">招待再送</button>
+                                    <button type="button" onClick={() => { setMenuOpenId(null); setResetPwProfile({ id: profile.id, name: profile.name }); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">PW変更</button>
+                                    <div className="my-1 border-t border-gray-100" />
+                                    <button type="button" onClick={() => { setMenuOpenId(null); toggleArchive(profile.id, false, '異動'); }} disabled={loading === profile.id} className="flex w-full px-3 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 disabled:opacity-50">異動処理</button>
+                                  </>
+                                )}
+                                <button type="button" onClick={() => { setMenuOpenId(null); toggleArchive(profile.id, profile.is_archived); }} disabled={loading === profile.id} className={`flex w-full px-3 py-2 text-left text-sm ${profile.is_archived ? 'text-green-600 hover:bg-green-50' : 'text-red-500 hover:bg-red-50'} disabled:opacity-50`}>
+                                  {loading === profile.id ? '処理中...' : profile.is_archived ? '復元' : '退職処理'}
+                                </button>
+                              </div>
+                            </>
                           )}
                         </div>
                       )}
@@ -572,6 +609,17 @@ export default function StaffManager({ profiles, facilities }: StaffManagerProps
             </table>
           </div>
         </>
+      )}
+
+      {/* PW reset dialog triggered from dropdown menu */}
+      {resetPwProfile && (
+        <ResetPasswordDialog
+          key={resetPwProfile.id}
+          userId={resetPwProfile.id}
+          userName={resetPwProfile.name}
+          defaultOpen
+          onClose={() => setResetPwProfile(null)}
+        />
       )}
     </>
   );

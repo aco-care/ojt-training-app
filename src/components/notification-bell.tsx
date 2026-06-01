@@ -138,7 +138,7 @@ export default function NotificationBell() {
                       >
                         {n.title}
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-gray-500 whitespace-pre-line">
                         {n.message}
                       </p>
                       <p className="mt-1 text-[10px] text-gray-400">

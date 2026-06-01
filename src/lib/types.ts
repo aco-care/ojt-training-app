@@ -272,6 +272,8 @@ export interface OjtPlan {
   supervisor_completed_at: string | null;
   supervisor_id: string | null;
   result: string | null;
+  cancel_reason: string | null;
+  cancel_history: CancelHistoryEntry[];
   created_at: string;
   updated_at: string;
 }
@@ -367,6 +369,7 @@ export interface Feedback {
   content: string;
   status: FeedbackStatus;
   admin_response: string | null;
+  image_url: string | null;
   resolved_by: string | null;
   resolved_at: string | null;
   created_at: string;

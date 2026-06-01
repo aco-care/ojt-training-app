@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { todayKey } from '@/lib/date-utils';
 import type { TrainingItem } from '@/lib/types';
 
 interface CreatePlanFormProps {
@@ -27,7 +28,7 @@ export default function CreatePlanForm({
   const [workerId, setWorkerId] = useState('');
   const [itemId, setItemId] = useState('');
   const [trainerId, setTrainerId] = useState('');
-  const [plannedDate, setPlannedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [plannedDate, setPlannedDate] = useState(todayKey());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [method, setMethod] = useState('対面');

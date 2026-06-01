@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSidebar } from './sidebar-context';
 
 type UserRole = 'admin' | 'trainer' | 'supervisor' | 'worker' | 'executive';
 
@@ -100,9 +101,10 @@ const navItems: NavItem[] = [
 ];
 
 export default function Sidebar({ currentPath, userRole }: SidebarProps) {
+  const { collapsed, toggle: toggleCollapsed } = useSidebar();
+
   const filteredItems = navItems.filter((item) => {
     if (item.adminOnly && userRole !== 'admin' && userRole !== 'supervisor') return false;
-    // Worker role: only show dashboard and help
     if (userRole === 'worker' && item.href !== '/' && item.href !== '/help') return false;
     return true;
   });
@@ -144,40 +146,74 @@ export default function Sidebar({ currentPath, userRole }: SidebarProps) {
       </nav>
 
       {/* Desktop left sidebar */}
-      <aside className="hidden md:flex md:w-60 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-white">
-        <div className="flex h-16 items-center px-4 border-b border-gray-200">
-          <h1 className="text-sm font-bold text-gray-900 leading-tight">
-            吉兆 研修・OJT
-            <br />
-            管理システム
-          </h1>
+      <aside
+        className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-white transition-all duration-200 ${
+          collapsed ? 'md:w-16' : 'md:w-60'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex h-16 items-center border-b border-gray-200 px-3">
+          {!collapsed && (
+            <h1 className="flex-1 text-sm font-bold text-gray-900 leading-tight">
+              吉兆 研修・OJT
+              <br />
+              管理システム
+            </h1>
+          )}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className={`rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors ${
+              collapsed ? 'mx-auto' : ''
+            }`}
+            title={collapsed ? 'メニューを開く' : 'メニューを閉じる'}
+          >
+            {collapsed ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Navigation */}
         <nav className="flex-1 px-2 py-4 space-y-1">
           {filteredItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                collapsed ? 'justify-center' : ''
+              } ${
                 isActive(item.href)
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
               }`}
+              title={collapsed ? item.label : undefined}
             >
               <span
-                className={
+                className={`flex-shrink-0 ${
                   isActive(item.href) ? 'text-blue-600' : 'text-gray-400'
-                }
+                }`}
               >
                 {item.icon}
               </span>
-              {item.label}
+              {!collapsed && item.label}
             </Link>
           ))}
         </nav>
-        <div className="mt-auto border-t border-gray-200 px-4 py-3 text-center">
-          <p className="text-[10px] text-gray-400">Powered by ACO_care</p>
-          <p className="text-[10px] text-gray-300">CHAOS合同会社</p>
-        </div>
+
+        {/* Footer */}
+        {!collapsed && (
+          <div className="mt-auto border-t border-gray-200 px-4 py-3 text-center">
+            <p className="text-[10px] text-gray-400">Powered by ACO_care</p>
+            <p className="text-[10px] text-gray-300">CHAOS合同会社</p>
+          </div>
+        )}
       </aside>
     </>
   );

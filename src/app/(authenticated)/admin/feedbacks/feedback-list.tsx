@@ -84,10 +84,14 @@ export default function FeedbackList({
       if (error) throw error;
 
       // Notify the feedback sender
+      const statusText = `あなたの${FEEDBACK_CATEGORY_LABELS[modalFeedback.category]}フィードバックのステータスが「${FEEDBACK_STATUS_LABELS[modalStatus]}」に変更されました`;
+      const responseText = adminResponse.trim()
+        ? `\n【対応内容】${adminResponse.trim()}`
+        : '';
       await supabase.from('notifications').insert({
         user_id: modalFeedback.sender_id,
         title: 'フィードバックが更新されました',
-        message: `あなたの${FEEDBACK_CATEGORY_LABELS[modalFeedback.category]}フィードバックのステータスが「${FEEDBACK_STATUS_LABELS[modalStatus]}」に変更されました`,
+        message: statusText + responseText,
         is_read: false,
         link: null,
       });
@@ -178,6 +182,11 @@ export default function FeedbackList({
                   <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
                     {fb.content}
                   </p>
+                  {fb.image_url && (
+                    <a href={fb.image_url} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                      <img src={fb.image_url} alt="添付画像" className="max-h-40 rounded-lg border border-gray-200 object-cover hover:opacity-80 transition-opacity" />
+                    </a>
+                  )}
                   {fb.admin_response && (
                     <div className="mt-2 rounded bg-blue-50 p-2">
                       <p className="text-xs font-medium text-blue-800">

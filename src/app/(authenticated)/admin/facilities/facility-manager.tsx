@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Facility } from '@/lib/types';
+import { writeAuditLog } from '@/lib/audit-log';
 
 interface FacilityManagerProps {
   facilities: Facility[];
+  currentUserId: string;
+  currentUserName: string;
 }
 
 interface FacilityFormData {
@@ -38,7 +41,7 @@ const FACILITY_TYPES = [
 
 const emptyForm: FacilityFormData = { name: '', address: '', type: '' };
 
-export default function FacilityManager({ facilities }: FacilityManagerProps) {
+export default function FacilityManager({ facilities, currentUserId, currentUserName }: FacilityManagerProps) {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Facility | null>(null);
@@ -100,16 +103,38 @@ export default function FacilityManager({ facilities }: FacilityManagerProps) {
         setLoading(false);
         return;
       }
+
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'update',
+        targetTable: 'facilities',
+        targetId: editing.id,
+        targetLabel: payload.name,
+        description: `施設「${payload.name}」を編集しました`,
+      });
     } else {
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('facilities')
-        .insert(payload);
+        .insert(payload)
+        .select('id')
+        .single();
 
       if (insertError) {
         setError(`登録に失敗しました: ${insertError.message}`);
         setLoading(false);
         return;
       }
+
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'insert',
+        targetTable: 'facilities',
+        targetId: inserted?.id ?? '',
+        targetLabel: payload.name,
+        description: `施設「${payload.name}」を登録しました`,
+      });
     }
 
     setLoading(false);
@@ -132,6 +157,19 @@ export default function FacilityManager({ facilities }: FacilityManagerProps) {
     if (deleteError) {
       setError(`削除に失敗しました: ${deleteError.message}`);
       return;
+    }
+
+    const deletedFacility = facilities.find((f) => f.id === facilityId);
+    if (deletedFacility) {
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'delete',
+        targetTable: 'facilities',
+        targetId: facilityId,
+        targetLabel: deletedFacility.name,
+        description: `施設「${deletedFacility.name}」を削除しました`,
+      });
     }
 
     router.refresh();

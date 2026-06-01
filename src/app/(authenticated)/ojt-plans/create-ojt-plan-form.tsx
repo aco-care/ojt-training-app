@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { OJT_STEPS } from '@/lib/types';
+import { todayKey } from '@/lib/date-utils';
 
 interface CreateOjtPlanFormProps {
   workers: { id: string; name: string }[];
@@ -28,7 +29,7 @@ export default function CreateOjtPlanForm({
   const [ojtUserId, setOjtUserId] = useState('');
   const [step, setStep] = useState('');
   const [companionId, setCompanionId] = useState('');
-  const [plannedDate, setPlannedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [plannedDate, setPlannedDate] = useState(todayKey());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [breakMinutes, setBreakMinutes] = useState(0);

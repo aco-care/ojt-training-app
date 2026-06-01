@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Qualification } from '@/lib/types';
 import { QUALIFICATION_LABELS } from '@/lib/types';
+import { writeAuditLog, qualificationLabel } from '@/lib/audit-log';
 
 interface EditQualificationProps {
   workerId: string;
   currentQualification: Qualification;
+  currentUserId: string;
+  currentUserName: string;
+  workerName: string;
 }
 
 function qualificationBadgeColor(q: Qualification): string {
@@ -19,7 +23,7 @@ function qualificationBadgeColor(q: Qualification): string {
   }
 }
 
-export default function EditQualification({ workerId, currentQualification }: EditQualificationProps) {
+export default function EditQualification({ workerId, currentQualification, currentUserId, currentUserName, workerName }: EditQualificationProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [qualification, setQualification] = useState<Qualification>(currentQualification);
@@ -39,6 +43,17 @@ export default function EditQualification({ workerId, currentQualification }: Ed
     if (updateError) {
       setError(`更新に失敗しました: ${updateError.message}`);
       return;
+    }
+    if (qualification !== currentQualification) {
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'update',
+        targetTable: 'foreign_workers',
+        targetId: workerId,
+        targetLabel: workerName,
+        description: `${workerName}の資格を ${qualificationLabel(currentQualification)} → ${qualificationLabel(qualification)} に変更しました`,
+      });
     }
     setEditing(false);
     router.refresh();

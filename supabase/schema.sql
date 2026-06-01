@@ -191,12 +191,12 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Profiles: users can read all, update own
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
-CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (id = auth.uid() OR get_user_role() = 'admin');
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (id = auth.uid() OR get_user_role() IN ('admin', 'supervisor'));
 CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (true);
 
 -- Facilities: read all, admin can modify
 CREATE POLICY "facilities_select" ON facilities FOR SELECT USING (true);
-CREATE POLICY "facilities_modify" ON facilities FOR ALL USING (get_user_role() = 'admin');
+CREATE POLICY "facilities_modify" ON facilities FOR ALL USING (get_user_role() IN ('admin', 'supervisor'));
 
 -- Training items/subtopics: read only (master data)
 CREATE POLICY "training_items_select" ON training_items FOR SELECT USING (true);
@@ -212,7 +212,7 @@ CREATE POLICY "sessions_insert" ON training_sessions FOR INSERT WITH CHECK (
   get_user_role() IN ('admin', 'trainer', 'supervisor')
 );
 CREATE POLICY "sessions_update" ON training_sessions FOR UPDATE USING (
-  trainer_id = auth.uid() OR get_user_role() = 'admin'
+  trainer_id = auth.uid() OR get_user_role() IN ('admin', 'supervisor')
 );
 
 -- Training approvals

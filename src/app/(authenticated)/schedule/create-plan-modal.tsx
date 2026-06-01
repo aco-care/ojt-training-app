@@ -5,16 +5,18 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { OJT_STEPS } from '@/lib/types';
 import type { CalendarEvent } from '@/lib/types';
+import { writeAuditLog, formatDateShort } from '@/lib/audit-log';
 
 interface CreatePlanModalProps {
   workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string }[] }[];
+  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string; groupLabel?: string | null }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string; qualification: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
   hoursByWorkerItem: Record<string, number>;
   currentUserId: string;
+  currentUserName: string;
   initialDate: string;
   duplicateSource?: CalendarEvent | null;
   onClose: () => void;
@@ -47,6 +49,7 @@ export default function CreatePlanModal({
   sessionCountByWorkerItem,
   hoursByWorkerItem,
   currentUserId,
+  currentUserName,
   initialDate,
   duplicateSource,
   onClose,
@@ -184,7 +187,7 @@ export default function CreatePlanModal({
     }
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from('training_plans').insert({
+    const { data: inserted, error: insertError } = await supabase.from('training_plans').insert({
       worker_id: workerId,
       item_id: itemId,
       trainer_id: trainerId,
@@ -195,12 +198,23 @@ export default function CreatePlanModal({
       end_time: endTime || null,
       method: method || null,
       break_minutes: breakMinutes,
-    });
+    }).select('id').single();
     setLoading(false);
     if (insertError) {
       setError(`作成に失敗しました: ${insertError.message}`);
       return;
     }
+    const workerName = workers.find((w) => w.id === workerId)?.name ?? '';
+    const itemTitle = trainingItems.find((i) => i.id === itemId)?.title ?? '';
+    writeAuditLog({
+      actorId: currentUserId,
+      actorName: currentUserName,
+      action: 'insert',
+      targetTable: 'training_plans',
+      targetId: inserted?.id ?? '',
+      targetLabel: workerName,
+      description: `${workerName}の研修予定（${itemTitle}）を ${formatDateShort(plannedDate)} に作成しました`,
+    });
     router.refresh();
     onClose();
   };
@@ -223,7 +237,7 @@ export default function CreatePlanModal({
     }
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from('ojt_plans').insert({
+    const { data: inserted, error: insertError } = await supabase.from('ojt_plans').insert({
       worker_id: workerId,
       ojt_user_id: ojtUserId || null,
       step,
@@ -233,19 +247,29 @@ export default function CreatePlanModal({
       start_time: startTime || null,
       end_time: endTime || null,
       break_minutes: breakMinutes,
-    });
+    }).select('id').single();
     setLoading(false);
     if (insertError) {
       setError(`作成に失敗しました: ${insertError.message}`);
       return;
     }
+    const workerName = workers.find((w) => w.id === workerId)?.name ?? '';
+    writeAuditLog({
+      actorId: currentUserId,
+      actorName: currentUserName,
+      action: 'insert',
+      targetTable: 'ojt_plans',
+      targetId: inserted?.id ?? '',
+      targetLabel: workerName,
+      description: `${workerName}のOJT予定を ${formatDateShort(plannedDate)} に作成しました`,
+    });
     router.refresh();
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
-      <div className="mx-auto w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 sm:p-4 sm:pt-8 sm:pb-8">
+      <div className="w-full min-h-full sm:min-h-0 sm:max-w-lg sm:rounded-xl bg-white p-4 sm:p-6 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -301,7 +325,7 @@ export default function CreatePlanModal({
 
         {/* Phase 2: Training form */}
         {planType === 'training' && (
-          <form onSubmit={handleSubmitTraining} className="space-y-4">
+          <form onSubmit={handleSubmitTraining} className="space-y-3">
             {/* Worker selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -491,24 +515,35 @@ export default function CreatePlanModal({
             {selectedItem && selectedItem.subtopics && selectedItem.subtopics.length > 0 && (
               <div>
                 <p className="mb-2 text-sm font-medium text-gray-700">予定サブトピック</p>
-                <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-2 space-y-1">
-                  {selectedItem.subtopics.map((st) => (
-                    <label
-                      key={st.id}
-                      className="flex items-center gap-2 cursor-pointer rounded px-2 py-1 hover:bg-gray-100"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSubtopics.includes(st.id)}
-                        onChange={() => toggleSubtopic(st.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                      />
-                      <span className="text-xs text-gray-700">{st.title}</span>
-                      {completedForWorker.includes(st.id) && (
-                        <span className="ml-auto text-[10px] text-green-600">完了済</span>
-                      )}
-                    </label>
-                  ))}
+                <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-2 space-y-0.5">
+                  {(() => {
+                    let lastGroup: string | null | undefined = undefined;
+                    return selectedItem.subtopics.map((st) => {
+                      const showGroup = st.groupLabel && st.groupLabel !== lastGroup;
+                      lastGroup = st.groupLabel;
+                      return (
+                        <div key={st.id}>
+                          {showGroup && (
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider pt-2 pb-0.5 px-2 border-b border-gray-200 mb-0.5">
+                              【{st.groupLabel}】
+                            </p>
+                          )}
+                          <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1 hover:bg-gray-100">
+                            <input
+                              type="checkbox"
+                              checked={selectedSubtopics.includes(st.id)}
+                              onChange={() => toggleSubtopic(st.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <span className="text-xs text-gray-700">{st.title}</span>
+                            {completedForWorker.includes(st.id) && (
+                              <span className="ml-auto text-[10px] text-green-600">完了済</span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
                 <button
                   type="button"
@@ -553,7 +588,7 @@ export default function CreatePlanModal({
 
         {/* Phase 2: OJT form */}
         {planType === 'ojt' && (
-          <form onSubmit={handleSubmitOjt} className="space-y-4">
+          <form onSubmit={handleSubmitOjt} className="space-y-3">
             {/* Worker selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700">

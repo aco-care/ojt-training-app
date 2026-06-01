@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import PageHeader from '@/components/page-header';
@@ -6,6 +7,15 @@ import CreateStaffForm from './create-staff-form';
 
 export default async function StaffPage() {
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .eq('id', user.id)
+    .single();
 
   const { data: profiles } = await supabase
     .from('profiles')
@@ -25,7 +35,7 @@ export default async function StaffPage() {
       <PageHeader title="スタッフ管理" subtitle={`${profileList.length}名のスタッフが登録されています`} />
       <div className="px-4 py-6 sm:px-6">
         <CreateStaffForm facilities={facilityList} />
-        <StaffManager profiles={profileList} facilities={facilityList} />
+        <StaffManager profiles={profileList} facilities={facilityList} currentUserId={user.id} currentUserName={currentProfile?.name ?? ''} />
       </div>
     </div>
   );

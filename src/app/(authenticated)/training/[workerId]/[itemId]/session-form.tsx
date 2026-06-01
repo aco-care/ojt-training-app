@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { TrainingSubtopic, TrainingFormat, Profile } from '@/lib/types';
 import { FORMAT_LABELS } from '@/lib/types';
+import { writeAuditLog } from '@/lib/audit-log';
+import { todayKey } from '@/lib/date-utils';
 
 interface SessionFormProps {
   workerId: string;
@@ -13,6 +15,10 @@ interface SessionFormProps {
   trainers: Pick<Profile, 'id' | 'name' | 'email' | 'role'>[];
   completedSubtopicIds: string[];
   facilities: { id: string; name: string }[];
+  currentUserId: string;
+  currentUserName: string;
+  workerName: string;
+  itemTitle: string;
 }
 
 const FORMAT_OPTIONS: { value: TrainingFormat; label: string }[] = [
@@ -23,8 +29,7 @@ const FORMAT_OPTIONS: { value: TrainingFormat; label: string }[] = [
 ];
 
 function getTodayString(): string {
-  const now = new Date();
-  return now.toISOString().slice(0, 10);
+  return todayKey();
 }
 
 export default function SessionForm({
@@ -34,6 +39,10 @@ export default function SessionForm({
   trainers,
   completedSubtopicIds,
   facilities,
+  currentUserId,
+  currentUserName,
+  workerName,
+  itemTitle,
 }: SessionFormProps) {
   const router = useRouter();
 
@@ -110,7 +119,7 @@ export default function SessionForm({
         }
       }
 
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('training_sessions')
         .insert({
           worker_id: workerId,
@@ -125,12 +134,24 @@ export default function SessionForm({
           custom_content: customContent.trim() || null,
           notes: notes.trim() || null,
           break_minutes: breakMinutes,
-        });
+        })
+        .select('id')
+        .single();
 
       if (insertError) {
         setError(`保存に失敗しました: ${insertError.message}`);
         return;
       }
+
+      writeAuditLog({
+        actorId: currentUserId,
+        actorName: currentUserName,
+        action: 'insert',
+        targetTable: 'training_sessions',
+        targetId: inserted?.id ?? '',
+        targetLabel: workerName,
+        description: `${workerName}の研修記録（${itemTitle}）を登録しました`,
+      });
 
       // Reset form
       setDate(getTodayString());

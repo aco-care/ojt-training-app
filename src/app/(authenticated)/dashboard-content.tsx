@@ -163,7 +163,7 @@ function FacilityFilter({
 
 function getGridClass(mode: ViewMode) {
   switch (mode) {
-    case 'grid': return 'grid grid-cols-2 gap-3';
+    case 'grid': return 'grid grid-cols-2 sm:grid-cols-3 gap-3';
     case 'columns': return 'grid grid-cols-1 sm:grid-cols-2 gap-3';
     case 'large': return 'grid grid-cols-1 gap-4';
     default: return 'space-y-2';

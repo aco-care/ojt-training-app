@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { OjtPlan, TrainingPlanStatus, UserRole } from '@/lib/types';
 import { OJT_STEPS, PLAN_STATUS_LABELS } from '@/lib/types';
 import CreateOjtPlanForm from './create-ojt-plan-form';
+import { todayKey } from '@/lib/date-utils';
 
 interface OjtPlanListProps {
   plans: (OjtPlan & {
@@ -48,7 +49,7 @@ export default function OjtPlanList({
   const [filter, setFilter] = useState<'all' | 'today' | 'upcoming' | 'completed'>('all');
   const [showCreate, setShowCreate] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayKey();
 
   const filtered = plans.filter((p) => {
     if (filter === 'today') return p.planned_date === today;

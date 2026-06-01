@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { CHECKLIST_ITEMS, EVAL_LABELS, type EvalRating } from '@/lib/types';
+import { todayKey } from '@/lib/date-utils';
 
 interface ExistingEvaluation {
   id: string;
@@ -84,7 +85,7 @@ export default function EvaluationForm({
 
     try {
       const supabase = createClient();
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayKey();
 
       if (existingEvaluation) {
         // Update existing evaluation

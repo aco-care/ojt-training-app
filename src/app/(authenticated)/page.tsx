@@ -776,6 +776,56 @@ export default async function DashboardPage() {
 
     const workerId = linkedWorker.id;
 
+    // Fetch upcoming plans for this worker (use JST for server-side date)
+    const nowJST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const todayStr = `${nowJST.getFullYear()}-${String(nowJST.getMonth() + 1).padStart(2, '0')}-${String(nowJST.getDate()).padStart(2, '0')}`;
+    const [{ data: workerTrainingPlans }, { data: workerOjtPlans }] = await Promise.all([
+      supabase
+        .from('training_plans')
+        .select('id, planned_date, start_time, end_time, status, item:training_items(id, title), trainer:profiles!training_plans_trainer_id_fkey(id, name)')
+        .eq('worker_id', workerId)
+        .gte('planned_date', todayStr)
+        .neq('status', 'cancelled')
+        .order('planned_date')
+        .limit(10),
+      supabase
+        .from('ojt_plans')
+        .select('id, planned_date, start_time, end_time, status, step, companion:profiles!ojt_plans_companion_id_fkey(id, name)')
+        .eq('worker_id', workerId)
+        .gte('planned_date', todayStr)
+        .neq('status', 'cancelled')
+        .order('planned_date')
+        .limit(10),
+    ]);
+
+    const upcomingPlans = [
+      ...(workerTrainingPlans ?? []).map((p) => ({
+        id: p.id,
+        type: 'training' as const,
+        date: p.planned_date,
+        startTime: p.start_time,
+        endTime: p.end_time,
+        status: p.status,
+        title: (p.item as unknown as { title: string })?.title ?? '研修',
+        trainerName: (p.trainer as unknown as { name: string })?.name ?? '',
+        detailUrl: `/training-plans/${p.id}`,
+      })),
+      ...(workerOjtPlans ?? []).map((p) => {
+        const stepInfo = OJT_STEPS.find((s) => s.step === p.step);
+        return {
+          id: p.id,
+          type: 'ojt' as const,
+          date: p.planned_date,
+          startTime: p.start_time,
+          endTime: p.end_time,
+          status: p.status,
+          title: `OJT ${stepInfo?.label ?? p.step}`,
+          trainerName: (p.companion as unknown as { name: string })?.name ?? '',
+          detailUrl: `/ojt-plans/${p.id}`,
+        };
+      }),
+    ].sort((a, b) => a.date.localeCompare(b.date));
+
     // Fetch training items and sessions
     const workerItems = items;
     const workerSessions = sessions.filter((s) => s.worker_id === workerId);
@@ -812,6 +862,55 @@ export default async function DashboardPage() {
               <p className="mt-1 text-2xl font-bold text-blue-600">{workerOjtUsers.length}</p>
             </div>
           </div>
+
+          {/* Upcoming schedule */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">今後の予定</h2>
+            {upcomingPlans.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-4 text-center">
+                <p className="text-sm text-gray-500">今後の予定はありません</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                {upcomingPlans.map((plan) => {
+                  const fmtTime = (t: string | null) => {
+                    if (!t) return '';
+                    const [h, m] = t.split(':');
+                    return `${parseInt(h, 10)}:${m}`;
+                  };
+                  const d = new Date(plan.date + 'T00:00:00');
+                  const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+                  const dateLabel = `${d.getMonth() + 1}/${d.getDate()}（${dayLabels[d.getDay()]}）`;
+                  return (
+                    <Link
+                      key={plan.id}
+                      href={plan.detailUrl}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                        plan.type === 'ojt' ? 'bg-green-500' : 'bg-blue-500'
+                      }`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{plan.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {dateLabel}
+                          {plan.startTime && plan.endTime ? ` ${fmtTime(plan.startTime)}〜${fmtTime(plan.endTime)}` : ''}
+                          {plan.trainerName ? ` / ${plan.trainerName}` : ''}
+                        </p>
+                      </div>
+                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        plan.status === 'completed' ? 'bg-green-100 text-green-700'
+                        : plan.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {plan.status === 'completed' ? '完了' : plan.status === 'in_progress' ? '入力中' : '予定'}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           {/* Training status */}
           <section>

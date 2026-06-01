@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { todayKey } from '@/lib/date-utils';
 
 interface OjtUserFormProps {
   workerId: string;
@@ -18,15 +19,13 @@ export default function OjtUserForm({ workerId, facilities }: OjtUserFormProps) 
   const [selectedFacilityId, setSelectedFacilityId] = useState(facilities[0]?.id ?? '');
   const [userInitial, setUserInitial] = useState('');
   const [visitFrequency, setVisitFrequency] = useState('1');
-  const [ojtStartDate, setOjtStartDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [ojtStartDate, setOjtStartDate] = useState(todayKey());
 
   const resetForm = () => {
     setSelectedFacilityId(facilities[0]?.id ?? '');
     setUserInitial('');
     setVisitFrequency('1');
-    setOjtStartDate(new Date().toISOString().split('T')[0]);
+    setOjtStartDate(todayKey());
     setError(null);
   };
 

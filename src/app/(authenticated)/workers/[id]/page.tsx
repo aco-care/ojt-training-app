@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession } from '@/lib/types';
 import { OJT_STATUS_LABELS } from '@/lib/types';
@@ -20,6 +20,9 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   const supabase = await createClient();
 
   // Fetch all data in parallel
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) redirect('/login');
+
   const [
     { data: worker },
     { data: allFacilitiesData },
@@ -28,6 +31,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
     { data: trainingSessions },
     { data: trainingApprovals },
     { data: ojtUsers },
+    { data: currentProfile },
   ] = await Promise.all([
     supabase
       .from('foreign_workers')
@@ -61,6 +65,11 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
       .select('id, worker_id, user_initial, visit_frequency, ojt_start_date, ojt_status, created_at')
       .eq('worker_id', id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('id', authUser.id)
+      .single(),
   ]);
 
   if (!worker) {
@@ -153,6 +162,9 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
             <EditQualification
               workerId={id}
               currentQualification={typedWorker.qualification ?? 'none'}
+              currentUserId={currentProfile?.id ?? ''}
+              currentUserName={currentProfile?.name ?? ''}
+              workerName={typedWorker.name}
             />
             <div>
               <dt className="text-xs font-medium text-gray-500">備考</dt>

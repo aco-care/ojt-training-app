@@ -1,0 +1,64 @@
+9c3a210 Initial commit from Create Next App
+634c8fb feat: OJT研修管理アプリ Phase 1 & 2 全機能実装
+b06779d fix: rename middleware.ts to proxy.ts for Next.js 16 compatibility
+6660ed5 fix: add missing index pages for /training, /ojt, /admin routes
+2a3812d fix: OJTステップ①追加・記録表示バグ修正・研修要件表記改善
+b154df8 fix: 研修要件の表記を「0.5時間/回 × 1回 = 合計0.5時間で完了」形式に修正
+3e5bb0c fix: OJT記録一覧が表示されないバグを修正
+69a57b1 feat: スタッフのアーカイブ（退職処理）機能を追加
+427d087 feat: スタッフ管理に「異動処理」ボタンを追加
+def6628 feat: スタッフ管理の所属施設セレクトに「+ 事業所を追加」リンクを追加
+7f01f45 fix: 「+ 事業所を追加」をモーダルダイアログに変更
+a0f927a feat: マルチ事業所（兼務）対応を実装
+b73b01f feat: 外国人詳細ページに所属施設の編集機能を追加
+238245b feat: ダッシュボードの視認性を大幅改善
+6fb56a9 feat: ダッシュボードUI改善 - OJTプログレスバー・外国人1本化・コンパクトレイアウト
+be02333 feat: ダッシュボード大幅改善 - 折りたたみ・OJTアラート・表示切替
+4ad4782 feat: OJT記録必須化・workerロール・本人コメント欄を追加
+5498463 feat: 外国人詳細ページに本人アカウント紐付けUIを追加
+6d2e755 feat: 用語統一・23名対応・3者フロー・サブトピック改修
+035007a perf: パフォーマンス改善 - クエリ最適化・インデックス・reload除去
+692550c feat: OJT予定管理を追加（3者フロー対応）
+02c8341 feat: 統合予定管理画面（カレンダー表示）を実装
+60f82a6 fix: 研修完了判定・プレースホルダー色・期間制限の修正
+1adf49d fix: 研修項目のsubtopicsリレーションクエリを修正
+01932d7 fix: training_subtopicsテーブル名をクエリで正しく指定
+726f884 feat: 研修予定作成の未完了パネルに必要時間・残り時間を表示
+267a5dd feat: 休憩時間（break_minutes）を全フォーム・時間計算に追加
+ec96d53 feat: 同一人物の研修時間重複を禁止
+c85c732 feat: 予定の編集・削除・複製機能を追加
+fbce280 fix: カレンダーの日付がタイムゾーンで1日ずれる問題を修正
+77a9c62 feat: スタッフ資格情報・フォーム視認性改善
+de650e8 fix: ダッシュボードのtraining_sessionsクエリにbreak_minutesを追加
+70857ae debug: add dashboard logging
+ce3cf7f fix: computeItemStatus堅牢化 + sessionsエラーログ追加
+e6a0545 debug: show dashboard data on page
+a879357 debug: show sessionsError in UI
+9c8326d fix: ダッシュボードのtraining_sessionsクエリから存在しないcompanion_idを除去
+4f7c99c fix: 全フォームの文字視認性を改善
+a7330c4 feat: 資格情報・権限変更・フィードバック・通知システム
+5ae5977 feat: 納品準備 - タイトル・パフォーマンス・ヘルプ・スキーマ統合
+ac58980 docs: CLAUDE.mdに次回作業メモ・UI改善メモを追加
+2c51f4b fix: 削除ボタン誤操作防止UI改善 + テストデータ削除完了メモ
+6c63795 docs: マニュアルを最新機能に対応して全面更新
+a872e16 docs: CLAUDE.md 完了タスクを更新
+8cdfd1e feat: スタッフ招待メールフローを実装
+8da05ac feat: ロール別ヘルプページ + worker RLSバグ修正
+2106de8 chore: 納品最終クリーンアップ
+9561076 docs: ロール別納品案内ガイドを作成
+c9a8a5a fix: 施設選択の文字視認性を改善
+a19601a feat: スタッフ編集で氏名・メールアドレスも変更可能に
+2088b36 docs: ガイドHTMLにQRコードとクリック可能URLを追加
+988aa1a feat: モバイルナビバー短縮 + PWA対応
+85f8eec feat: パスワード入力に表示/非表示トグルを追加
+583c714 feat: workerロール作成時にforeign_workersへ自動登録
+0e61f8c docs: 納品用の詳細権限表を作成
+04dae1c fix: 権限表ヘッダーに日本語ロール名を追記
+c69bf89 fix: 権限表の列揃え + 施設種別の選択肢を拡充
+5c8b2dc fix: 権限表ロール説明テーブルを全列左揃えに修正
+a2dfa70 fix: 退職済みスタッフ再登録時のデータ消失バグを修正 + 招待再送機能
+a0c1bcd fix: 招待再送APIを修正
+6d96201 fix: Auth Callbackでtoken_hash/typeフローに対応
+23a7dd9 fix: パスワードリセット/招待リンクからパスワード設定画面への遷移を修正
+470f8cb docs: CLAUDE.mdを最新状態に更新（引き継ぎ用）
+af9d8ff fix: OJT予定作成で対象外国人が表示されない問題を修正

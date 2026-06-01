@@ -9,10 +9,10 @@ import type {
   Profile,
 } from '@/lib/types';
 import { FORMAT_LABELS } from '@/lib/types';
+import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import ProgressBar from '@/components/progress-bar';
 import StatusBadge from '@/components/status-badge';
-import SessionForm from './session-form';
 import ApprovalAction from './approval-action';
 
 interface TrainingItemDetailPageProps {
@@ -337,19 +337,13 @@ export default async function TrainingItemDetailPage({
           )}
         </div>
 
-        {/* Session Form */}
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">
-            セッション追加
-          </h2>
-          <SessionForm
-            workerId={workerId}
-            itemId={itemId}
-            subtopics={subtopics}
-            trainers={trainers}
-            completedSubtopicIds={Array.from(completedSubtopicIds)}
-            facilities={workerFacilities}
-          />
+        {/* Guidance Banner */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-medium text-blue-800">研修記録は予定管理から入力してください</p>
+          <p className="mt-1 text-xs text-blue-600">予定を作成 → 研修実施 → 3者フロー入力で記録が登録されます</p>
+          <Link href="/schedule" className="mt-2 inline-block rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+            予定管理へ
+          </Link>
         </div>
       </div>
     </div>
