@@ -252,27 +252,34 @@ export default function ScheduleCalendar({
 
   // Compact event row for event list
   const renderEventRow = (event: CalendarEvent) => (
-    <Link
-      key={event.id}
-      href={event.detailUrl}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-gray-50 ${
-        event.status === 'cancelled' ? 'opacity-50' : ''
-      }`}
-    >
-      <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-        event.type === 'ojt' ? 'bg-green-500' : 'bg-blue-500'
-      } ${event.status === 'cancelled' ? 'bg-gray-300' : ''}`} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
-        <p className="text-xs text-gray-500">
-          {event.startTime && event.endTime ? `${fmtTime(event.startTime)}〜${fmtTime(event.endTime)}` : '終日'}
-          {' '}・ {event.workerName}
-        </p>
-      </div>
-      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeColor(event.status)}`}>
-        {PLAN_STATUS_LABELS[event.status] ?? event.status}
-      </span>
-    </Link>
+    <div key={event.id} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-gray-50 ${
+      event.status === 'cancelled' ? 'opacity-50' : ''
+    }`}>
+      <Link href={event.detailUrl} className="flex items-center gap-3 min-w-0 flex-1">
+        <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+          event.type === 'ojt' ? 'bg-green-500' : 'bg-blue-500'
+        } ${event.status === 'cancelled' ? 'bg-gray-300' : ''}`} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
+          <p className="text-xs text-gray-500">
+            {event.startTime && event.endTime ? `${fmtTime(event.startTime)}〜${fmtTime(event.endTime)}` : '終日'}
+            {' '}・ {event.workerName}
+          </p>
+        </div>
+        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeColor(event.status)}`}>
+          {PLAN_STATUS_LABELS[event.status] ?? event.status}
+        </span>
+      </Link>
+      {canCreate && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleArchivePlan(event); }}
+          className="flex-shrink-0 rounded border border-gray-200 bg-white px-2 py-1 text-[10px] font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+        >
+          アーカイブ
+        </button>
+      )}
+    </div>
   );
 
   return (
