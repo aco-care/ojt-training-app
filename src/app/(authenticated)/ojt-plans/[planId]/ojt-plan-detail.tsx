@@ -255,6 +255,9 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId, currentUs
           ojt_plan_id: plan.id,
         });
       }
+      // Update ojt_users.ojt_status based on step
+      const newStatus = plan.step === 'independent' ? 'completed' : 'in_progress';
+      await supabase.from('ojt_users').update({ ojt_status: newStatus }).eq('id', plan.ojt_user_id);
     }
 
     writeAuditLog({
