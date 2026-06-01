@@ -535,19 +535,20 @@ export default function PlanDetail({ plan, planRole, currentUserId, currentUserN
           </div>
         )}
 
-        {/* Archive button */}
+        {/* Archive/Delete button */}
         {planRole === 'supervisor' && (
           <div className="mt-3">
             <button
               onClick={async () => {
-                if (!confirm('この予定をアーカイブしますか？\nカレンダーから非表示になりますが、研修データは保持されます。')) return;
+                if (!confirm('この予定を削除しますか？\nカレンダーと進捗から削除されます。')) return;
                 const supabase = createClient();
+                await supabase.from('training_sessions').delete().eq('training_plan_id', plan.id);
                 await supabase.from('training_plans').update({ is_archived: true }).eq('id', plan.id);
                 router.push('/schedule');
               }}
-              className="text-xs font-medium text-gray-400 hover:text-red-600"
+              className="rounded border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
             >
-              アーカイブ
+              削除
             </button>
           </div>
         )}

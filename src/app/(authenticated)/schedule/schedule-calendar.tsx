@@ -153,11 +153,15 @@ export default function ScheduleCalendar({
   const weekDates = getWeekDates(currentDate);
 
   const handleArchivePlan = async (event: CalendarEvent) => {
-    if (!confirm(`「${event.title}」（${event.workerName}）をアーカイブしますか？\nカレンダーから非表示になりますが、研修データは保持されます。`)) return;
+    if (!confirm(`「${event.title}」（${event.workerName}）を削除しますか？\nカレンダーと進捗から削除されます。`)) return;
     const supabase = createClient();
-    const table = event.type === 'training' ? 'training_plans' : 'ojt_plans';
     const planId = event.detailUrl.split('/').pop();
-    await supabase.from(table).update({ is_archived: true }).eq('id', planId);
+    if (event.type === 'training') {
+      await supabase.from('training_sessions').delete().eq('training_plan_id', planId);
+      await supabase.from('training_plans').update({ is_archived: true }).eq('id', planId);
+    } else {
+      await supabase.from('ojt_plans').update({ is_archived: true }).eq('id', planId);
+    }
     router.refresh();
   };
 
@@ -242,7 +246,7 @@ export default function ScheduleCalendar({
               onClick={() => handleArchivePlan(event)}
               className="rounded px-1.5 py-1 text-[10px] font-medium text-gray-400 hover:bg-red-50 hover:text-red-600"
             >
-              アーカイブ
+              削除
             </button>
           </div>
         </div>
