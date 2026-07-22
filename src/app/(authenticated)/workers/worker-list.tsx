@@ -3,6 +3,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { FacilityBadges } from '@/components/facility-badges';
+import StatusBadge from '@/components/status-badge';
+import type { TrainingStatus } from '@/lib/types';
 
 type WorkerFacility = {
   id: string;
@@ -18,6 +20,7 @@ type Worker = {
   experience_years: number;
   facility: { id: string; name: string } | null;
   worker_facilities: WorkerFacility[];
+  status: TrainingStatus;
 };
 
 type Facility = { id: string; name: string };
@@ -166,30 +169,43 @@ export default function WorkerList({ workers, facilities }: WorkerListProps) {
           {/* Mobile cards */}
           <div className="space-y-3 sm:hidden">
             {displayed.map((worker) => (
-              <Link
+              <div
                 key={worker.id}
-                href={`/workers/${worker.id}`}
-                className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
               >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900">{worker.name}</p>
-                    <p className="mt-1 text-xs text-gray-500">{worker.nationality ?? '未設定'}</p>
+                <Link href={`/workers/${worker.id}`} className="block">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-gray-900">{worker.name}</p>
+                      <p className="mt-1 text-xs text-gray-500">{worker.nationality ?? '未設定'}</p>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <StatusBadge status={worker.status} />
+                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
                   </div>
-                  <svg className="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
+                      </svg>
+                      <FacilityBadges facilities={facilityBadges(worker.worker_facilities)} />
+                    </span>
+                    <span>経験 {worker.experience_years}年</span>
+                  </div>
+                </Link>
+                <Link
+                  href={`/export/${worker.id}`}
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="12" y2="18" /><line x1="15" y1="15" x2="12" y2="18" />
                   </svg>
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
-                    </svg>
-                    <FacilityBadges facilities={facilityBadges(worker.worker_facilities)} />
-                  </span>
-                  <span>経験 {worker.experience_years}年</span>
-                </div>
-              </Link>
+                  PDF出力
+                </Link>
+              </div>
             ))}
           </div>
 
@@ -202,7 +218,8 @@ export default function WorkerList({ workers, facilities }: WorkerListProps) {
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">国籍</th>
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">所属施設</th>
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">経験年数</th>
-                  <th scope="col" className="relative px-4 py-3"><span className="sr-only">詳細</span></th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ステータス</th>
+                  <th scope="col" className="relative px-4 py-3"><span className="sr-only">操作</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -214,10 +231,18 @@ export default function WorkerList({ workers, facilities }: WorkerListProps) {
                       <FacilityBadges facilities={facilityBadges(worker.worker_facilities)} />
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{worker.experience_years}年</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm">
+                      <StatusBadge status={worker.status} />
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                      <Link href={`/workers/${worker.id}`} className="font-medium text-blue-600 hover:text-blue-800">
-                        詳細
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/export/${worker.id}`} className="font-medium text-gray-500 hover:text-gray-700">
+                          PDF出力
+                        </Link>
+                        <Link href={`/workers/${worker.id}`} className="font-medium text-blue-600 hover:text-blue-800">
+                          詳細
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
