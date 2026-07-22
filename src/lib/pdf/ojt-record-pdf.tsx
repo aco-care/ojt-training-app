@@ -14,6 +14,13 @@ import {
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+interface MutualComments {
+  trainer_comment: string | null;
+  worker_comment: string | null;
+  supervisor_comment_to_trainer: string | null;
+  supervisor_comment_to_worker: string | null;
+}
+
 interface OjtRecordPDFProps {
   worker: { name: string; nationality: string | null; facility_name: string };
   ojtUser: {
@@ -34,8 +41,16 @@ interface OjtRecordPDFProps {
     result: string | null;
     manager_comment: string | null;
     notes: string | null;
+    comments?: MutualComments | null;
   }[];
 }
+
+const COMMENT_LABELS: { key: keyof MutualComments; label: string }[] = [
+  { key: 'trainer_comment', label: '指導者' },
+  { key: 'worker_comment', label: '本人' },
+  { key: 'supervisor_comment_to_trainer', label: '指導責任者（指導者へ）' },
+  { key: 'supervisor_comment_to_worker', label: '指導責任者（本人へ）' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -210,30 +225,50 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
             </View>
             {records.map((r, idx) => {
               const isLast = idx === records.length - 1;
+              const commentEntries = r.comments
+                ? COMMENT_LABELS
+                    .map(({ key, label }) => ({ label, text: r.comments?.[key] ?? null }))
+                    .filter((c): c is { label: string; text: string } => !!c.text)
+                : r.manager_comment
+                  ? [{ label: '指導責任者', text: r.manager_comment }]
+                  : [];
+              const isLastVisualRow = isLast && commentEntries.length === 0;
               return (
-                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
-                    <Text>{wrapCJK(r.step_label)}</Text>
+                <React.Fragment key={idx}>
+                  <View wrap={false} style={isLastVisualRow ? styles.tableRowLast : styles.tableRow}>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
+                      <Text>{wrapCJK(r.step_label)}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 20, textAlign: 'center' }]}>
+                      <Text>{r.attempt_number}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 68 }]}>
+                      <Text>{formatDate(r.date)}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 42 }]}>
+                      <Text>{r.companion_name ?? '―'}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
+                      <Text>{r.content ? wrapCJK(r.content) : '―'}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 34, textAlign: 'center' }]}>
+                      <Text>{resultLabel(r.result)}</Text>
+                    </View>
+                    <View style={[styles.tableCell, { width: 97 }]}>
+                      <Text>{wrapCJK(r.notes)}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 20, textAlign: 'center' }]}>
-                    <Text>{r.attempt_number}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 68 }]}>
-                    <Text>{formatDate(r.date)}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 42 }]}>
-                    <Text>{r.companion_name ?? '―'}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{r.content ? wrapCJK(r.content) : '―'}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 34, textAlign: 'center' }]}>
-                    <Text>{resultLabel(r.result)}</Text>
-                  </View>
-                  <View style={[styles.tableCell, { width: 97 }]}>
-                    <Text>{wrapCJK(r.notes)}</Text>
-                  </View>
-                </View>
+                  {commentEntries.length > 0 && (
+                    <View wrap={false} style={isLast ? styles.commentBlockLast : styles.commentBlock}>
+                      {commentEntries.map((c, i) => (
+                        <Text key={i} style={styles.commentLine}>
+                          <Text style={styles.bold}>{c.label}：</Text>
+                          {wrapCJK(c.text)}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </React.Fragment>
               );
             })}
           </View>

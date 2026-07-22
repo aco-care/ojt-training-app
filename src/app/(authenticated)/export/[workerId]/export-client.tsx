@@ -12,6 +12,13 @@ interface WorkerInfo {
   facility_name: string;
 }
 
+interface MutualComments {
+  trainer_comment: string | null;
+  worker_comment: string | null;
+  supervisor_comment_to_trainer: string | null;
+  supervisor_comment_to_worker: string | null;
+}
+
 interface TrainingItemData {
   item: {
     id: string;
@@ -28,6 +35,7 @@ interface TrainingItemData {
     format: string;
     completed_subtopics: string[];
     notes: string | null;
+    comments: MutualComments | null;
   }[];
   approval: { approved_by_name: string; approved_at: string } | null;
 }
@@ -52,6 +60,7 @@ interface OjtUserData {
     result: string | null;
     manager_comment: string | null;
     notes: string | null;
+    comments: MutualComments | null;
   }[];
 }
 

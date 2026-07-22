@@ -56,7 +56,26 @@ export default async function ExportPage({ params }: ExportPageProps) {
 
   const sessions = (trainingSessions ?? []) as (TrainingSession & {
     trainer: { id: string; name: string } | null;
+    training_plan_id: string | null;
   })[];
+
+  // Fetch 3-party flow comments (trainer/worker/supervisor) for linked training plans
+  const trainingPlanIds = [...new Set(sessions.map((s) => s.training_plan_id).filter((id): id is string => !!id))];
+  const { data: trainingPlansData } = trainingPlanIds.length > 0
+    ? await supabase
+        .from('training_plans')
+        .select('id, trainer_comment, worker_comment, supervisor_comment_to_trainer, supervisor_comment_to_worker')
+        .in('id', trainingPlanIds)
+    : { data: [] };
+
+  const trainingPlanComments = new Map(
+    (trainingPlansData ?? []).map((p) => [p.id, {
+      trainer_comment: p.trainer_comment as string | null,
+      worker_comment: p.worker_comment as string | null,
+      supervisor_comment_to_trainer: p.supervisor_comment_to_trainer as string | null,
+      supervisor_comment_to_worker: p.supervisor_comment_to_worker as string | null,
+    }]),
+  );
 
   // Fetch training approvals with approved_by profile
   const { data: trainingApprovals } = await supabase
@@ -86,7 +105,26 @@ export default async function ExportPage({ params }: ExportPageProps) {
 
   const ojtRecords = (ojtRecordsData ?? []) as (OjtRecord & {
     companion: { id: string; name: string } | null;
+    ojt_plan_id: string | null;
   })[];
+
+  // Fetch 3-party flow comments (trainer/worker/supervisor) for linked OJT plans
+  const ojtPlanIds = [...new Set(ojtRecords.map((r) => r.ojt_plan_id).filter((id): id is string => !!id))];
+  const { data: ojtPlansData } = ojtPlanIds.length > 0
+    ? await supabase
+        .from('ojt_plans')
+        .select('id, trainer_comment, worker_comment, supervisor_comment_to_trainer, supervisor_comment_to_worker')
+        .in('id', ojtPlanIds)
+    : { data: [] };
+
+  const ojtPlanComments = new Map(
+    (ojtPlansData ?? []).map((p) => [p.id, {
+      trainer_comment: p.trainer_comment as string | null,
+      worker_comment: p.worker_comment as string | null,
+      supervisor_comment_to_trainer: p.supervisor_comment_to_trainer as string | null,
+      supervisor_comment_to_worker: p.supervisor_comment_to_worker as string | null,
+    }]),
+  );
 
   // Fetch final evaluations with approved_by profile
   const { data: finalEvaluationsData } = await supabase
@@ -117,6 +155,7 @@ export default async function ExportPage({ params }: ExportPageProps) {
         format: s.format,
         completed_subtopics: s.completed_subtopics,
         notes: s.notes,
+        comments: s.training_plan_id ? trainingPlanComments.get(s.training_plan_id) ?? null : null,
       }));
 
     const approval = approvals.find((a) => a.item_id === item.id);
@@ -164,6 +203,7 @@ export default async function ExportPage({ params }: ExportPageProps) {
           result: r.result,
           manager_comment: r.manager_comment,
           notes: r.notes,
+          comments: r.ojt_plan_id ? ojtPlanComments.get(r.ojt_plan_id) ?? null : null,
         };
       });
 

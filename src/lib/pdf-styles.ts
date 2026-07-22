@@ -156,6 +156,25 @@ export const styles = StyleSheet.create({
     borderRightColor: colors.borderGray,
   },
 
+  // Mutual comment block (trainer/worker/supervisor), shown under a session/record row
+  commentBlock: {
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    backgroundColor: '#f7f7f7',
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.borderGray,
+  },
+  commentBlockLast: {
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    backgroundColor: '#f7f7f7',
+  },
+  commentLine: {
+    fontSize: 7,
+    color: colors.darkGray,
+    marginBottom: 1,
+  },
+
   // Signature section
   signatureSection: {
     marginTop: 20,

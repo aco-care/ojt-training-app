@@ -6,6 +6,13 @@ import { FORMAT_LABELS, type TrainingFormat } from '@/lib/types';
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+interface MutualComments {
+  trainer_comment: string | null;
+  worker_comment: string | null;
+  supervisor_comment_to_trainer: string | null;
+  supervisor_comment_to_worker: string | null;
+}
+
 interface TrainingRecordPDFProps {
   worker: { name: string; nationality: string | null; facility_name: string };
   item: { item_number: number; title: string; target_hours: number };
@@ -18,9 +25,17 @@ interface TrainingRecordPDFProps {
     format: string;
     completed_subtopics: string[];
     notes: string | null;
+    comments?: MutualComments | null;
   }[];
   approval?: { approved_by_name: string; approved_at: string } | null;
 }
+
+const COMMENT_LABELS: { key: keyof MutualComments; label: string }[] = [
+  { key: 'trainer_comment', label: '指導者' },
+  { key: 'worker_comment', label: '本人' },
+  { key: 'supervisor_comment_to_trainer', label: '指導責任者（指導者へ）' },
+  { key: 'supervisor_comment_to_worker', label: '指導責任者（本人へ）' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -171,30 +186,46 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
                 .filter((st) => s.completed_subtopics.includes(st.id))
                 .map((st) => st.title)
                 .join('、');
+              const commentEntries = COMMENT_LABELS
+                .map(({ key, label }) => ({ label, text: s.comments?.[key] ?? null }))
+                .filter((c): c is { label: string; text: string } => !!c.text);
+              const isLastVisualRow = isLast && commentEntries.length === 0;
               return (
-                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
-                    <Text>{formatDate(s.date)}</Text>
+                <React.Fragment key={idx}>
+                  <View wrap={false} style={isLastVisualRow ? styles.tableRowLast : styles.tableRow}>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
+                      <Text>{formatDate(s.date)}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
+                      <Text>
+                        {s.start_time} 〜 {s.end_time}
+                        {'\n'}({hours.toFixed(1)}h)
+                      </Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
+                      <Text>{s.trainer_name}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { width: 50 }]}>
+                      <Text>{FORMAT_LABELS[s.format as TrainingFormat] ?? s.format}</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
+                      <Text>{wrapCJK(subtopicTitles) || '―'}</Text>
+                    </View>
+                    <View style={[styles.tableCell, { width: 95 }]}>
+                      <Text>{wrapCJK(s.notes)}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
-                    <Text>
-                      {s.start_time} 〜 {s.end_time}
-                      {'\n'}({hours.toFixed(1)}h)
-                    </Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
-                    <Text>{s.trainer_name}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 50 }]}>
-                    <Text>{FORMAT_LABELS[s.format as TrainingFormat] ?? s.format}</Text>
-                  </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{wrapCJK(subtopicTitles) || '―'}</Text>
-                  </View>
-                  <View style={[styles.tableCell, { width: 95 }]}>
-                    <Text>{wrapCJK(s.notes)}</Text>
-                  </View>
-                </View>
+                  {commentEntries.length > 0 && (
+                    <View wrap={false} style={isLast ? styles.commentBlockLast : styles.commentBlock}>
+                      {commentEntries.map((c, i) => (
+                        <Text key={i} style={styles.commentLine}>
+                          <Text style={styles.bold}>{c.label}：</Text>
+                          {wrapCJK(c.text)}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </React.Fragment>
               );
             })}
           </View>
