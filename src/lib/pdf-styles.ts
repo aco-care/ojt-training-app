@@ -17,6 +17,19 @@ Font.register({
   ],
 });
 
+// react-pdf's line-breaker only treats a literal ASCII space as a place it
+// can wrap without hyphenating; Japanese has no spaces, so a whole comma-
+// separated list (or sentence) is seen as a single unbreakable "word" and
+// either overflows its box or gets force-split with an English-style "-".
+// wrapCJK() inserts a real space after natural Japanese punctuation so the
+// renderer gets legitimate wrap points, the same way it already wraps at
+// English word boundaries. Use it for any dynamic/long Japanese text
+// rendered as PDF Text (list-joined values, free-text notes/comments).
+export function wrapCJK(text: string | null | undefined): string {
+  if (!text) return '';
+  return text.replace(/([、。・（）「」『』】])/g, '$1 ');
+}
+
 // ---------------------------------------------------------------------------
 // Color palette (monochrome, official document style)
 // ---------------------------------------------------------------------------

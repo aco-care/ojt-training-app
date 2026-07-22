@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, colors } from '@/lib/pdf-styles';
+import { styles, colors, wrapCJK } from '@/lib/pdf-styles';
 import { CHECKLIST_ITEMS, EVAL_LABELS, type EvalRating } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -98,12 +98,12 @@ const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
             {CHECKLIST_ITEMS.map((itemText, idx) => {
               const isLast = idx === CHECKLIST_ITEMS.length - 1;
               return (
-                <View key={idx} style={isLast ? styles.tableRowLast : styles.tableRow}>
+                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
                   <View style={[styles.tableCell, styles.tableCellBorder, { width: 28, textAlign: 'center' }]}>
                     <Text>{idx + 1}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{itemText}</Text>
+                    <Text>{wrapCJK(itemText)}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { width: 64, textAlign: 'center' }]}>
                     <Text style={{ fontSize: 12 }}>{ratingSymbol(evaluation.scores_self[idx])}</Text>
@@ -136,7 +136,7 @@ const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
             }}
           >
             <Text style={{ fontSize: 9 }}>
-              {evaluation.supervisor_comment ?? ''}
+              {wrapCJK(evaluation.supervisor_comment)}
             </Text>
           </View>
         </View>

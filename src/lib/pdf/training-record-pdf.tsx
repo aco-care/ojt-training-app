@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles } from '@/lib/pdf-styles';
+import { styles, wrapCJK } from '@/lib/pdf-styles';
 import { FORMAT_LABELS, type TrainingFormat } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -124,12 +124,12 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
               const done = allCompletedIds.has(st.id);
               const isLast = idx === subtopics.length - 1;
               return (
-                <View key={st.id} style={isLast ? styles.tableRowLast : styles.tableRow}>
+                <View key={st.id} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
                   <View style={[styles.tableCell, styles.tableCellBorder, { width: 36, textAlign: 'center' }]}>
                     <Text>{st.sort_order}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{st.title}</Text>
+                    <Text>{wrapCJK(st.title)}</Text>
                   </View>
                   <View style={[styles.tableCell, { width: 60, textAlign: 'center' }]}>
                     <Text>{done ? '○' : '―'}</Text>
@@ -145,22 +145,22 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
           <Text style={styles.subtitle}>研修実施記録</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 70 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 65 }]}>
                 <Text>実施日</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 70 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 65 }]}>
                 <Text>時間</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 60 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 55 }]}>
                 <Text>指導者</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 56 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 50 }]}>
                 <Text>実施形式</Text>
               </View>
               <View style={[styles.tableCellHeader, styles.tableCellBorder, { flex: 1 }]}>
                 <Text>実施内容</Text>
               </View>
-              <View style={[styles.tableCellHeader, { width: 70 }]}>
+              <View style={[styles.tableCellHeader, { width: 95 }]}>
                 <Text>備考</Text>
               </View>
             </View>
@@ -172,27 +172,27 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
                 .map((st) => st.title)
                 .join('、');
               return (
-                <View key={idx} style={isLast ? styles.tableRowLast : styles.tableRow}>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 70 }]}>
+                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
                     <Text>{formatDate(s.date)}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 70 }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 65 }]}>
                     <Text>
-                      {s.start_time}〜{s.end_time}
+                      {s.start_time} 〜 {s.end_time}
                       {'\n'}({hours.toFixed(1)}h)
                     </Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 60 }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
                     <Text>{s.trainer_name}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 56 }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 50 }]}>
                     <Text>{FORMAT_LABELS[s.format as TrainingFormat] ?? s.format}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{subtopicTitles || '―'}</Text>
+                    <Text>{wrapCJK(subtopicTitles) || '―'}</Text>
                   </View>
-                  <View style={[styles.tableCell, { width: 70 }]}>
-                    <Text>{s.notes ?? ''}</Text>
+                  <View style={[styles.tableCell, { width: 95 }]}>
+                    <Text>{wrapCJK(s.notes)}</Text>
                   </View>
                 </View>
               );

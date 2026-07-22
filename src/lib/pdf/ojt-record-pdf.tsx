@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles } from '@/lib/pdf-styles';
+import { styles, wrapCJK } from '@/lib/pdf-styles';
 import {
   CHECKLIST_ITEMS,
   EVAL_LABELS,
@@ -156,7 +156,7 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
                   ]}
                 >
                   <Text>{s.number}</Text>
-                  <Text style={{ fontSize: 6, marginTop: 1 }}>{s.label}</Text>
+                  <Text style={{ fontSize: 6, marginTop: 1 }}>{wrapCJK(s.label)}</Text>
                 </View>
               ))}
             </View>
@@ -186,52 +186,52 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
           <Text style={styles.subtitle}>実施記録詳細</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 70 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 55 }]}>
                 <Text>ステップ</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 28 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 20 }]}>
                 <Text>回</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 66 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 68 }]}>
                 <Text>実施日</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 56 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 42 }]}>
                 <Text>同行者</Text>
               </View>
               <View style={[styles.tableCellHeader, styles.tableCellBorder, { flex: 1 }]}>
                 <Text>実施内容</Text>
               </View>
-              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 44 }]}>
+              <View style={[styles.tableCellHeader, styles.tableCellBorder, { width: 34 }]}>
                 <Text>判定</Text>
               </View>
-              <View style={[styles.tableCellHeader, { width: 70 }]}>
+              <View style={[styles.tableCellHeader, { width: 97 }]}>
                 <Text>備考</Text>
               </View>
             </View>
             {records.map((r, idx) => {
               const isLast = idx === records.length - 1;
               return (
-                <View key={idx} style={isLast ? styles.tableRowLast : styles.tableRow}>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 70 }]}>
-                    <Text>{r.step_label}</Text>
+                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 55 }]}>
+                    <Text>{wrapCJK(r.step_label)}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 28, textAlign: 'center' }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 20, textAlign: 'center' }]}>
                     <Text>{r.attempt_number}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 66 }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 68 }]}>
                     <Text>{formatDate(r.date)}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 56 }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 42 }]}>
                     <Text>{r.companion_name ?? '―'}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{r.content ?? '―'}</Text>
+                    <Text>{r.content ? wrapCJK(r.content) : '―'}</Text>
                   </View>
-                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 44, textAlign: 'center' }]}>
+                  <View style={[styles.tableCell, styles.tableCellBorder, { width: 34, textAlign: 'center' }]}>
                     <Text>{resultLabel(r.result)}</Text>
                   </View>
-                  <View style={[styles.tableCell, { width: 70 }]}>
-                    <Text>{r.notes ?? ''}</Text>
+                  <View style={[styles.tableCell, { width: 97 }]}>
+                    <Text>{wrapCJK(r.notes)}</Text>
                   </View>
                 </View>
               );
@@ -269,12 +269,12 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
               const isLast = idx === CHECKLIST_ITEMS.length - 1;
 
               return (
-                <View key={idx} style={isLast ? styles.tableRowLast : styles.tableRow}>
+                <View key={idx} wrap={false} style={isLast ? styles.tableRowLast : styles.tableRow}>
                   <View style={[styles.tableCell, styles.tableCellBorder, { width: 28, textAlign: 'center' }]}>
                     <Text>{idx + 1}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                    <Text>{itemText}</Text>
+                    <Text>{wrapCJK(itemText)}</Text>
                   </View>
                   <View style={[styles.tableCell, styles.tableCellBorder, { width: 56, textAlign: 'center' }]}>
                     <Text>{ratingSymbol(selfRating)}</Text>
