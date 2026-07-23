@@ -59,6 +59,7 @@ interface OjtUserData {
     checklist_trainer: string[];
     result: string | null;
     manager_comment: string | null;
+    worker_comment: string | null;
     notes: string | null;
     comments: MutualComments | null;
   }[];

@@ -40,6 +40,7 @@ interface OjtRecordPDFProps {
     checklist_trainer: string[];
     result: string | null;
     manager_comment: string | null;
+    worker_comment: string | null;
     notes: string | null;
     comments?: MutualComments | null;
   }[];
@@ -225,13 +226,18 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
             </View>
             {records.map((r, idx) => {
               const isLast = idx === records.length - 1;
-              const commentEntries = r.comments
-                ? COMMENT_LABELS
-                    .map(({ key, label }) => ({ label, text: r.comments?.[key] ?? null }))
-                    .filter((c): c is { label: string; text: string } => !!c.text)
-                : r.manager_comment
-                  ? [{ label: '指導責任者', text: r.manager_comment }]
-                  : [];
+              // Prefer the linked OJT予定's comments (covers all 4 roles), but fall
+              // back to the values saved directly on the record — these survive even
+              // if the source OJT予定 was later deleted/archived.
+              const effectiveComments: MutualComments = {
+                trainer_comment: r.comments?.trainer_comment ?? null,
+                worker_comment: r.comments?.worker_comment ?? r.worker_comment ?? null,
+                supervisor_comment_to_trainer: r.comments?.supervisor_comment_to_trainer ?? null,
+                supervisor_comment_to_worker: r.comments?.supervisor_comment_to_worker ?? r.manager_comment ?? null,
+              };
+              const commentEntries = COMMENT_LABELS
+                .map(({ key, label }) => ({ label, text: effectiveComments[key] }))
+                .filter((c): c is { label: string; text: string } => !!c.text);
               const isLastVisualRow = isLast && commentEntries.length === 0;
               return (
                 <React.Fragment key={idx}>

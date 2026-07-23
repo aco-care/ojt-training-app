@@ -202,6 +202,7 @@ export default async function ExportPage({ params }: ExportPageProps) {
           checklist_trainer: r.checklist_trainer as string[],
           result: r.result,
           manager_comment: r.manager_comment,
+          worker_comment: r.worker_comment,
           notes: r.notes,
           comments: r.ojt_plan_id ? ojtPlanComments.get(r.ojt_plan_id) ?? null : null,
         };
