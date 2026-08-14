@@ -170,7 +170,7 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
                     { flex: 1 },
                   ]}
                 >
-                  <Text>{s.number}</Text>
+                  <Text>{idx + 1}</Text>
                   <Text style={{ fontSize: 6, marginTop: 1 }}>{wrapCJK(s.label)}</Text>
                 </View>
               ))}

@@ -190,12 +190,15 @@ export default async function ExportPage({ params }: ExportPageProps) {
     const userRecords = ojtRecords
       .filter((r) => r.ojt_user_id === ojtUser.id)
       .map((r) => {
-        const stepInfo = OJT_STEPS.find(
+        const stepIndex = OJT_STEPS.findIndex(
           (s) => s.step === r.step,
         );
+        const stepInfo = stepIndex >= 0 ? OJT_STEPS[stepIndex] : undefined;
         return {
           step: r.step,
-          step_label: stepInfo ? `${stepInfo.number} ${stepInfo.label}` : r.step,
+          // Plain ASCII index, not stepInfo.number (①②③…) — the circled-digit
+          // glyphs aren't in the PDF's embedded font subset and render as tofu.
+          step_label: stepInfo ? `${stepIndex + 1}. ${stepInfo.label}` : r.step,
           attempt_number: r.attempt_number,
           date: r.date,
           companion_name: r.companion?.name ?? null,
