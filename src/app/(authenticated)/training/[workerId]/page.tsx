@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import type {
   ForeignWorker,
   TrainingItem,
@@ -87,9 +88,10 @@ export default async function TrainingOverviewPage({
     facility: { id: string; name: string } | null;
   };
 
-  const items = (trainingItems ?? []) as (TrainingItem & {
+  const allItems = (trainingItems ?? []) as (TrainingItem & {
     subtopics: TrainingSubtopic[];
   })[];
+  const items = resolveTrainingItemsForFacility(allItems, typedWorker.facility_id);
   const sessions = (trainingSessions ?? []) as TrainingSession[];
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];
 

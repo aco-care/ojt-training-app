@@ -26,8 +26,8 @@ import CreatePlanModal from './create-plan-modal';
 
 interface ScheduleCalendarProps {
   events: CalendarEvent[];
-  workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string; groupLabel?: string | null }[] }[];
+  workers: { id: string; name: string; facility_id: string }[];
+  trainingItems: { id: string; item_number: number; facility_id: string | null; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string; groupLabel?: string | null }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string; qualification: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;

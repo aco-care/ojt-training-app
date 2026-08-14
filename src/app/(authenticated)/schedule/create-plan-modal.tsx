@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/client';
 import { OJT_STEPS } from '@/lib/types';
 import type { CalendarEvent } from '@/lib/types';
 import { writeAuditLog, formatDateShort } from '@/lib/audit-log';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 
 interface CreatePlanModalProps {
-  workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string; groupLabel?: string | null }[] }[];
+  workers: { id: string; name: string; facility_id: string }[];
+  trainingItems: { id: string; item_number: number; facility_id: string | null; title: string; target_sessions: number; target_hours: number; subtopics: { id: string; title: string; groupLabel?: string | null }[] }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
   staff: { id: string; name: string; qualification: string }[];
   completedSubtopicsByWorker: Record<string, string[]>;
@@ -80,7 +81,9 @@ export default function CreatePlanModal({
   const [step, setStep] = useState('');
   const [companionId, setCompanionId] = useState('');
 
-  const selectedItem = trainingItems.find((i) => i.id === itemId);
+  const selectedWorker = workers.find((w) => w.id === workerId);
+  const availableTrainingItems = resolveTrainingItemsForFacility(trainingItems, selectedWorker?.facility_id ?? null);
+  const selectedItem = availableTrainingItems.find((i) => i.id === itemId);
   const filteredOjtUsers = ojtUsers.filter((u) => u.worker_id === workerId);
   const completedForWorker = completedSubtopicsByWorker[workerId] ?? [];
 
@@ -349,7 +352,7 @@ export default function CreatePlanModal({
               <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
                 <p className="mb-2 text-xs font-semibold text-blue-800">未完了の研修項目</p>
                 <div className="max-h-32 space-y-1 overflow-y-auto">
-                  {trainingItems.map((item) => {
+                  {availableTrainingItems.map((item) => {
                     const totalSubs = item.subtopics.length;
                     if (totalSubs === 0) return null;
                     const doneCount = item.subtopics.filter((st) =>
@@ -421,7 +424,7 @@ export default function CreatePlanModal({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="" className="text-gray-400">選択してください</option>
-                {trainingItems.map((item) => (
+                {availableTrainingItems.map((item) => (
                   <option key={item.id} value={item.id}>{item.title}</option>
                 ))}
               </select>

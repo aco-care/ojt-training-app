@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { OJT_STEPS } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 
 interface WeekSidebarProps {
-  workers: { id: string; name: string }[];
-  trainingItems: { id: string; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
+  workers: { id: string; name: string; facility_id: string }[];
+  trainingItems: { id: string; item_number: number; facility_id: string | null; title: string; target_sessions: number; subtopics: { id: string; title: string }[] }[];
   completedSubtopicsByWorker: Record<string, string[]>;
   sessionCountByWorkerItem: Record<string, number>;
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
@@ -50,6 +51,7 @@ export default function WeekSidebar({
         {workers.map((worker) => {
           const completed = completedSubtopicsByWorker[worker.id] ?? [];
           const workerOjtUsers = ojtUsers.filter((u) => u.worker_id === worker.id);
+          const workerItems = resolveTrainingItemsForFacility(trainingItems, worker.facility_id);
 
           return (
             <div key={worker.id} className="px-4 py-3">
@@ -57,7 +59,7 @@ export default function WeekSidebar({
 
               {/* Training items with incomplete subtopics */}
               <div className="mt-1.5 space-y-1">
-                {trainingItems.map((item) => {
+                {workerItems.map((item) => {
                   const totalSubs = item.subtopics.length;
                   if (totalSubs === 0) return null;
                   const doneCount = item.subtopics.filter((st) =>

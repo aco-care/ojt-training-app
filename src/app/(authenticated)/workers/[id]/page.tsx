@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { ForeignWorker, TrainingItem, TrainingApproval, OjtUser, TrainingSession } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import { OJT_STATUS_LABELS } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
@@ -50,7 +51,7 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, item_number, title, target_hours, target_sessions, sort_order')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order, facility_id')
       .order('sort_order'),
     supabase
       .from('training_sessions')
@@ -90,7 +91,8 @@ export default async function WorkerDetailPage({ params }: WorkerDetailPageProps
   const workerProfiles = (workerProfilesData ?? []) as { id: string; name: string; email: string }[];
   const linkedProfile = workerProfiles.find((p) => p.id === typedWorker.profile_id);
 
-  const items = (trainingItems ?? []) as TrainingItem[];
+  const allItems = (trainingItems ?? []) as TrainingItem[];
+  const items = resolveTrainingItemsForFacility(allItems, typedWorker.facility_id);
   const sessions = (trainingSessions ?? []) as TrainingSession[];
   const approvals = (trainingApprovals ?? []) as TrainingApproval[];
   const ojtList = (ojtUsers ?? []) as OjtUser[];

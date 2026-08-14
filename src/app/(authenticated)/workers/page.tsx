@@ -9,6 +9,7 @@ import type {
   OjtUser,
   OjtRecord,
 } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import PageHeader from '@/components/page-header';
 import WorkerForm from './worker-form';
 import WorkerList from './worker-list';
@@ -68,7 +69,7 @@ export default async function WorkersPage() {
       .single(),
     supabase
       .from('training_items')
-      .select('id, item_number, title, target_hours, target_sessions, sort_order')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order, facility_id')
       .order('sort_order'),
     supabase
       .from('training_sessions')
@@ -101,7 +102,8 @@ export default async function WorkersPage() {
   // Compute overall status (training + OJT combined) per worker
   const workerStatuses = new Map<string, TrainingStatus>();
   for (const w of workerList) {
-    const itemStatuses = items.map((item) => {
+    const workerItems = resolveTrainingItemsForFacility(items, w.facility_id);
+    const itemStatuses = workerItems.map((item) => {
       const wSessions = sessions.filter((s) => s.worker_id === w.id && s.item_id === item.id);
       const approval = approvals.find((a) => a.worker_id === w.id && a.item_id === item.id);
       return computeItemStatus(wSessions, item.target_hours, approval);

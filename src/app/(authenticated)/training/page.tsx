@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { ForeignWorker } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import PageHeader from '@/components/page-header';
 import TrainingList from './training-list';
 
@@ -20,7 +21,7 @@ export default async function TrainingListPage() {
 
   const { data: items } = await supabase
     .from('training_items')
-    .select('id, target_hours')
+    .select('id, item_number, target_hours, facility_id')
     .order('sort_order');
 
   const { data: approvals } = await supabase
@@ -33,8 +34,8 @@ export default async function TrainingListPage() {
 
   const workerList = (workers ?? []) as (ForeignWorker & { facility: { id: string; name: string } | null })[];
   const facilityList = (facilities ?? []) as { id: string; name: string }[];
-  const itemList = (items ?? []) as { id: string; target_hours: number }[];
-  const totalItems = itemList.length || 5;
+  const itemList = (items ?? []) as { id: string; item_number: number; target_hours: number; facility_id: string | null }[];
+  const totalItems = new Set(itemList.map((i) => i.item_number)).size || 5;
   const approvalList = (approvals ?? []) as { worker_id: string; item_id: string; status: string }[];
   const sessionList = (sessions ?? []) as { worker_id: string; item_id: string; start_time: string; end_time: string; break_minutes: number }[];
 
@@ -42,7 +43,8 @@ export default async function TrainingListPage() {
   const completedMap: Record<string, number> = {};
   for (const w of workerList) {
     let completed = 0;
-    for (const item of itemList) {
+    const workerItems = resolveTrainingItemsForFacility(itemList, w.facility_id);
+    for (const item of workerItems) {
       const approval = approvalList.find((a) => a.worker_id === w.id && a.item_id === item.id);
       if (approval?.status === 'completed') { completed++; continue; }
       const itemSessions = sessionList.filter((s) => s.worker_id === w.id && s.item_id === item.id);

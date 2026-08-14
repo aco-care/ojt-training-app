@@ -14,6 +14,7 @@ import type {
   OjtStep,
 } from '@/lib/types';
 import { OJT_STEPS, ROLE_LABELS } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
@@ -141,7 +142,7 @@ export default async function DashboardPage() {
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, item_number, title, target_hours, target_sessions, sort_order, subtopics:training_subtopics(id, item_id, title, sort_order)')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order, facility_id, subtopics:training_subtopics(id, item_id, title, sort_order)')
       .order('sort_order'),
     supabase
       .from('training_sessions')
@@ -188,7 +189,8 @@ export default async function DashboardPage() {
 
   const workerItemStatuses: WorkerItemStatus[] = [];
   for (const w of workers) {
-    for (const item of items) {
+    const workerItems = resolveTrainingItemsForFacility(items, w.facility_id);
+    for (const item of workerItems) {
       const wSessions = sessions.filter(
         (s) => s.worker_id === w.id && s.item_id === item.id,
       );
@@ -299,6 +301,8 @@ export default async function DashboardPage() {
     const itemDataForClient = items.map((i) => ({
       id: i.id,
       title: i.title,
+      item_number: i.item_number,
+      facility_id: i.facility_id,
     }));
 
     const ojtUserDataForClient = ojtUsersEnriched.map((u) => {
@@ -366,7 +370,8 @@ export default async function DashboardPage() {
 
     // Per-worker progress for trainer
     const trainerWorkerProgress = trainedWorkers.map((w) => {
-      const itemStatuses = items.map((item) => {
+      const workerItems = resolveTrainingItemsForFacility(items, w.facility_id);
+      const itemStatuses = workerItems.map((item) => {
         const found = workerItemStatuses.find(
           (s) => s.workerId === w.id && s.itemId === item.id,
         );
@@ -379,25 +384,26 @@ export default async function DashboardPage() {
         (s) => s.status === 'completed',
       ).length;
       const pct =
-        items.length > 0
-          ? Math.round((completed / items.length) * 100)
+        workerItems.length > 0
+          ? Math.round((completed / workerItems.length) * 100)
           : 0;
       return { worker: w, itemStatuses, pct };
     });
 
     // Uncovered subtopics per trained worker
     const uncoveredByWorker = trainedWorkers.map((w) => {
+      const workerItems = resolveTrainingItemsForFacility(items, w.facility_id);
       const wSessions = sessions.filter((s) => s.worker_id === w.id);
       const coveredSubtopicIds = new Set(
         wSessions.flatMap((s) => s.completed_subtopics),
       );
-      const uncovered = items.flatMap((item) =>
+      const uncovered = workerItems.flatMap((item) =>
         (item.subtopics ?? [])
           .filter((st) => !coveredSubtopicIds.has(st.id))
           .map((st) => ({
             itemTitle: item.title,
             itemNumber:
-              ITEM_NUMBERS[items.indexOf(item)] ?? `${items.indexOf(item) + 1}`,
+              ITEM_NUMBERS[workerItems.indexOf(item)] ?? `${workerItems.indexOf(item) + 1}`,
             subtopicTitle: st.title,
           })),
       );
@@ -838,7 +844,7 @@ export default async function DashboardPage() {
     ].sort((a, b) => a.date.localeCompare(b.date));
 
     // Fetch training items and sessions
-    const workerItems = items;
+    const workerItems = resolveTrainingItemsForFacility(items, linkedWorker.facility_id);
     const workerSessions = sessions.filter((s) => s.worker_id === workerId);
     const workerApprovals = (approvals ?? []).filter((a) => a.worker_id === workerId);
 

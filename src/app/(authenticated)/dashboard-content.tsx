@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { TrainingStatus, OjtStatus } from '@/lib/types';
 import { OJT_STEPS } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import {
@@ -22,7 +23,7 @@ export type WorkerData = {
   facility: { id: string; name: string } | null;
 };
 
-export type ItemData = { id: string; title: string };
+export type ItemData = { id: string; title: string; item_number: number; facility_id: string | null };
 
 export type WorkerItemStatusData = {
   workerId: string;
@@ -215,21 +216,22 @@ export default function AdminDashboardContent({
     return ids ? list.filter((wp) => ids.has(wp.worker.id)) : [];
   }
 
-  function getWorkerStatuses(workerId: string) {
-    return items.map((item) => {
-      const found = workerItemStatuses.find((s) => s.workerId === workerId && s.itemId === item.id);
+  function getWorkerStatuses(worker: WorkerData) {
+    const workerItems = resolveTrainingItemsForFacility(items, worker.facility?.id ?? null);
+    return workerItems.map((item) => {
+      const found = workerItemStatuses.find((s) => s.workerId === worker.id && s.itemId === item.id);
       return found?.status ?? ('not_started' as TrainingStatus);
     });
   }
 
-  function getWorkerPct(workerId: string) {
-    const statuses = getWorkerStatuses(workerId);
+  function getWorkerPct(worker: WorkerData) {
+    const statuses = getWorkerStatuses(worker);
     const completed = statuses.filter((s) => s === 'completed').length;
-    return items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+    return statuses.length > 0 ? Math.round((completed / statuses.length) * 100) : 0;
   }
 
-  function isAllTrainingDone(workerId: string) {
-    return getWorkerStatuses(workerId).every((s) => s === 'completed');
+  function isAllTrainingDone(worker: WorkerData) {
+    return getWorkerStatuses(worker).every((s) => s === 'completed');
   }
 
   function groupOjtByWorker(list: OjtUserData[]) {
@@ -272,8 +274,8 @@ export default function AdminDashboardContent({
   const fCompletedOjt = filterOjtUsers(completedOjt, ojtFacilityId);
   const fPending = filterPending(workersWithPending, trainingFacilityId);
 
-  const activeWorkers = fWorkers.filter((w) => !isAllTrainingDone(w.id));
-  const completedWorkers = fWorkers.filter((w) => isAllTrainingDone(w.id));
+  const activeWorkers = fWorkers.filter((w) => !isAllTrainingDone(w));
+  const completedWorkers = fWorkers.filter((w) => isAllTrainingDone(w));
   const activeOjtGrouped = groupOjtByWorker(fActiveOjt);
   const completedOjtGrouped = groupOjtByWorker(fCompletedOjt);
 
@@ -294,8 +296,8 @@ export default function AdminDashboardContent({
 
   // ---- Training card rendering ----
   function renderTrainingCard(w: WorkerData, isCompact: boolean) {
-    const statuses = getWorkerStatuses(w.id);
-    const pct = getWorkerPct(w.id);
+    const statuses = getWorkerStatuses(w);
+    const pct = getWorkerPct(w);
 
     if (isCompact) {
       return (

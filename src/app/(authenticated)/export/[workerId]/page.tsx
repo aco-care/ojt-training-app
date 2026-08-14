@@ -11,6 +11,7 @@ import type {
   FinalEvaluation,
 } from '@/lib/types';
 import { OJT_STEPS } from '@/lib/types';
+import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import PageHeader from '@/components/page-header';
 import ExportClient from './export-client';
 
@@ -43,9 +44,10 @@ export default async function ExportPage({ params }: ExportPageProps) {
     .select('*, subtopics:training_subtopics(id, item_id, title, sort_order)')
     .order('sort_order');
 
-  const items = (trainingItems ?? []) as (TrainingItem & {
+  const allItems = (trainingItems ?? []) as (TrainingItem & {
     subtopics: TrainingSubtopic[];
   })[];
+  const items = resolveTrainingItemsForFacility(allItems, typedWorker.facility_id);
 
   // Fetch training sessions with trainer profile
   const { data: trainingSessions } = await supabase

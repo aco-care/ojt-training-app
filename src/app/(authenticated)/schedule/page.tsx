@@ -41,11 +41,11 @@ export default async function SchedulePage() {
       .order('planned_date', { ascending: false }),
     supabase
       .from('foreign_workers')
-      .select('id, name')
+      .select('id, name, facility_id')
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, target_sessions, target_hours, training_subtopics(id, title, group_label, sort_order)')
+      .select('id, item_number, facility_id, title, target_sessions, target_hours, training_subtopics(id, title, group_label, sort_order)')
       .order('sort_order'),
     supabase
       .from('ojt_users')
@@ -82,10 +82,12 @@ export default async function SchedulePage() {
     companion: { id: string; name: string };
   })[];
 
-  const workers = (workersData ?? []) as { id: string; name: string }[];
-  const rawItems = (itemsData ?? []) as { id: string; title: string; target_sessions: number; target_hours: number; training_subtopics: { id: string; title: string; group_label: string | null; sort_order: number }[] }[];
+  const workers = (workersData ?? []) as { id: string; name: string; facility_id: string }[];
+  const rawItems = (itemsData ?? []) as { id: string; item_number: number; facility_id: string | null; title: string; target_sessions: number; target_hours: number; training_subtopics: { id: string; title: string; group_label: string | null; sort_order: number }[] }[];
   const trainingItems = rawItems.map((item) => ({
     id: item.id,
+    item_number: item.item_number,
+    facility_id: item.facility_id,
     title: item.title,
     target_sessions: item.target_sessions,
     target_hours: item.target_hours,
@@ -181,6 +183,8 @@ export default async function SchedulePage() {
           workers={workers}
           trainingItems={trainingItems.map((item) => ({
             id: item.id,
+            item_number: item.item_number,
+            facility_id: item.facility_id,
             title: item.title,
             target_sessions: item.target_sessions,
             target_hours: item.target_hours,
