@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   WorkerInfo,
   TrainingItemData,
@@ -21,25 +21,47 @@ interface ExportClientProps {
 // ---------------------------------------------------------------------------
 // PDF layout/rendering is synchronous, CPU-heavy work. Running it on the main
 // thread blocks the tab long enough to trigger the browser's own "page
-// unresponsive" prompt once a worklist has more than a couple of records.
-// A fresh Worker per request keeps that work off the UI thread entirely.
-function runPdfWorker(request: PdfWorkerRequest): Promise<ArrayBuffer> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('../../../../lib/pdf/pdf-worker.tsx', import.meta.url));
-    worker.onmessage = (event: MessageEvent<PdfWorkerResponse>) => {
-      worker.terminate();
-      if (event.data.ok) {
-        resolve(event.data.buffer);
-      } else {
-        reject(new Error(event.data.error));
-      }
+// unresponsive" prompt once a worklist has more than a couple of records, so
+// it runs in a Worker instead. The Worker module also registers the Japanese
+// font (~3MB across two weights, fetched from a CDN) at load time, and that
+// cost was being paid on every single click because a fresh Worker was spun
+// up and torn down each time. Reusing one Worker for the page's lifetime
+// means only the first PDF pays the font fetch/parse cost — later ones in
+// the same session render in roughly the time PDF layout actually takes.
+function usePdfWorker() {
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
     };
-    worker.onerror = (event) => {
-      worker.terminate();
-      reject(new Error(event.message || 'PDF worker failed'));
-    };
-    worker.postMessage(request);
-  });
+  }, []);
+
+  return useCallback((request: PdfWorkerRequest): Promise<ArrayBuffer> => {
+    if (!workerRef.current) {
+      workerRef.current = new Worker(new URL('../../../../lib/pdf/pdf-worker.tsx', import.meta.url));
+    }
+    const worker = workerRef.current;
+
+    return new Promise((resolve, reject) => {
+      worker.onmessage = (event: MessageEvent<PdfWorkerResponse>) => {
+        if (event.data.ok) {
+          resolve(event.data.buffer);
+        } else {
+          reject(new Error(event.data.error));
+        }
+      };
+      worker.onerror = (event) => {
+        // The worker context is broken at this point; drop it so the next
+        // call starts fresh instead of reusing a dead worker.
+        workerRef.current?.terminate();
+        workerRef.current = null;
+        reject(new Error(event.message || 'PDF worker failed'));
+      };
+      worker.postMessage(request);
+    });
+  }, []);
 }
 
 function downloadPdf(buffer: ArrayBuffer, filename: string) {
@@ -63,6 +85,7 @@ export default function ExportClient({
 }: ExportClientProps) {
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const runPdfWorker = usePdfWorker();
 
   const handleBulkPdf = useCallback(async () => {
     if (trainingData.length + ojtData.length + (evaluationData ? 1 : 0) === 0) {
@@ -85,7 +108,7 @@ export default function ExportClient({
     } finally {
       setIsBulkLoading(false);
     }
-  }, [worker, trainingData, ojtData, evaluationData]);
+  }, [worker, trainingData, ojtData, evaluationData, runPdfWorker]);
 
   const handleTrainingPdf = useCallback(
     async (itemData: TrainingItemData) => {
@@ -101,7 +124,7 @@ export default function ExportClient({
         setLoadingKey(null);
       }
     },
-    [worker],
+    [worker, runPdfWorker],
   );
 
   const handleOjtPdf = useCallback(
@@ -118,7 +141,7 @@ export default function ExportClient({
         setLoadingKey(null);
       }
     },
-    [worker],
+    [worker, runPdfWorker],
   );
 
   const handleEvaluationPdf = useCallback(async () => {
@@ -134,7 +157,7 @@ export default function ExportClient({
     } finally {
       setLoadingKey(null);
     }
-  }, [worker, evaluationData]);
+  }, [worker, evaluationData, runPdfWorker]);
 
   const ITEM_NUMBERS = ['①', '②', '③', '④', '⑤'];
   const bulkCount = trainingData.length + ojtData.length + (evaluationData ? 1 : 0);
