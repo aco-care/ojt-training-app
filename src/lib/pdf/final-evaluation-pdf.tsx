@@ -140,42 +140,19 @@ export const FinalEvaluationPage: React.FC<FinalEvaluationPDFProps> = ({
           </View>
         </View>
 
-        {/* Signature section - 4 boxes */}
-        <View style={styles.signatureSection}>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>指導者</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
+        {/* Approval info (kept as plain text; supervisor comment above already
+            carries the substantive record — no separate sign-here boxes for a
+            document that only ever exists as a saved PDF). */}
+        {evaluation.approved_by_name && (
+          <View style={styles.mb8}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>承認者</Text>
+              <Text style={styles.infoValue}>
+                {evaluation.approved_by_name}（{formatDate(evaluation.approved_at)}）
+              </Text>
+            </View>
           </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>指導責任者</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-          </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>本人</Text>
-            <Text style={styles.signatureName}>{worker.name}</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-          </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>管理者承認</Text>
-            {evaluation.approved_by_name ? (
-              <>
-                <Text style={styles.signatureName}>{evaluation.approved_by_name}</Text>
-                <View style={styles.signatureLine} />
-                <Text style={styles.signatureDate}>
-                  日付：{formatDate(evaluation.approved_at)}
-                </Text>
-              </>
-            ) : (
-              <>
-                <View style={styles.signatureLine} />
-                <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-              </>
-            )}
-          </View>
-        </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>

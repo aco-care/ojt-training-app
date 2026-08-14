@@ -243,38 +243,6 @@ export const TrainingRecordPage: React.FC<TrainingRecordPDFProps> = ({
           </View>
         </View>
 
-        {/* Signature section */}
-        <View style={styles.signatureSection}>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>指導者</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-          </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>指導責任者</Text>
-            {approval ? (
-              <>
-                <Text style={styles.signatureName}>{approval.approved_by_name}</Text>
-                <View style={styles.signatureLine} />
-                <Text style={styles.signatureDate}>
-                  日付：{formatDate(approval.approved_at)}
-                </Text>
-              </>
-            ) : (
-              <>
-                <View style={styles.signatureLine} />
-                <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-              </>
-            )}
-          </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureLabel}>本人</Text>
-            <Text style={styles.signatureName}>{worker.name}</Text>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureDate}>日付：　　年　　月　　日</Text>
-          </View>
-        </View>
-
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>

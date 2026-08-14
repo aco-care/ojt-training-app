@@ -193,41 +193,6 @@ export const styles = StyleSheet.create({
     marginBottom: 1,
   },
 
-  // Signature section
-  signatureSection: {
-    marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  signatureBox: {
-    width: '23%',
-    borderWidth: 1,
-    borderColor: colors.black,
-    padding: 6,
-  },
-  signatureLabel: {
-    fontSize: 8,
-    fontWeight: 700,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  signatureLine: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.black,
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  signatureDate: {
-    fontSize: 7,
-    color: colors.mediumGray,
-    textAlign: 'right',
-  },
-  signatureName: {
-    fontSize: 8,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-
   // Footer
   footer: {
     position: 'absolute',
