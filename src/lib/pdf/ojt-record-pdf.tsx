@@ -92,10 +92,18 @@ export const OjtRecordPage: React.FC<OjtRecordPDFProps> = ({
   ojtUser,
   records,
 }) => {
+  // Steps like 利用者の選定・マッチング/利用者・家族への説明/事前研修/OJT完了判定
+  // are handled administratively before/after the actual visits (見学/メイン/独立)
+  // and are never logged as their own records. Once the OJT is done overall,
+  // treat those record-less steps as complete rather than "未実施" — they were
+  // necessarily finished for the visits to have happened at all.
+  const hasIndependentPass = records.some((r) => r.step === 'independent' && r.result === 'pass');
+  const isOverallComplete = ojtUser.ojt_status === 'completed' || hasIndependentPass;
+
   // Determine step statuses for the timeline
   function stepStatus(step: OjtStep): string {
     const recs = records.filter((r) => r.step === step);
-    if (recs.length === 0) return '未実施';
+    if (recs.length === 0) return isOverallComplete ? '完了' : '未実施';
     const lastRecord = recs[recs.length - 1];
     if (lastRecord.result === 'pass') return '完了';
     if (lastRecord.result === 'redo') return '再実施';
