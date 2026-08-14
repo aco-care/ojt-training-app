@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, wrapCJK } from '@/lib/pdf-styles';
+import { styles, wrapCJK, PDF_DONE, PDF_NOT_DONE, PDF_EMPTY } from '@/lib/pdf-styles';
 import { FORMAT_LABELS, type TrainingFormat } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>国籍</Text>
-            <Text style={styles.infoValue}>{worker.nationality ?? '―'}</Text>
+            <Text style={styles.infoValue}>{worker.nationality ?? PDF_EMPTY}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>所属事業所</Text>
@@ -147,7 +147,7 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
                     <Text>{wrapCJK(st.title)}</Text>
                   </View>
                   <View style={[styles.tableCell, { width: 60, textAlign: 'center' }]}>
-                    <Text>{done ? '○' : '―'}</Text>
+                    <Text>{done ? PDF_DONE : PDF_NOT_DONE}</Text>
                   </View>
                 </View>
               );
@@ -209,7 +209,7 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
                       <Text>{FORMAT_LABELS[s.format as TrainingFormat] ?? s.format}</Text>
                     </View>
                     <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                      <Text>{wrapCJK(subtopicTitles) || '―'}</Text>
+                      <Text>{wrapCJK(subtopicTitles) || PDF_EMPTY}</Text>
                     </View>
                     <View style={[styles.tableCell, { width: 95 }]}>
                       <Text>{wrapCJK(s.notes)}</Text>

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, wrapCJK } from '@/lib/pdf-styles';
+import { styles, wrapCJK, PDF_EVAL_LABELS, PDF_EMPTY } from '@/lib/pdf-styles';
 import {
   CHECKLIST_ITEMS,
-  EVAL_LABELS,
   OJT_STEPS,
   OJT_STATUS_LABELS,
   type EvalRating,
@@ -57,7 +56,7 @@ const COMMENT_LABELS: { key: keyof MutualComments; label: string }[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '―';
+  if (!dateStr) return PDF_EMPTY;
   const d = new Date(dateStr);
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
@@ -67,12 +66,12 @@ function today(): string {
 }
 
 function ratingSymbol(rating: string | undefined): string {
-  if (!rating) return '―';
-  return EVAL_LABELS[rating as EvalRating] ?? '―';
+  if (!rating) return PDF_EMPTY;
+  return PDF_EVAL_LABELS[rating as EvalRating] ?? PDF_EMPTY;
 }
 
 function resultLabel(result: string | null): string {
-  if (!result) return '―';
+  if (!result) return PDF_EMPTY;
   switch (result) {
     case 'pass':
       return '合格';
@@ -127,7 +126,7 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>国籍</Text>
-                <Text style={styles.infoValue}>{worker.nationality ?? '―'}</Text>
+                <Text style={styles.infoValue}>{worker.nationality ?? PDF_EMPTY}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>所属事業所</Text>
@@ -252,10 +251,10 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
                       <Text>{formatDate(r.date)}</Text>
                     </View>
                     <View style={[styles.tableCell, styles.tableCellBorder, { width: 42 }]}>
-                      <Text>{r.companion_name ?? '―'}</Text>
+                      <Text>{r.companion_name ?? PDF_EMPTY}</Text>
                     </View>
                     <View style={[styles.tableCell, styles.tableCellBorder, { flex: 1 }]}>
-                      <Text>{r.content ? wrapCJK(r.content) : '―'}</Text>
+                      <Text>{r.content ? wrapCJK(r.content) : PDF_EMPTY}</Text>
                     </View>
                     <View style={[styles.tableCell, styles.tableCellBorder, { width: 34, textAlign: 'center' }]}>
                       <Text>{resultLabel(r.result)}</Text>

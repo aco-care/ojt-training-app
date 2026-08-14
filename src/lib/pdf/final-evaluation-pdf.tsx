@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, colors, wrapCJK } from '@/lib/pdf-styles';
-import { CHECKLIST_ITEMS, EVAL_LABELS, type EvalRating } from '@/lib/types';
+import { styles, colors, wrapCJK, PDF_EVAL_LABELS, PDF_EVAL_LEGEND, PDF_EMPTY } from '@/lib/pdf-styles';
+import { CHECKLIST_ITEMS, type EvalRating } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -22,7 +22,7 @@ interface FinalEvaluationPDFProps {
 // Helpers
 // ---------------------------------------------------------------------------
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '―';
+  if (!dateStr) return PDF_EMPTY;
   const d = new Date(dateStr);
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
@@ -33,8 +33,8 @@ function today(): string {
 }
 
 function ratingSymbol(rating: string | undefined): string {
-  if (!rating) return '―';
-  return EVAL_LABELS[rating as EvalRating] ?? '―';
+  if (!rating) return PDF_EMPTY;
+  return PDF_EVAL_LABELS[rating as EvalRating] ?? PDF_EMPTY;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>国籍</Text>
-            <Text style={styles.infoValue}>{worker.nationality ?? '―'}</Text>
+            <Text style={styles.infoValue}>{worker.nationality ?? PDF_EMPTY}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>所属事業所</Text>
@@ -119,7 +119,7 @@ const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
           {/* Rating legend */}
           <View style={[styles.row, { justifyContent: 'flex-end', marginTop: 2 }]}>
             <Text style={{ fontSize: 7, color: colors.mediumGray }}>
-              ○：良好　△：おおむね良好　×：不十分
+              {PDF_EVAL_LEGEND}
             </Text>
           </View>
         </View>

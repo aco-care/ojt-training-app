@@ -1,4 +1,22 @@
 import { Font, StyleSheet } from '@react-pdf/renderer';
+import type { EvalRating } from '@/lib/types';
+
+// The embedded NotoSansJP subset covers standard Japanese text but not
+// symbol glyphs like ○/△/―, which render as garbled tofu in the PDF even
+// though they display fine in-browser via system fonts. Use plain kanji
+// labels in PDF output instead of the UI's EVAL_LABELS symbols.
+export const PDF_EVAL_LABELS: Record<EvalRating, string> = {
+  good: '良',
+  fair: '可',
+  poor: '否',
+};
+
+export const PDF_EVAL_LEGEND = '良：良好　可：おおむね良好　否：不十分';
+export const PDF_DONE = '済';
+export const PDF_NOT_DONE = '未';
+// Plain ASCII hyphen, not the Unicode horizontal-bar (―) — the latter is
+// also outside the embedded font's glyph set and renders as tofu.
+export const PDF_EMPTY = '-';
 
 // ---------------------------------------------------------------------------
 // Font Registration - Noto Sans JP for Japanese text

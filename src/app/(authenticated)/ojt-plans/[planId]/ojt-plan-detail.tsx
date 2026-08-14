@@ -251,7 +251,7 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId, currentUs
           result: plan.result ?? 'pass',
           manager_comment: plan.supervisor_comment_to_worker ?? null,
           worker_comment: plan.worker_comment ?? null,
-          notes: '3者フローより自動登録',
+          notes: null,
           ojt_plan_id: plan.id,
         });
       }

@@ -155,6 +155,9 @@ export default function ExportClient({
           sourcePdf.getPageIndices(),
         );
         copiedPages.forEach((page) => mergedPdf.addPage(page));
+        // Yield to the browser between documents so the tab stays responsive
+        // and doesn't trigger a "page unresponsive" prompt on longer worklists.
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
       const mergedBytes = await mergedPdf.save();

@@ -286,7 +286,7 @@ export default function PlanDetail({ plan, planRole, currentUserId, currentUserN
         format: methodToFormat[plan.method ?? '対面'] ?? 'classroom',
         completed_subtopics: plan.trainer_checked_subtopics ?? [],
         custom_content: plan.trainer_custom_content ?? null,
-        notes: '3者フローより自動登録',
+        notes: null,
         break_minutes: plan.break_minutes ?? 0,
         training_plan_id: plan.id,
       });
