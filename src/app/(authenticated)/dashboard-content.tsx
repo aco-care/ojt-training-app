@@ -186,8 +186,7 @@ export default function AdminDashboardContent({
 }: AdminDashboardProps) {
   const [showCompletedTraining, setShowCompletedTraining] = useState(false);
   const [showCompletedOjt, setShowCompletedOjt] = useState(false);
-  const [trainingFacilityId, setTrainingFacilityId] = useState<string | null>(null);
-  const [ojtFacilityId, setOjtFacilityId] = useState<string | null>(null);
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [trainingView, setTrainingView] = useState<ViewMode>('list');
   const [ojtView, setOjtView] = useState<ViewMode>('list');
   const [expandedOjtWorkers, setExpandedOjtWorkers] = useState<Set<string>>(new Set());
@@ -269,10 +268,10 @@ export default function AdminDashboardContent({
   const activeOjt = ojtUsers.filter((u) => u.ojt_status !== 'completed');
   const completedOjt = ojtUsers.filter((u) => u.ojt_status === 'completed');
 
-  const fWorkers = filterWorkers(workers, trainingFacilityId);
-  const fActiveOjt = filterOjtUsers(activeOjt, ojtFacilityId);
-  const fCompletedOjt = filterOjtUsers(completedOjt, ojtFacilityId);
-  const fPending = filterPending(workersWithPending, trainingFacilityId);
+  const fWorkers = filterWorkers(workers, selectedFacilityId);
+  const fActiveOjt = filterOjtUsers(activeOjt, selectedFacilityId);
+  const fCompletedOjt = filterOjtUsers(completedOjt, selectedFacilityId);
+  const fPending = filterPending(workersWithPending, selectedFacilityId);
 
   const activeWorkers = fWorkers.filter((w) => !isAllTrainingDone(w));
   const completedWorkers = fWorkers.filter((w) => isAllTrainingDone(w));
@@ -281,7 +280,7 @@ export default function AdminDashboardContent({
 
   // ---- OJT alerts: not_started or stalled (>7 days on same step) ----
   const ojtAlerts: { worker: WorkerData; ojtUser: OjtUserData; reason: string }[] = [];
-  for (const u of activeOjt) {
+  for (const u of fActiveOjt) {
     const w = workers.find((w) => w.id === u.worker_id);
     if (!w) continue;
     if (u.ojt_status === 'not_started') {
@@ -492,7 +491,7 @@ export default function AdminDashboardContent({
       <section>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900">研修進捗一覧</h2>
-          <FacilityFilter facilities={facilities} selectedId={trainingFacilityId} onChange={setTrainingFacilityId} />
+          <FacilityFilter facilities={facilities} selectedId={selectedFacilityId} onChange={setSelectedFacilityId} />
           <div className="ml-auto">
             <ViewToggle value={trainingView} onChange={setTrainingView} />
           </div>
@@ -501,7 +500,7 @@ export default function AdminDashboardContent({
         {fWorkers.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
             <p className="text-sm text-gray-500">
-              {trainingFacilityId ? 'この施設に所属する外国人はいません' : '外国人が登録されていません'}
+              {selectedFacilityId ? 'この施設に所属する外国人はいません' : '外国人が登録されていません'}
             </p>
           </div>
         ) : (
@@ -534,7 +533,7 @@ export default function AdminDashboardContent({
       <section>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900">OJT進捗一覧</h2>
-          <FacilityFilter facilities={facilities} selectedId={ojtFacilityId} onChange={setOjtFacilityId} />
+          <FacilityFilter facilities={facilities} selectedId={selectedFacilityId} onChange={setSelectedFacilityId} />
           <div className="ml-auto">
             <ViewToggle value={ojtView} onChange={setOjtView} />
           </div>
@@ -543,7 +542,7 @@ export default function AdminDashboardContent({
         {fActiveOjt.length === 0 && fCompletedOjt.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
             <p className="text-sm text-gray-500">
-              {ojtFacilityId ? 'この施設のOJT対象利用者はいません' : 'OJT対象利用者が登録されていません'}
+              {selectedFacilityId ? 'この施設のOJT対象利用者はいません' : 'OJT対象利用者が登録されていません'}
             </p>
           </div>
         ) : (
@@ -579,7 +578,7 @@ export default function AdminDashboardContent({
         {fPending.length === 0 && ojtAlerts.length === 0 ? (
           <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
             <p className="text-sm font-medium text-green-700">
-              {trainingFacilityId ? 'この施設のアラートはありません' : '全ての項目が順調に進んでいます'}
+              {selectedFacilityId ? 'この施設のアラートはありません' : '全ての項目が順調に進んでいます'}
             </p>
           </div>
         ) : (
