@@ -96,19 +96,14 @@ export default function ExportClient({
   const handleBulkPdf = useCallback(async () => {
     setIsBulkLoading(true);
     try {
-      const { pdf } = await import('@react-pdf/renderer');
-      const { PDFDocument } = await import('pdf-lib');
-      const { default: TrainingRecordPDF } = await import(
-        '@/lib/pdf/training-record-pdf'
-      );
-      const { default: OjtRecordPDF } = await import('@/lib/pdf/ojt-record-pdf');
-      const { default: FinalEvaluationPDF } = await import(
-        '@/lib/pdf/final-evaluation-pdf'
-      );
+      const { pdf, Document } = await import('@react-pdf/renderer');
+      const { TrainingRecordPage } = await import('@/lib/pdf/training-record-pdf');
+      const { OjtRecordPage } = await import('@/lib/pdf/ojt-record-pdf');
+      const { FinalEvaluationPage } = await import('@/lib/pdf/final-evaluation-pdf');
 
-      const docs: ReactElement[] = [
+      const pages: ReactElement[] = [
         ...trainingData.map((itemData) => (
-          <TrainingRecordPDF
+          <TrainingRecordPage
             key={`training-${itemData.item.id}`}
             worker={worker}
             item={itemData.item}
@@ -118,7 +113,7 @@ export default function ExportClient({
           />
         )),
         ...ojtData.map((userData) => (
-          <OjtRecordPDF
+          <OjtRecordPage
             key={`ojt-${userData.ojtUser.id}`}
             worker={worker}
             ojtUser={userData.ojtUser}
@@ -127,7 +122,7 @@ export default function ExportClient({
         )),
         ...(evaluationData
           ? [
-              <FinalEvaluationPDF
+              <FinalEvaluationPage
                 key="evaluation"
                 worker={worker}
                 evaluation={evaluationData}
@@ -136,32 +131,19 @@ export default function ExportClient({
           : []),
       ];
 
-      if (docs.length === 0) {
+      if (pages.length === 0) {
         alert('出力できる帳票がありません。');
         return;
       }
 
-      const mergedPdf = await PDFDocument.create();
-      for (const doc of docs) {
-        // react-pdf's `pdf()` types its argument as ReactElement<DocumentProps>,
-        // but our children are the higher-level components (TrainingRecordPDF
-        // etc.) that render a <Document> internally — this is the same usage
-        // as the individual export handlers above, just gathered into a list.
-        const blob = await pdf(doc as ReactElement<DocumentProps>).toBlob();
-        const bytes = await blob.arrayBuffer();
-        const sourcePdf = await PDFDocument.load(bytes);
-        const copiedPages = await mergedPdf.copyPages(
-          sourcePdf,
-          sourcePdf.getPageIndices(),
-        );
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-        // Yield to the browser between documents so the tab stays responsive
-        // and doesn't trigger a "page unresponsive" prompt on longer worklists.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const mergedBytes = await mergedPdf.save();
-      const blob = new Blob([mergedBytes as unknown as BlobPart], { type: 'application/pdf' });
+      // Render every record as a Page inside ONE Document/pdf() call instead of
+      // rendering N separate PDFs and merging them with pdf-lib: that approach
+      // re-embedded the Japanese font in every single document and copied pages
+      // across documents, which got slow enough to look hung for worklists with
+      // more than a few records.
+      const blob = await pdf(
+        <Document>{pages}</Document> as ReactElement<DocumentProps>,
+      ).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

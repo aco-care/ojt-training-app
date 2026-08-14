@@ -60,7 +60,9 @@ function today(): string {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
+// Page-only content, reusable inside a shared <Document> for bulk export
+// (avoids re-embedding fonts + pdf-lib page-merging for every single item).
+export const TrainingRecordPage: React.FC<TrainingRecordPDFProps> = ({
   worker,
   item,
   subtopics,
@@ -75,7 +77,6 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
   const allCompletedIds = new Set(sessions.flatMap((s) => s.completed_subtopics));
 
   return (
-    <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -277,8 +278,13 @@ const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = ({
           </Text>
         </View>
       </Page>
-    </Document>
   );
 };
+
+const TrainingRecordPDF: React.FC<TrainingRecordPDFProps> = (props) => (
+  <Document>
+    <TrainingRecordPage {...props} />
+  </Document>
+);
 
 export default TrainingRecordPDF;

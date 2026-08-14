@@ -40,12 +40,11 @@ function ratingSymbol(rating: string | undefined): string {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
+export const FinalEvaluationPage: React.FC<FinalEvaluationPDFProps> = ({
   worker,
   evaluation,
 }) => {
   return (
-    <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -185,8 +184,13 @@ const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = ({
           </Text>
         </View>
       </Page>
-    </Document>
   );
 };
+
+const FinalEvaluationPDF: React.FC<FinalEvaluationPDFProps> = (props) => (
+  <Document>
+    <FinalEvaluationPage {...props} />
+  </Document>
+);
 
 export default FinalEvaluationPDF;

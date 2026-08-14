@@ -87,7 +87,7 @@ function resultLabel(result: string | null): string {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
+export const OjtRecordPage: React.FC<OjtRecordPDFProps> = ({
   worker,
   ojtUser,
   records,
@@ -104,7 +104,6 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
   }
 
   return (
-    <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -355,8 +354,13 @@ const OjtRecordPDF: React.FC<OjtRecordPDFProps> = ({
           </Text>
         </View>
       </Page>
-    </Document>
   );
 };
+
+const OjtRecordPDF: React.FC<OjtRecordPDFProps> = (props) => (
+  <Document>
+    <OjtRecordPage {...props} />
+  </Document>
+);
 
 export default OjtRecordPDF;
