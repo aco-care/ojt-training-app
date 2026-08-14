@@ -1,84 +1,55 @@
 'use client';
 
-import { useState, useCallback, type ReactElement } from 'react';
-import type { DocumentProps } from '@react-pdf/renderer';
-
-// ---------------------------------------------------------------------------
-// Props types (serializable from server component)
-// ---------------------------------------------------------------------------
-interface WorkerInfo {
-  name: string;
-  nationality: string | null;
-  facility_name: string;
-}
-
-interface MutualComments {
-  trainer_comment: string | null;
-  worker_comment: string | null;
-  supervisor_comment_to_trainer: string | null;
-  supervisor_comment_to_worker: string | null;
-}
-
-interface TrainingItemData {
-  item: {
-    id: string;
-    item_number: number;
-    title: string;
-    target_hours: number;
-  };
-  subtopics: { id: string; title: string; sort_order: number }[];
-  sessions: {
-    date: string;
-    start_time: string;
-    end_time: string;
-    trainer_name: string;
-    format: string;
-    completed_subtopics: string[];
-    notes: string | null;
-    comments: MutualComments | null;
-  }[];
-  approval: { approved_by_name: string; approved_at: string } | null;
-}
-
-interface OjtUserData {
-  ojtUser: {
-    id: string;
-    user_initial: string;
-    visit_frequency: number;
-    ojt_start_date: string | null;
-    ojt_status: string;
-  };
-  records: {
-    step: string;
-    step_label: string;
-    attempt_number: number;
-    date: string;
-    companion_name: string | null;
-    content: string | null;
-    checklist_self: string[];
-    checklist_trainer: string[];
-    result: string | null;
-    manager_comment: string | null;
-    worker_comment: string | null;
-    notes: string | null;
-    comments: MutualComments | null;
-  }[];
-}
-
-interface EvaluationData {
-  eval_date: string;
-  scores_self: string[];
-  scores_trainer: string[];
-  supervisor_comment: string | null;
-  approved_by_name: string | null;
-  approved_at: string | null;
-}
+import { useState, useCallback } from 'react';
+import type {
+  WorkerInfo,
+  TrainingItemData,
+  OjtUserData,
+  EvaluationData,
+} from '@/lib/pdf/pdf-types';
+import type { PdfWorkerRequest, PdfWorkerResponse } from '@/lib/pdf/pdf-worker';
 
 interface ExportClientProps {
   worker: WorkerInfo;
   trainingData: TrainingItemData[];
   ojtData: OjtUserData[];
   evaluationData: EvaluationData | null;
+}
+
+// ---------------------------------------------------------------------------
+// Worker helper
+// ---------------------------------------------------------------------------
+// PDF layout/rendering is synchronous, CPU-heavy work. Running it on the main
+// thread blocks the tab long enough to trigger the browser's own "page
+// unresponsive" prompt once a worklist has more than a couple of records.
+// A fresh Worker per request keeps that work off the UI thread entirely.
+function runPdfWorker(request: PdfWorkerRequest): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../../../../lib/pdf/pdf-worker.tsx', import.meta.url));
+    worker.onmessage = (event: MessageEvent<PdfWorkerResponse>) => {
+      worker.terminate();
+      if (event.data.ok) {
+        resolve(event.data.buffer);
+      } else {
+        reject(new Error(event.data.error));
+      }
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message || 'PDF worker failed'));
+    };
+    worker.postMessage(request);
+  });
+}
+
+function downloadPdf(buffer: ArrayBuffer, filename: string) {
+  const blob = new Blob([buffer], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ---------------------------------------------------------------------------
@@ -94,62 +65,20 @@ export default function ExportClient({
   const [isBulkLoading, setIsBulkLoading] = useState(false);
 
   const handleBulkPdf = useCallback(async () => {
+    if (trainingData.length + ojtData.length + (evaluationData ? 1 : 0) === 0) {
+      alert('出力できる帳票がありません。');
+      return;
+    }
     setIsBulkLoading(true);
     try {
-      const { pdf, Document } = await import('@react-pdf/renderer');
-      const { TrainingRecordPage } = await import('@/lib/pdf/training-record-pdf');
-      const { OjtRecordPage } = await import('@/lib/pdf/ojt-record-pdf');
-      const { FinalEvaluationPage } = await import('@/lib/pdf/final-evaluation-pdf');
-
-      const pages: ReactElement[] = [
-        ...trainingData.map((itemData) => (
-          <TrainingRecordPage
-            key={`training-${itemData.item.id}`}
-            worker={worker}
-            item={itemData.item}
-            subtopics={itemData.subtopics}
-            sessions={itemData.sessions}
-            approval={itemData.approval}
-          />
-        )),
-        ...ojtData.map((userData) => (
-          <OjtRecordPage
-            key={`ojt-${userData.ojtUser.id}`}
-            worker={worker}
-            ojtUser={userData.ojtUser}
-            records={userData.records}
-          />
-        )),
-        ...(evaluationData
-          ? [
-              <FinalEvaluationPage
-                key="evaluation"
-                worker={worker}
-                evaluation={evaluationData}
-              />,
-            ]
-          : []),
-      ];
-
-      if (pages.length === 0) {
-        alert('出力できる帳票がありません。');
-        return;
-      }
-
-      // Render every record as a Page inside ONE Document/pdf() call instead of
-      // rendering N separate PDFs and merging them with pdf-lib: that approach
-      // re-embedded the Japanese font in every single document and copied pages
-      // across documents, which got slow enough to look hung for worklists with
-      // more than a few records.
-      const blob = await pdf(
-        <Document>{pages}</Document> as ReactElement<DocumentProps>,
-      ).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `研修OJT記録一式_${worker.name}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const buffer = await runPdfWorker({
+        kind: 'bulk',
+        worker,
+        trainingData,
+        ojtData,
+        evaluationData,
+      });
+      downloadPdf(buffer, `研修OJT記録一式_${worker.name}.pdf`);
     } catch (err) {
       console.error('Bulk PDF generation failed:', err);
       alert('一括PDF出力に失敗しました。');
@@ -163,27 +92,8 @@ export default function ExportClient({
       const key = `training-${itemData.item.id}`;
       setLoadingKey(key);
       try {
-        const { pdf } = await import('@react-pdf/renderer');
-        const { default: TrainingRecordPDF } = await import(
-          '@/lib/pdf/training-record-pdf'
-        );
-
-        const blob = await pdf(
-          <TrainingRecordPDF
-            worker={worker}
-            item={itemData.item}
-            subtopics={itemData.subtopics}
-            sessions={itemData.sessions}
-            approval={itemData.approval}
-          />,
-        ).toBlob();
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `研修記録票_${itemData.item.item_number}_${worker.name}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const buffer = await runPdfWorker({ kind: 'training', worker, item: itemData });
+        downloadPdf(buffer, `研修記録票_${itemData.item.item_number}_${worker.name}.pdf`);
       } catch (err) {
         console.error('PDF generation failed:', err);
         alert('PDF生成に失敗しました。');
@@ -199,25 +109,8 @@ export default function ExportClient({
       const key = `ojt-${userData.ojtUser.id}`;
       setLoadingKey(key);
       try {
-        const { pdf } = await import('@react-pdf/renderer');
-        const { default: OjtRecordPDF } = await import(
-          '@/lib/pdf/ojt-record-pdf'
-        );
-
-        const blob = await pdf(
-          <OjtRecordPDF
-            worker={worker}
-            ojtUser={userData.ojtUser}
-            records={userData.records}
-          />,
-        ).toBlob();
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `OJT記録票_${userData.ojtUser.user_initial}_${worker.name}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const buffer = await runPdfWorker({ kind: 'ojt', worker, item: userData });
+        downloadPdf(buffer, `OJT記録票_${userData.ojtUser.user_initial}_${worker.name}.pdf`);
       } catch (err) {
         console.error('PDF generation failed:', err);
         alert('PDF生成に失敗しました。');
@@ -233,21 +126,8 @@ export default function ExportClient({
     const key = 'evaluation';
     setLoadingKey(key);
     try {
-      const { pdf } = await import('@react-pdf/renderer');
-      const { default: FinalEvaluationPDF } = await import(
-        '@/lib/pdf/final-evaluation-pdf'
-      );
-
-      const blob = await pdf(
-        <FinalEvaluationPDF worker={worker} evaluation={evaluationData} />,
-      ).toBlob();
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `最終評価票_${worker.name}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const buffer = await runPdfWorker({ kind: 'evaluation', worker, item: evaluationData });
+      downloadPdf(buffer, `最終評価票_${worker.name}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
       alert('PDF生成に失敗しました。');
