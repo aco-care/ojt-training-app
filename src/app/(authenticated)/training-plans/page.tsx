@@ -29,15 +29,15 @@ export default async function TrainingPlansPage() {
       .order('planned_date', { ascending: false }),
     supabase
       .from('foreign_workers')
-      .select('id, name')
+      .select('id, name, facility_id')
       .order('name'),
     supabase
       .from('training_items')
-      .select('id, title, subtopics')
+      .select('id, item_number, title, target_hours, target_sessions, sort_order, facility_id, subtopics:training_subtopics(id, title)')
       .order('sort_order'),
     supabase
       .from('profiles')
-      .select('id, name, role, qualification')
+      .select('id, name, role, qualification, facility_id, profile_facilities(facility_id)')
       .in('role', ['trainer', 'supervisor', 'admin'])
       .eq('is_archived', false)
       .order('name'),
@@ -51,9 +51,9 @@ export default async function TrainingPlansPage() {
     item: { id: string; title: string };
     trainer: { id: string; name: string };
   })[];
-  const workers = (workersData ?? []) as { id: string; name: string }[];
+  const workers = (workersData ?? []) as { id: string; name: string; facility_id: string }[];
   const items = (itemsData ?? []) as (TrainingItem & { subtopics: { id: string; title: string }[] })[];
-  const trainers = (trainersData ?? []) as { id: string; name: string; role: string; qualification: string }[];
+  const trainers = (trainersData ?? []) as { id: string; name: string; role: string; qualification: string; facility_id: string | null; profile_facilities: { facility_id: string }[] }[];
 
   const canCreate = userRole === 'admin' || userRole === 'supervisor' || userRole === 'trainer';
 

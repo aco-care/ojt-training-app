@@ -34,7 +34,7 @@ export default async function OjtPlansPage() {
       .order('planned_date', { ascending: false }),
     supabase
       .from('foreign_workers')
-      .select('id, name')
+      .select('id, name, facility_id')
       .order('name'),
     supabase
       .from('ojt_users')
@@ -43,7 +43,7 @@ export default async function OjtPlansPage() {
       .order('created_at'),
     supabase
       .from('profiles')
-      .select('id, name, role, qualification')
+      .select('id, name, role, qualification, facility_id, profile_facilities(facility_id)')
       .in('role', ['trainer', 'supervisor', 'admin'])
       .eq('is_archived', false)
       .order('name'),
@@ -57,9 +57,9 @@ export default async function OjtPlansPage() {
     ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
   })[];
-  const workers = (workersData ?? []) as { id: string; name: string }[];
+  const workers = (workersData ?? []) as { id: string; name: string; facility_id: string }[];
   const ojtUsers = (ojtUsersData ?? []) as { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  const staff = (staffData ?? []) as { id: string; name: string; role: string; qualification: string }[];
+  const staff = (staffData ?? []) as { id: string; name: string; role: string; qualification: string; facility_id: string | null; profile_facilities: { facility_id: string }[] }[];
 
   const canCreate = userRole === 'admin' || userRole === 'supervisor' || userRole === 'trainer';
 

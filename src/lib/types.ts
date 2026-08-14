@@ -82,6 +82,7 @@ export interface TrainingItem {
   target_hours: number;
   target_sessions: number;
   sort_order: number;
+  facility_id: string | null;
   subtopics?: TrainingSubtopic[];
 }
 

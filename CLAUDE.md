@@ -29,12 +29,13 @@ https://ojt-training-app.vercel.app
 - 管理者: a.yma0615@gmail.com (admin)
 - 施設: ACOケア訪問介護事業所、定期巡回・随時対応型訪問介護看護コロボックル、定期巡回・随時対応型訪問介護看護ちっこりーの
 
-## 登録済みスタッフ（kiccho.org）
-- yamaguchi-ayuko@kiccho.org — 指導責任者 ✅ パスワード設定済み・ログイン確認済み
-- tsutsumi-yukiko@kiccho.org — 指導責任者（パスワード設定待ち）
-- yamashita-kanami@kiccho.org — 指導責任者（パスワード設定待ち）
-- sabina-magar@kiccho.org — 特定技能外国人（パスワード設定待ち）
-- sastika-rai@kiccho.org — 特定技能外国人（パスワード設定待ち）
+## 登録済みスタッフ（2026-08-15 DB確認・全員メール確認済み）
+アカウントの正確な状況は都度DBで確認すること（このリストは静的なため陳腐化しやすい）。
+
+- **コロボックル**: 山口愛優子@supervisor(yamaguchi-ayuko)・堤有輝子(tsutsumi-yukiko)・山下華美(yamashita-kanami)・福田純也(fukuda-jyunya)=supervisor、永尾賢斗(nagao-kento)・山下隼(yamashita-shun)=trainer、Magar Sabina(sabina-magar)・Rai Sastika(sastika-rai)=worker
+- **ふきのはなれ**: 古賀遥(koga-haruka)=supervisor、宮原幸美(miyahara-yukimi)・松倉由美子(matsukura-yumiko)=trainer、Akash Tamang・Rupesh Budha・MAHAT KHEM RAJ・SHRESTHA ANJANA・MAGAR YAMUNA KUMARI・ADHIKARI DIJINA・LAMSAL LAXMI=worker（全員@kiccho.orgまたは個人アドレス）
+- **ふきのとう/コロボックルの学校**: BUCHA KHIMA・REGMI SOMA・SHRESTHA PRAMILA・YADAV JHUBAN KUMARI・CHEMJONG DILASHA・RANA MAGAR BUDHATHOKI BANDANA・PUN MAGAR KHIM KUMARI・RESHMI MAMITA=worker
+- QAテスト用: qa-test-fukinohanare@ojt-training-app.internal（supervisor、ふきのはなれ所属、実装確認専用アカウント。docs/roadmap.md参照）
 
 ## 運用上の注意点
 - カスタムSMTP（Resend）設定済みのため、メール送信のrate limit問題は解消済み
@@ -46,6 +47,9 @@ https://ojt-training-app.vercel.app
 - 会社ごとに別インスタンス方式で展開予定
 - 同じコードを複製し、会社ごとにSupabaseプロジェクト+Vercelデプロイを作成
 - アプリ名のハードコード箇所を環境変数化する作業が必要（未着手）
+
+## 改善ロードマップ
+現在進行中のタスクと既知の課題は docs/roadmap.md に一覧化している。新しい依頼をする前に必ず確認し、完了した項目はチェックを付け、新たに見つかった課題は追記すること。
 
 ## 納品物
 - ロール別案内ガイド: docs/guides/guide-supervisor.html, guide-trainer.html, guide-worker.html, guide-executive.html

@@ -13,9 +13,9 @@ interface OjtPlanListProps {
     ojt_user: { id: string; user_initial: string; ojt_status: string } | null;
     companion: { id: string; name: string };
   })[];
-  workers: { id: string; name: string }[];
+  workers: { id: string; name: string; facility_id: string }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string; role: string; qualification: string }[];
+  staff: { id: string; name: string; role: string; qualification: string; facility_id: string | null; profile_facilities: { facility_id: string }[] }[];
   canCreate: boolean;
   currentUserId: string;
   userRole: UserRole;

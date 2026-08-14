@@ -7,9 +7,9 @@ import { OJT_STEPS } from '@/lib/types';
 import { todayKey } from '@/lib/date-utils';
 
 interface CreateOjtPlanFormProps {
-  workers: { id: string; name: string }[];
+  workers: { id: string; name: string; facility_id: string }[];
   ojtUsers: { id: string; worker_id: string; user_initial: string; ojt_status: string }[];
-  staff: { id: string; name: string; role: string; qualification: string }[];
+  staff: { id: string; name: string; role: string; qualification: string; facility_id: string | null; profile_facilities: { facility_id: string }[] }[];
   currentUserId: string;
   onClose: () => void;
 }
@@ -37,7 +37,16 @@ export default function CreateOjtPlanForm({
   // Filter OJT users by selected worker
   const filteredOjtUsers = ojtUsers.filter((u) => u.worker_id === workerId);
 
-  const sortedStaff = [...staff].sort((a, b) => {
+  const selectedWorker = workers.find((w) => w.id === workerId);
+  const availableStaff = selectedWorker
+    ? staff.filter(
+        (s) =>
+          s.facility_id === selectedWorker.facility_id ||
+          s.profile_facilities.some((pf) => pf.facility_id === selectedWorker.facility_id)
+      )
+    : staff;
+
+  const sortedStaff = [...availableStaff].sort((a, b) => {
     const order: Record<string, number> = { kaigofukushishi: 0, shoninsya: 1, none: 2 };
     return (order[a.qualification] ?? 2) - (order[b.qualification] ?? 2);
   });
@@ -99,7 +108,7 @@ export default function CreateOjtPlanForm({
             </label>
             <select
               value={workerId}
-              onChange={(e) => { setWorkerId(e.target.value); setOjtUserId(''); }}
+              onChange={(e) => { setWorkerId(e.target.value); setOjtUserId(''); setCompanionId(''); }}
               required
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
             >

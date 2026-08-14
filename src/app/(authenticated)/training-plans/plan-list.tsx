@@ -13,9 +13,9 @@ interface PlanListProps {
     item: { id: string; title: string };
     trainer: { id: string; name: string };
   })[];
-  workers: { id: string; name: string }[];
+  workers: { id: string; name: string; facility_id: string }[];
   items: (TrainingItem & { subtopics: { id: string; title: string }[] })[];
-  trainers: { id: string; name: string; role: string; qualification: string }[];
+  trainers: { id: string; name: string; role: string; qualification: string; facility_id: string | null; profile_facilities: { facility_id: string }[] }[];
   canCreate: boolean;
   currentUserId: string;
   userRole: UserRole;
