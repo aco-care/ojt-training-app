@@ -217,7 +217,11 @@ export const TrainingRecordPage: React.FC<TrainingRecordPDFProps> = ({
                     </View>
                   </View>
                   {commentEntries.length > 0 && (
-                    <View wrap={false} style={isLast ? styles.commentBlockLast : styles.commentBlock}>
+                    // wrap defaults to true here (unlike the compact info row above):
+                    // these comment blocks can run to 15-20+ lines, and forcing them to
+                    // stay together left large blank gaps whenever one didn't fit the
+                    // remaining space on a page.
+                    <View style={isLast ? styles.commentBlockLast : styles.commentBlock}>
                       {commentEntries.map((c, i) => (
                         <Text key={i} style={styles.commentLine}>
                           <Text style={styles.bold}>{c.label}：</Text>
