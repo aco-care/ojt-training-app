@@ -76,55 +76,30 @@ export default function StaffManager({ profiles, facilities, currentUserId, curr
   const saveEdit = async (profileId: string) => {
     setLoading(profileId);
     setError(null);
-    const supabase = createClient();
-
-    // 1. Update profiles.facility_id to primary for backward compat
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        name: editName,
-        email: editEmail,
-        role: editRole,
-        qualification: editQualification,
-        facility_id: editPrimaryFacilityId || null,
-      })
-      .eq('id', profileId);
-
-    if (updateError) {
-      setLoading(null);
-      setError(`更新に失敗しました: ${updateError.message}`);
-      return;
-    }
-
-    // 2. Delete old profile_facilities rows
-    const { error: deleteError } = await supabase
-      .from('profile_facilities')
-      .delete()
-      .eq('profile_id', profileId);
-
-    if (deleteError) {
-      setLoading(null);
-      setError(`施設割り当ての削除に失敗しました: ${deleteError.message}`);
-      return;
-    }
-
-    // 3. Insert new profile_facilities rows
-    if (editFacilityIds.length > 0) {
-      const rows = editFacilityIds.map((fid) => ({
-        profile_id: profileId,
-        facility_id: fid,
-        is_primary: fid === editPrimaryFacilityId,
-      }));
-
-      const { error: insertError } = await supabase
-        .from('profile_facilities')
-        .insert(rows);
-
-      if (insertError) {
+    try {
+      const response = await fetch('/api/admin/update-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile_id: profileId,
+          email: editEmail,
+          name: editName,
+          role: editRole,
+          qualification: editQualification,
+          facility_ids: editFacilityIds,
+          primary_facility_id: editPrimaryFacilityId || null,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
         setLoading(null);
-        setError(`施設割り当ての保存に失敗しました: ${insertError.message}`);
+        setError(result.error || '更新に失敗しました');
         return;
       }
+    } catch {
+      setLoading(null);
+      setError('更新に失敗しました。通信状態を確認してください。');
+      return;
     }
 
     // Audit log: compare old vs new values
@@ -132,6 +107,7 @@ export default function StaffManager({ profiles, facilities, currentUserId, curr
     if (target) {
       const changes: string[] = [];
       if (editName !== target.name) changes.push(`氏名を ${target.name} → ${editName} に変更`);
+      if (editEmail.trim().toLowerCase() !== target.email.toLowerCase()) changes.push(`メールアドレスを ${target.email} → ${editEmail.trim().toLowerCase()} に変更`);
       if (editRole !== target.role) changes.push(`役職を ${roleLabel(target.role)} → ${roleLabel(editRole)} に変更`);
       const oldQual = (target as Profile).qualification ?? 'none';
       if (editQualification !== oldQual) changes.push(`資格を ${qualificationLabel(oldQual)} → ${qualificationLabel(editQualification)} に変更`);
@@ -198,14 +174,14 @@ export default function StaffManager({ profiles, facilities, currentUserId, curr
     router.refresh();
   };
 
-  const resendInvite = async (email: string) => {
+  const resendInvite = async (profileId: string, email: string) => {
     if (!confirm(`${email} に招待メールを再送しますか？`)) return;
     setError(null);
     try {
       const res = await fetch('/api/admin/resend-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ profile_id: profileId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -588,7 +564,7 @@ export default function StaffManager({ profiles, facilities, currentUserId, curr
                                 {!profile.is_archived && (
                                   <>
                                     <button type="button" onClick={() => { setMenuOpenId(null); startEdit(profile); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">編集</button>
-                                    <button type="button" onClick={() => { setMenuOpenId(null); resendInvite(profile.email); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">招待再送</button>
+                                    <button type="button" onClick={() => { setMenuOpenId(null); resendInvite(profile.id, profile.email); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">招待再送</button>
                                     <button type="button" onClick={() => { setMenuOpenId(null); setResetPwProfile({ id: profile.id, name: profile.name }); }} className="flex w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">PW変更</button>
                                     <div className="my-1 border-t border-gray-100" />
                                     <button type="button" onClick={() => { setMenuOpenId(null); toggleArchive(profile.id, false, '異動'); }} disabled={loading === profile.id} className="flex w-full px-3 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 disabled:opacity-50">異動処理</button>

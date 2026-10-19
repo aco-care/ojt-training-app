@@ -24,8 +24,24 @@ export default async function AuthenticatedLayout({
     .eq('id', user.id)
     .single();
 
-  const userName = profile?.name ?? user.email ?? '';
-  const userRole = profile?.role ?? 'worker';
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-lg rounded-lg border border-amber-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-lg font-semibold text-gray-900">アカウント設定を確認してください</h1>
+          <p className="mt-3 text-sm text-gray-600">
+            ログイン情報とスタッフ台帳が紐づいていません。特定技能外国人としては処理されていません。
+          </p>
+          <p className="mt-2 text-xs text-gray-500">
+            管理者にメールアドレスとスタッフ登録の確認を依頼してください。
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = profile.name;
+  const userRole = profile.role;
 
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') ?? '/';
