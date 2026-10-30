@@ -118,6 +118,7 @@ export default function CreatePlanModal({
       .select('id, start_time, end_time')
       .eq('worker_id', wid)
       .eq('planned_date', pDate)
+      .neq('is_archived', true)
       .neq('status', 'cancelled');
 
     for (const p of plans ?? []) {
@@ -131,6 +132,7 @@ export default function CreatePlanModal({
       .select('id, start_time, end_time')
       .eq('worker_id', wid)
       .eq('planned_date', pDate)
+      .neq('is_archived', true)
       .neq('status', 'cancelled');
 
     for (const p of oPlans ?? []) {
