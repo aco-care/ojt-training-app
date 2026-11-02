@@ -2,6 +2,7 @@ import test, { before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
+import { FEEDBACK_CATEGORY_LABELS, OJT_STEPS } from '../src/lib/types.ts';
 
 // Replays the repository's real migrations on a throwaway Postgres, with the
 // Supabase platform stubbed, then checks what each role can do through RLS.
@@ -126,6 +127,7 @@ const SEED = `
     ('${SUPERVISOR_AB}', '${FACILITY_A}'),
     ('${SUPERVISOR_AB}', '${FACILITY_B}'),
     ('${TRAINER_A}', '${FACILITY_A}'),
+    ('${TRAINER_A2}', '${FACILITY_B}'),
     ('${TRAINER_A2}', '${FACILITY_A}'),
     ('${TRAINER_B}', '${FACILITY_B}'),
     ('${WORKER_A}', '${FACILITY_A}'),
@@ -300,6 +302,24 @@ test('facility staff read their own facility only', async () => {
 test('someone in several facilities reads all of them', async () => {
   assert.deepEqual(await ids(SUPERVISOR_AB, 'foreign_workers'), [FW_A, FW_A2, FW_B, FW_B_ALSO_A].sort());
   assert.equal((await ids(SUPERVISOR_AB, 'training_plans')).length, 5);
+});
+
+test('staff see every facility of the staff they can see, so an edit cannot drop one', async () => {
+  const facilitiesOf = async (viewer, profileId) =>
+    (await as(viewer, `select facility_id from profile_facilities where profile_id = '${profileId}'`)).rows
+      .map((r) => r.facility_id)
+      .sort();
+
+  for (const viewer of [SUPERVISOR_A, TRAINER_A, ADMIN, EXECUTIVE]) {
+    assert.deepEqual(await facilitiesOf(viewer, TRAINER_A2), [FACILITY_A, FACILITY_B], `${viewer}: colleague in A and B`);
+  }
+  // Trainer B is only in B, but is named on a plan supervisor A can read
+  assert.ok((await ids(SUPERVISOR_A, 'profiles')).includes(TRAINER_B));
+  assert.deepEqual(await facilitiesOf(SUPERVISOR_A, TRAINER_B), [FACILITY_B]);
+
+  assert.deepEqual(await facilitiesOf(SUPERVISOR_A, WORKER_B), [], 'staff out of sight stay out of sight');
+  assert.deepEqual(await facilitiesOf(WORKER_A, WORKER_A2), [], 'workers cannot read each other');
+  assert.deepEqual(await facilitiesOf(WORKER_A, TRAINER_A), [], 'workers see only their own membership');
 });
 
 test('someone without profile_facilities rows falls back to profiles.facility_id', async () => {
@@ -516,20 +536,24 @@ test('plan review notice reaches the facility supervisors and admins', async () 
   }
 });
 
-test('OJT step labels in the notice match the app', async () => {
-  const [migration, types] = await Promise.all([
-    sql(SCOPE),
-    readFile(new URL('src/lib/types.ts', root), 'utf8'),
-  ]);
-  const steps = [...types.matchAll(/\{ step: '(\w+)', number: '(.)', label: '([^']+)'/g)];
-  assert.equal(steps.length, 7);
-  for (const [, step, number, label] of steps) {
-    assert.ok(migration.includes(`WHEN '${step}' THEN '${number} ${label}'`), `${step} label`);
+test('step and category labels in the notices match the app', async () => {
+  for (const { step, number, label } of OJT_STEPS) {
+    const { notices } = await asSession(SUPERVISOR_A, [
+      `update ojt_plans set step = '${step}', trainer_completed_at = now(), worker_completed_at = now() where id = '${OJT_PLAN_A}'`,
+      `select public.notify_plan_ready_for_review('ojt', '${OJT_PLAN_A}')`,
+    ]);
+    const notice = notices.find((n) => n.link === `/ojt-plans/${OJT_PLAN_A}`);
+    assert.ok(notice.message.includes(`（${number} ${label}）`), `${step}: ${notice.message}`);
   }
-  const categories = types.match(/FEEDBACK_CATEGORY_LABELS[^{]*\{([^}]+)\}/)[1];
-  for (const [, key, label] of categories.matchAll(/(\w+): '([^']+)'/g)) {
-    const expected = key === 'other' ? `ELSE '${label}'` : `WHEN '${key}' THEN '${label}'`;
-    assert.ok(migration.includes(expected), `${key} label`);
+
+  for (const [category, label] of Object.entries(FEEDBACK_CATEGORY_LABELS)) {
+    const id = uuid(70);
+    const { notices } = await asSession(WORKER_A, [
+      `insert into feedbacks (id, sender_id, content, category, status) values ('${id}', '${WORKER_A}', 'c', '${category}', 'pending')`,
+      `select public.notify_feedback_received('${id}')`,
+    ]);
+    const notice = notices.find((n) => n.title === '新しいフィードバック');
+    assert.equal(notice.message, `worker-aさんから${label}のフィードバックが届きました`);
   }
 });
 
@@ -569,9 +593,8 @@ test('feedback notice goes to admins and only the sender can trigger it', async 
 });
 
 test('feedback-images is private and folder-scoped', async () => {
-  const { rows } = await db.query(`select public, file_size_limit from storage.buckets where id = 'feedback-images'`);
-  assert.equal(rows[0].public, false);
-  assert.equal(Number(rows[0].file_size_limit), 5 * 1024 * 1024);
+  const { rows } = await db.query(`select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'feedback-images'`);
+  assert.deepEqual(rows, [{ public: false, file_size_limit: null, allowed_mime_types: null }]);
 
   const names = async (uid) =>
     (await as(uid, `select name from storage.objects where bucket_id = 'feedback-images' order by name`)).rows.map((r) => r.name);

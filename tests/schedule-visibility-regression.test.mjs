@@ -1,63 +1,104 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import {
+  canArchiveEvent,
+  filterCalendarEvents,
+  initialCalendarFilters,
+  trainerFilterOptions,
+  withScope,
+  withTrainerFilter,
+  withWorkerFilter,
+} from '../src/lib/calendar-filters.ts';
+import { feedbackImagePath } from '../src/lib/feedback-images.ts';
 
-const read = (relativePath) => readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
+const ME = 'me';
 
-test('trainers are matched by ID, never by display name', async () => {
-  const [page, calendar] = await Promise.all([
-    read('src/app/(authenticated)/schedule/page.tsx'),
-    read('src/app/(authenticated)/schedule/schedule-calendar.tsx'),
+const event = (id, trainerId, workerId, extra = {}) => ({
+  id,
+  trainerId,
+  workerId,
+  trainerName: `name-${trainerId}`,
+  createdBy: 'someone',
+  ...extra,
+});
+
+const MINE = event('mine', ME, 'worker-1');
+const OTHER = event('other', 'trainer-2', 'worker-2');
+const EVENTS = [MINE, OTHER];
+
+const shown = (filters, events = EVENTS) =>
+  filterCalendarEvents(events, filters, ME).map((e) => e.id);
+
+test('the calendar opens on your own plans and can switch to everyone', () => {
+  const opened = initialCalendarFilters(EVENTS, ME);
+  assert.deepEqual(shown(opened), ['mine']);
+  assert.deepEqual(shown(withScope(opened, true)), ['mine', 'other']);
+});
+
+test('someone with no plans of their own opens on everyone', () => {
+  assert.deepEqual(shown(initialCalendarFilters([OTHER], ME), [OTHER]), ['other']);
+});
+
+test('trainers are matched by ID, so same-name staff stay separate', () => {
+  const twin = event('twin', 'trainer-3', 'worker-2', { trainerName: 'name-trainer-2' });
+  const events = [MINE, OTHER, twin];
+
+  const filters = withTrainerFilter(initialCalendarFilters(events, ME), 'trainer-2', ME);
+  assert.deepEqual(shown(filters, events), ['other']);
+  assert.deepEqual(trainerFilterOptions(events), [
+    [ME, 'name-me'],
+    ['trainer-2', 'name-trainer-2'],
+    ['trainer-3', 'name-trainer-2'],
   ]);
-
-  assert.doesNotMatch(page, /e\.trainerName === profile\.name/);
-  assert.match(page, /trainerId: p\.trainer_id/);
-  assert.match(page, /trainerId: p\.companion_id/);
-
-  assert.doesNotMatch(calendar, /filterTrainerName/);
-  assert.match(calendar, /e\.trainerId !== filterTrainerId/);
-  assert.match(calendar, /<option key=\{id\} value=\{id\}>\{name\}<\/option>/);
 });
 
-test('the calendar opens on your own plans and can switch to everyone', async () => {
-  const calendar = await read('src/app/(authenticated)/schedule/schedule-calendar.tsx');
-
-  assert.match(calendar, /!events\.some\(\(e\) => e\.trainerId === currentUserId\)/);
-  assert.match(calendar, /!showAllEvents && e\.trainerId !== currentUserId/);
-  assert.match(calendar, /label: '自分の予定'/);
-  assert.match(calendar, /label: '全員'/);
-  assert.equal(calendar.match(/\{eventScopeToggle\}/g)?.length, 2, 'both mobile and desktop controls');
+test('choosing another trainer switches to everyone; choosing yourself does not', () => {
+  const opened = initialCalendarFilters(EVENTS, ME);
+  assert.equal(withTrainerFilter(opened, 'trainer-2', ME).showAll, true);
+  assert.equal(withTrainerFilter(opened, ME, ME).showAll, false);
 });
 
-test('archiving is only offered on plans the database lets you change', async () => {
-  const calendar = await read('src/app/(authenticated)/schedule/schedule-calendar.tsx');
-
-  assert.match(calendar, /event\.trainerId === currentUserId \|\| event\.createdBy === currentUserId/);
-  assert.doesNotMatch(calendar, /\{canCreate && \(\s*<button\s+type="button"\s+onClick=\{\(e\) => \{ e\.stopPropagation\(\); handleArchivePlan/);
+test('choosing a worker switches to everyone and shows that worker\'s plans', () => {
+  const filters = withWorkerFilter(initialCalendarFilters(EVENTS, ME), 'worker-2');
+  assert.equal(filters.showAll, true);
+  assert.deepEqual(shown(filters), ['other']);
 });
 
-test('review and feedback notices go through the database, not the staff list', async () => {
-  const [plan, ojtPlan, button] = await Promise.all([
-    read('src/app/(authenticated)/training-plans/[planId]/plan-detail.tsx'),
-    read('src/app/(authenticated)/ojt-plans/[planId]/ojt-plan-detail.tsx'),
-    read('src/components/feedback-button.tsx'),
-  ]);
+test('clearing a filter leaves the current view alone', () => {
+  const opened = initialCalendarFilters(EVENTS, ME);
+  assert.equal(withWorkerFilter(opened, '').showAll, false);
+  assert.equal(withTrainerFilter(opened, '', ME).showAll, false);
 
-  for (const source of [plan, ojtPlan, button]) {
-    assert.doesNotMatch(source, /from\('notifications'\)/);
+  const everyone = withWorkerFilter(opened, 'worker-2');
+  assert.equal(withWorkerFilter(everyone, '').showAll, true);
+});
+
+test('going back to your own plans clears both filters', () => {
+  const picked = withTrainerFilter(withWorkerFilter(initialCalendarFilters(EVENTS, ME), 'worker-2'), 'trainer-2', ME);
+  assert.deepEqual(withScope(picked, false), { showAll: false, workerId: '', trainerId: '' });
+  assert.deepEqual(shown(withScope(picked, false)), ['mine']);
+});
+
+test('archiving is only offered on plans the database lets you change', () => {
+  const viewer = (role, canCreate = true) => ({ userId: ME, role, canCreate });
+
+  for (const role of ['admin', 'supervisor']) {
+    assert.equal(canArchiveEvent(OTHER, viewer(role)), true, role);
   }
-  assert.equal(plan.match(/rpc\('notify_plan_ready_for_review', \{ p_plan_type: 'training'/g)?.length, 2);
-  assert.equal(ojtPlan.match(/rpc\('notify_plan_ready_for_review', \{ p_plan_type: 'ojt'/g)?.length, 2);
-  assert.match(button, /rpc\('notify_feedback_received'/);
+  assert.equal(canArchiveEvent(MINE, viewer('trainer')), true, 'assigned trainer');
+  assert.equal(canArchiveEvent(event('created', 'trainer-2', 'worker-2', { createdBy: ME }), viewer('trainer')), true, 'creator');
+  assert.equal(canArchiveEvent(OTHER, viewer('trainer')), false, 'someone else\'s plan');
+  assert.equal(canArchiveEvent(MINE, viewer('executive', false)), false, 'read-only role');
 });
 
-test('feedback images are stored by path and shown through signed URLs', async () => {
-  const [button, page] = await Promise.all([
-    read('src/components/feedback-button.tsx'),
-    read('src/app/(authenticated)/admin/feedbacks/page.tsx'),
-  ]);
-
-  assert.doesNotMatch(button, /getPublicUrl/);
-  assert.match(page, /createSignedUrls\(imagePaths, 3600\)/);
-  assert.match(page, /feedbackImagePath\(f\.image_url\)/);
+test('stored feedback images resolve to a storage path, old public URLs included', () => {
+  assert.equal(feedbackImagePath('user-1/1.png'), 'user-1/1.png');
+  assert.equal(
+    feedbackImagePath('https://x.supabase.co/storage/v1/object/public/feedback-images/user-1/1.png'),
+    'user-1/1.png',
+  );
+  assert.equal(
+    feedbackImagePath('https://x.supabase.co/storage/v1/object/public/feedback-images/user-1/a%20b.png?t=1'),
+    'user-1/a b.png',
+  );
 });

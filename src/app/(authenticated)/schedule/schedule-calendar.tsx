@@ -7,6 +7,15 @@ import { createClient } from '@/lib/supabase/client';
 import type { CalendarEvent, CalendarViewMode } from '@/lib/types';
 import { PLAN_STATUS_LABELS } from '@/lib/types';
 import {
+  canArchiveEvent,
+  filterCalendarEvents,
+  initialCalendarFilters,
+  trainerFilterOptions,
+  withScope,
+  withTrainerFilter,
+  withWorkerFilter,
+} from '@/lib/calendar-filters';
+import {
   toDateKey,
   addMonths,
   addWeeks,
@@ -80,49 +89,31 @@ export default function ScheduleCalendar({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [duplicateSource, setDuplicateSource] = useState<CalendarEvent | null>(null);
-  const [filterWorkerId, setFilterWorkerId] = useState('');
-  const [filterTrainerId, setFilterTrainerId] = useState('');
-  // Own plans by default; people with no plans of their own start on everyone's
-  const [showAllEvents, setShowAllEvents] = useState(
-    () => !events.some((e) => e.trainerId === currentUserId)
-  );
+  const [filters, setFilters] = useState(() => initialCalendarFilters(events, currentUserId));
+  const { showAll: showAllEvents, workerId: filterWorkerId, trainerId: filterTrainerId } = filters;
   const router = useRouter();
 
   // Swipe state
   const touchStartX = useRef(0);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Build unique trainers from events, keyed by ID so same-name staff stay separate
-  const trainerOptions = [
-    ...new Map(
-      events
-        .filter((e) => e.trainerId && e.trainerName)
-        .map((e) => [e.trainerId as string, e.trainerName])
-    ),
-  ].sort(([, a], [, b]) => a.localeCompare(b));
+  const trainerOptions = trainerFilterOptions(events);
+  const filteredEvents = filterCalendarEvents(events, filters, currentUserId);
 
-  const filteredEvents = events.filter((e) => {
-    if (!showAllEvents && e.trainerId !== currentUserId) return false;
-    if (filterWorkerId && e.workerId !== filterWorkerId) return false;
-    if (filterTrainerId && e.trainerId !== filterTrainerId) return false;
-    return true;
-  });
+  const handleWorkerFilterChange = (workerId: string) => {
+    setFilters((current) => withWorkerFilter(current, workerId));
+  };
 
-  // Picking someone else's plans only makes sense on the everyone view
   const handleTrainerFilterChange = (trainerId: string) => {
-    setFilterTrainerId(trainerId);
-    if (trainerId && trainerId !== currentUserId) setShowAllEvents(true);
+    setFilters((current) => withTrainerFilter(current, trainerId, currentUserId));
   };
 
   const handleShowAllChange = (showAll: boolean) => {
-    setShowAllEvents(showAll);
-    if (!showAll) setFilterTrainerId('');
+    setFilters((current) => withScope(current, showAll));
   };
 
   const canArchive = (event: CalendarEvent) =>
-    currentUserRole === 'admin' ||
-    currentUserRole === 'supervisor' ||
-    (canCreate && (event.trainerId === currentUserId || event.createdBy === currentUserId));
+    canArchiveEvent(event, { userId: currentUserId, role: currentUserRole, canCreate });
 
   const eventScopeToggle = (
     <div className="flex rounded-lg border border-gray-300 bg-white">
@@ -365,7 +356,7 @@ export default function ScheduleCalendar({
         <div className="flex gap-2">
           <select
             value={filterWorkerId}
-            onChange={(e) => setFilterWorkerId(e.target.value)}
+            onChange={(e) => handleWorkerFilterChange(e.target.value)}
             className="flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-700"
           >
             <option value="">外国人: すべて</option>
@@ -424,7 +415,7 @@ export default function ScheduleCalendar({
         {eventScopeToggle}
         <select
           value={filterWorkerId}
-          onChange={(e) => setFilterWorkerId(e.target.value)}
+          onChange={(e) => handleWorkerFilterChange(e.target.value)}
           className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
         >
           <option value="">外国人: すべて</option>

@@ -145,7 +145,7 @@ WHERE pl.status NOT IN ('completed', 'cancelled')
 GROUP BY pl.source;
 
 -- 10. feedback-images の今の設定と、保存済み画像の件数
-SELECT id, public, file_size_limit, allowed_mime_types FROM storage.buckets WHERE id = 'feedback-images';
+SELECT id, public FROM storage.buckets WHERE id = 'feedback-images';
 SELECT count(*) AS stored_images FROM storage.objects WHERE bucket_id = 'feedback-images';
 SELECT count(*) AS feedbacks_with_image FROM public.feedbacks WHERE image_url IS NOT NULL;
 

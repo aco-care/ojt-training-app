@@ -37,7 +37,7 @@ WHERE (
   );
 
 CREATE TABLE private.feedback_bucket_snapshot_20261102 AS
-SELECT id, public, file_size_limit, allowed_mime_types
+SELECT id, public
 FROM storage.buckets
 WHERE id = 'feedback-images';
 
@@ -240,11 +240,15 @@ CREATE POLICY "workers_select_scoped" ON foreign_workers FOR SELECT TO authentic
 CREATE POLICY "worker_facilities_select_scoped" ON worker_facilities FOR SELECT TO authenticated
   USING (worker_id IN (SELECT public.readable_worker_ids()));
 
+-- スタッフ編集は読めた所属で保存し直すので、読める職員の所属はすべて返す。
+-- 外国人が読めるのは自分の所属だけ
 CREATE POLICY "profile_facilities_select_scoped" ON profile_facilities FOR SELECT TO authenticated
   USING (
     profile_id = auth.uid()
-    OR public.is_corporate_viewer()
-    OR facility_id IN (SELECT public.scoped_facility_ids())
+    OR (
+      public.get_user_role() <> 'worker'
+      AND profile_id IN (SELECT public.readable_profile_ids())
+    )
   );
 
 CREATE POLICY "sessions_select_scoped" ON training_sessions FOR SELECT TO authenticated
@@ -608,15 +612,9 @@ GRANT EXECUTE ON FUNCTION public.notify_feedback_received(uuid) TO authenticated
 -- 置き場所は送信者のフォルダだけ、読めるのは送信者本人と admin だけ。
 -- 画面は保存したURLではなく、都度発行する署名付きURLで表示する。
 -- ------------------------------------------------------------
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'feedback-images', 'feedback-images', false, 5242880,
-  ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
-)
-ON CONFLICT (id) DO UPDATE SET
-  public = EXCLUDED.public,
-  file_size_limit = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('feedback-images', 'feedback-images', false)
+ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
 
 CREATE POLICY "feedback_images_insert_own_folder" ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (

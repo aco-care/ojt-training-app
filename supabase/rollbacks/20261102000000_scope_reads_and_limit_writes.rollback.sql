@@ -68,9 +68,7 @@ GRANT UPDATE ON public.notifications TO authenticated;
 
 -- 記録が無いときは第2段階で作ったバケットなので消さず、公開設定も変えない
 UPDATE storage.buckets b
-SET public = s.public,
-    file_size_limit = s.file_size_limit,
-    allowed_mime_types = s.allowed_mime_types
+SET public = s.public
 FROM private.feedback_bucket_snapshot_20261102 s
 WHERE b.id = s.id;
 
