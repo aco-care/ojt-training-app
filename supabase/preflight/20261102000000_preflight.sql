@@ -116,3 +116,21 @@ WHERE status NOT IN ('scheduled', 'in_progress', 'completed', 'cancelled') GROUP
 UNION ALL
 SELECT 'ojt_plans', status, count(*) FROM public.ojt_plans
 WHERE status NOT IN ('scheduled', 'in_progress', 'completed', 'cancelled') GROUP BY status;
+
+-- 11. 指導者が予定を作るときに空であることを確かめる列の既定値。
+--     想定は null、'{}'（配列の列だけ）、'[]'、false。
+--     ほかの既定値があると、指導者は予定を作成できなくなる（jsonb の列の '{}' も同じ）
+SELECT table_name, column_name, data_type, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name IN ('training_plans', 'ojt_plans')
+  AND column_name IN (
+    'trainer_completed_at', 'trainer_checked_subtopics', 'trainer_checked_items',
+    'trainer_eval', 'trainer_comment', 'trainer_custom_content', 'result',
+    'worker_completed_at', 'worker_checked_subtopics', 'worker_checked_items',
+    'worker_eval', 'worker_comment', 'worker_custom_content',
+    'supervisor_comment_to_trainer', 'supervisor_comment_to_worker',
+    'supervisor_completed_at', 'supervisor_id',
+    'cancel_reason', 'cancel_history', 'is_archived'
+  )
+ORDER BY table_name, column_name;

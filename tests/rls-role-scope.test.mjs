@@ -720,7 +720,13 @@ test('the preflight queries run and change nothing', async () => {
   const before = await policySnapshot();
   const results = await db.exec(await readFile(PREFLIGHT, 'utf8'));
   assert.deepEqual(results[0].rows, [], 'no code-referenced column is missing');
-  assert.deepEqual(results.at(-1).rows, [], 'no plan has an unexpected status');
+  assert.deepEqual(results.at(-2).rows, [], 'no plan has an unexpected status');
+  const defaults = results.at(-1).rows;
+  assert.equal(defaults.length, 35, 'every column the insert check reads, on both tables');
+  assert.deepEqual(
+    [...new Set(defaults.map((row) => row.column_default))].sort(),
+    [null, "'[]'::jsonb", "'{}'::text[]", "'{}'::uuid[]", 'false'].sort(),
+  );
   assert.deepEqual(await policySnapshot(), before);
 });
 
