@@ -147,22 +147,7 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId, currentUs
       description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）に同行者入力を完了`,
     });
     if (plan.worker_completed_at) {
-      const { data: supervisors } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'supervisor'])
-        .eq('is_archived', false);
-      if (supervisors && supervisors.length > 0) {
-        await supabase.from('notifications').insert(
-          supervisors.map((s) => ({
-            user_id: s.id,
-            title: 'OJT記録の確認依頼',
-            message: `${plan.worker.name}のOJT（${getStepLabel(plan.step ?? '')}）の同行者・本人入力が完了しました。確認・承認をお願いします。`,
-            is_read: false,
-            link: `/ojt-plans/${plan.id}`,
-          }))
-        );
-      }
+      await supabase.rpc('notify_plan_ready_for_review', { p_plan_type: 'ojt', p_plan_id: plan.id });
     }
     setSuccess('同行者の入力を保存しました');
     router.refresh();
@@ -191,22 +176,7 @@ export default function OjtPlanDetail({ plan, planRole, currentUserId, currentUs
       description: `${plan.worker.name}のOJT予定（${getStepLabel(plan.step ?? '')}）に本人入力を完了`,
     });
     if (plan.trainer_completed_at) {
-      const { data: supervisors } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'supervisor'])
-        .eq('is_archived', false);
-      if (supervisors && supervisors.length > 0) {
-        await supabase.from('notifications').insert(
-          supervisors.map((s) => ({
-            user_id: s.id,
-            title: 'OJT記録の確認依頼',
-            message: `${plan.worker.name}のOJT（${getStepLabel(plan.step ?? '')}）の同行者・本人入力が完了しました。確認・承認をお願いします。`,
-            is_read: false,
-            link: `/ojt-plans/${plan.id}`,
-          }))
-        );
-      }
+      await supabase.rpc('notify_plan_ready_for_review', { p_plan_type: 'ojt', p_plan_id: plan.id });
     }
     setSuccess('本人の入力を保存しました');
     router.refresh();

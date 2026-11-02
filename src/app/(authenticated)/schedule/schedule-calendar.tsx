@@ -81,21 +81,69 @@ export default function ScheduleCalendar({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [duplicateSource, setDuplicateSource] = useState<CalendarEvent | null>(null);
   const [filterWorkerId, setFilterWorkerId] = useState('');
-  const [filterTrainerName, setFilterTrainerName] = useState('');
+  const [filterTrainerId, setFilterTrainerId] = useState('');
+  // Own plans by default; people with no plans of their own start on everyone's
+  const [showAllEvents, setShowAllEvents] = useState(
+    () => !events.some((e) => e.trainerId === currentUserId)
+  );
   const router = useRouter();
 
   // Swipe state
   const touchStartX = useRef(0);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Build unique trainer names from events
-  const trainerNames = [...new Set(events.map((e) => e.trainerName).filter(Boolean))].sort();
+  // Build unique trainers from events, keyed by ID so same-name staff stay separate
+  const trainerOptions = [
+    ...new Map(
+      events
+        .filter((e) => e.trainerId && e.trainerName)
+        .map((e) => [e.trainerId as string, e.trainerName])
+    ),
+  ].sort(([, a], [, b]) => a.localeCompare(b));
 
   const filteredEvents = events.filter((e) => {
+    if (!showAllEvents && e.trainerId !== currentUserId) return false;
     if (filterWorkerId && e.workerId !== filterWorkerId) return false;
-    if (filterTrainerName && e.trainerName !== filterTrainerName) return false;
+    if (filterTrainerId && e.trainerId !== filterTrainerId) return false;
     return true;
   });
+
+  // Picking someone else's plans only makes sense on the everyone view
+  const handleTrainerFilterChange = (trainerId: string) => {
+    setFilterTrainerId(trainerId);
+    if (trainerId && trainerId !== currentUserId) setShowAllEvents(true);
+  };
+
+  const handleShowAllChange = (showAll: boolean) => {
+    setShowAllEvents(showAll);
+    if (!showAll) setFilterTrainerId('');
+  };
+
+  const canArchive = (event: CalendarEvent) =>
+    currentUserRole === 'admin' ||
+    currentUserRole === 'supervisor' ||
+    (canCreate && (event.trainerId === currentUserId || event.createdBy === currentUserId));
+
+  const eventScopeToggle = (
+    <div className="flex rounded-lg border border-gray-300 bg-white">
+      {[
+        { showAll: false, label: '自分の予定' },
+        { showAll: true, label: '全員' },
+      ].map(({ showAll, label }) => (
+        <button
+          key={label}
+          type="button"
+          aria-pressed={showAllEvents === showAll}
+          onClick={() => handleShowAllChange(showAll)}
+          className={`px-2.5 py-1 text-xs font-medium transition-colors first:rounded-l-lg last:rounded-r-lg ${
+            showAllEvents === showAll ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 
   const eventsForDate = useCallback(
     (date: Date) => filteredEvents.filter((e) => e.date === toDateKey(date)),
@@ -249,15 +297,17 @@ export default function ScheduleCalendar({
               複製
             </button>
           </div>
-          <div className="mt-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => handleArchivePlan(event)}
-              className="rounded px-1.5 py-1 text-[10px] font-medium text-gray-400 hover:bg-red-50 hover:text-red-600"
-            >
-              削除
-            </button>
-          </div>
+          {canArchive(event) && (
+            <div className="mt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleArchivePlan(event)}
+                className="rounded px-1.5 py-1 text-[10px] font-medium text-gray-400 hover:bg-red-50 hover:text-red-600"
+              >
+                削除
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -283,7 +333,7 @@ export default function ScheduleCalendar({
           {PLAN_STATUS_LABELS[event.status] ?? event.status}
         </span>
       </Link>
-      {canCreate && (
+      {canArchive(event) && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); handleArchivePlan(event); }}
@@ -311,6 +361,7 @@ export default function ScheduleCalendar({
           </div>
           <button type="button" onClick={goToday} className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">今日</button>
         </div>
+        <div className="flex justify-end">{eventScopeToggle}</div>
         <div className="flex gap-2">
           <select
             value={filterWorkerId}
@@ -323,13 +374,13 @@ export default function ScheduleCalendar({
             ))}
           </select>
           <select
-            value={filterTrainerName}
-            onChange={(e) => setFilterTrainerName(e.target.value)}
+            value={filterTrainerId}
+            onChange={(e) => handleTrainerFilterChange(e.target.value)}
             className="flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-700"
           >
             <option value="">指導者: すべて</option>
-            {trainerNames.map((name) => (
-              <option key={name} value={name}>{name}</option>
+            {trainerOptions.map(([id, name]) => (
+              <option key={id} value={id}>{name}</option>
             ))}
           </select>
         </div>
@@ -370,6 +421,7 @@ export default function ScheduleCalendar({
         <div className="flex-1" />
 
         {/* Filter + Create */}
+        {eventScopeToggle}
         <select
           value={filterWorkerId}
           onChange={(e) => setFilterWorkerId(e.target.value)}
@@ -381,13 +433,13 @@ export default function ScheduleCalendar({
           ))}
         </select>
         <select
-          value={filterTrainerName}
-          onChange={(e) => setFilterTrainerName(e.target.value)}
+          value={filterTrainerId}
+          onChange={(e) => handleTrainerFilterChange(e.target.value)}
           className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700"
         >
           <option value="">指導者: すべて</option>
-          {trainerNames.map((name) => (
-            <option key={name} value={name}>{name}</option>
+          {trainerOptions.map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
           ))}
         </select>
         {canCreate && (

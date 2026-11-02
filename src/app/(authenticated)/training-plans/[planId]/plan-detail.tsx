@@ -172,22 +172,7 @@ export default function PlanDetail({ plan, planRole, currentUserId, currentUserN
     });
     // If both trainer and worker are done, notify supervisors
     if (plan.worker_completed_at) {
-      const { data: supervisors } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'supervisor'])
-        .eq('is_archived', false);
-      if (supervisors && supervisors.length > 0) {
-        await supabase.from('notifications').insert(
-          supervisors.map((s) => ({
-            user_id: s.id,
-            title: '研修記録の確認依頼',
-            message: `${plan.worker.name}の研修（${plan.item.title}）の指導者・本人入力が完了しました。確認・承認をお願いします。`,
-            is_read: false,
-            link: `/training-plans/${plan.id}`,
-          }))
-        );
-      }
+      await supabase.rpc('notify_plan_ready_for_review', { p_plan_type: 'training', p_plan_id: plan.id });
     }
     setSuccess('指導者の入力を保存しました');
     router.refresh();
@@ -231,22 +216,7 @@ export default function PlanDetail({ plan, planRole, currentUserId, currentUserN
     });
     // If both trainer and worker are done, notify supervisors
     if (plan.trainer_completed_at) {
-      const { data: supervisors } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'supervisor'])
-        .eq('is_archived', false);
-      if (supervisors && supervisors.length > 0) {
-        await supabase.from('notifications').insert(
-          supervisors.map((s) => ({
-            user_id: s.id,
-            title: '研修記録の確認依頼',
-            message: `${plan.worker.name}の研修（${plan.item.title}）の指導者・本人入力が完了しました。確認・承認をお願いします。`,
-            is_read: false,
-            link: `/training-plans/${plan.id}`,
-          }))
-        );
-      }
+      await supabase.rpc('notify_plan_ready_for_review', { p_plan_type: 'training', p_plan_id: plan.id });
     }
     setSuccess('本人の入力を保存しました');
     router.refresh();
