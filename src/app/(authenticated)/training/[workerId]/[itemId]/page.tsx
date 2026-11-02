@@ -9,6 +9,7 @@ import type {
   Profile,
 } from '@/lib/types';
 import { FORMAT_LABELS } from '@/lib/types';
+import { calculateSessionHours, isItemEligibleForApproval } from '@/lib/review-queue';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import ProgressBar from '@/components/progress-bar';
@@ -17,12 +18,6 @@ import ApprovalAction from './approval-action';
 
 interface TrainingItemDetailPageProps {
   params: Promise<{ workerId: string; itemId: string }>;
-}
-
-function calculateSessionHours(session: TrainingSession): number {
-  const start = new Date(`2000-01-01T${session.start_time}`);
-  const end = new Date(`2000-01-01T${session.end_time}`);
-  return (end.getTime() - start.getTime()) / (1000 * 60 * 60) - (session.break_minutes || 0) / 60;
 }
 
 export default async function TrainingItemDetailPage({
@@ -145,12 +140,12 @@ export default async function TrainingItemDetailPage({
       : 0;
 
   // Check completion eligibility for approval
-  const allSubtopicsComplete =
-    subtopics.length > 0 &&
-    subtopics.every((st) => completedSubtopicIds.has(st.id));
-  const hoursTargetMet = totalHours >= item.target_hours;
-  const isEligibleForApproval =
-    allSubtopicsComplete && hoursTargetMet && approval?.status !== 'completed';
+  const isEligibleForApproval = isItemEligibleForApproval(
+    sessions,
+    subtopics,
+    item.target_hours,
+    approval?.status,
+  );
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('ja-JP', {
