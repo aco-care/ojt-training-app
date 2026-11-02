@@ -62,8 +62,9 @@ export default function FeedbackButton() {
         return;
       }
 
-      // Upload image if present
-      let imageUrl: string | null = null;
+      // Upload image if present. The bucket is private, so store the path;
+      // the admin page issues a signed URL when it shows the image.
+      let imagePath: string | null = null;
       if (imageFile) {
         const ext = imageFile.name.split('.').pop() ?? 'png';
         const fileName = `${user.id}/${Date.now()}.${ext}`;
@@ -71,47 +72,20 @@ export default function FeedbackButton() {
           .from('feedback-images')
           .upload(fileName, imageFile);
         if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('feedback-images')
-          .getPublicUrl(fileName);
-        imageUrl = urlData.publicUrl;
+        imagePath = fileName;
       }
 
       // Insert feedback
-      const { error: insertError } = await supabase.from('feedbacks').insert({
+      const { data: inserted, error: insertError } = await supabase.from('feedbacks').insert({
         sender_id: user.id,
         category,
         content: content.trim(),
         status: 'pending',
-        image_url: imageUrl,
-      });
+        image_url: imagePath,
+      }).select('id').single();
       if (insertError) throw insertError;
 
-      // Get sender name for notification
-      const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', user.id)
-        .single();
-      const senderName = senderProfile?.name ?? 'ユーザー';
-
-      // Fetch all admin users to notify them
-      const { data: admins } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin');
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: '新しいフィードバック',
-          message: `${senderName}さんから${FEEDBACK_CATEGORY_LABELS[category]}のフィードバックが届きました${imageUrl ? '（画像付き）' : ''}`,
-          is_read: false,
-          link: '/admin/feedbacks',
-        }));
-        await supabase.from('notifications').insert(notifications);
-      }
+      await supabase.rpc('notify_feedback_received', { p_feedback_id: inserted.id });
 
       setSuccess(true);
       setContent('');

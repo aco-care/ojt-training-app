@@ -100,7 +100,7 @@ export default async function SchedulePage() {
   const trainingSessions = (trainingSessionsData ?? []) as { worker_id: string; item_id: string; completed_subtopics: string[]; start_time: string; end_time: string; break_minutes: number | null }[];
 
   // Transform to CalendarEvent[]
-  let events: CalendarEvent[] = [
+  const events: CalendarEvent[] = [
     ...trainingPlans.map((p) => ({
       id: p.id,
       type: 'training' as const,
@@ -111,7 +111,9 @@ export default async function SchedulePage() {
       workerName: p.worker?.name ?? '',
       workerId: p.worker_id,
       title: p.item?.title ?? '',
+      trainerId: p.trainer_id,
       trainerName: p.trainer?.name ?? '',
+      createdBy: p.created_by,
       detailUrl: `/training-plans/${p.id}`,
       cancelReason: p.cancel_reason ?? undefined,
       cancelHistory: p.cancel_history ?? undefined,
@@ -129,7 +131,9 @@ export default async function SchedulePage() {
       workerName: p.worker?.name ?? '',
       workerId: p.worker_id,
       title: `OJT ${OJT_STEPS.find((s) => s.step === p.step)?.label ?? p.step}`,
+      trainerId: p.companion_id,
       trainerName: p.companion?.name ?? '',
+      createdBy: p.created_by,
       detailUrl: `/ojt-plans/${p.id}`,
       cancelReason: undefined,
       cancelHistory: undefined,
@@ -138,13 +142,6 @@ export default async function SchedulePage() {
       supervisorDone: !!p.supervisor_completed_at,
     })),
   ];
-
-  // Role-based filter for trainers
-  if (userRole === 'trainer') {
-    events = events.filter(
-      (e) => e.trainerName === profile.name
-    );
-  }
 
   // Compute completedSubtopicsByWorker
   const completedSubtopicsByWorker: Record<string, string[]> = {};

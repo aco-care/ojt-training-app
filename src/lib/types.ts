@@ -236,7 +236,9 @@ export interface CalendarEvent {
   workerName: string;
   workerId: string;
   title: string;
+  trainerId: string | null;
   trainerName: string;
+  createdBy: string | null;
   detailUrl: string;
   cancelReason?: string;
   cancelHistory?: CancelHistoryEntry[];

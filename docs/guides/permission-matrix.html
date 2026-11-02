@@ -37,7 +37,7 @@ tbody tr:hover{background:#f0f9ff}
 <body>
 
 <h1>吉兆 研修・OJT管理システム<br>権限表（詳細）</h1>
-<p class="subtitle">各ロール（役割）ごとに、どの機能が使えるかを一覧にしたものです。<br>最終更新：2026年4月7日</p>
+<p class="subtitle">各ロール（役割）ごとに、どの機能が使えるかを一覧にしたものです。<br>最終更新：2026年11月2日</p>
 
 <div class="legend">
   <span class="y">◯ = できる</span>
@@ -53,8 +53,8 @@ tbody tr:hover{background:#f0f9ff}
   </thead>
   <tbody>
     <tr><td>admin</td><td>管理者</td><td>全機能の閲覧・編集・承認・削除が可能。フィードバック管理も含む最高権限</td></tr>
-    <tr><td>supervisor</td><td>指導責任者</td><td>adminとほぼ同等。研修・OJTの承認、予定管理、スタッフ管理が可能。フィードバック管理のみ不可</td></tr>
-    <tr><td>trainer</td><td>指導者</td><td>研修・OJTの記録入力と、自分の予定管理が中心。承認・削除は不可</td></tr>
+    <tr><td>supervisor</td><td>指導責任者</td><td>adminとほぼ同等。研修・OJTの承認、予定管理、スタッフ管理が可能。閲覧は全拠点。フィードバック管理は不可</td></tr>
+    <tr><td>trainer</td><td>指導者</td><td>研修・OJTの記録入力と、自分の予定管理が中心。閲覧は全拠点。承認は不可</td></tr>
     <tr><td>worker</td><td>特定技能外国人</td><td>自分の進捗確認と自己評価の入力のみ。ダッシュボードとヘルプが使える</td></tr>
     <tr><td>executive</td><td>経営側</td><td>全事業所の進捗ダッシュボードの閲覧とPDF出力。編集・入力は全て不可</td></tr>
   </tbody>
@@ -93,8 +93,8 @@ tbody tr:hover{background:#f0f9ff}
 <table>
   <thead><tr><th>表示内容</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
   <tbody>
-    <tr><td>全外国人の研修進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
-    <tr><td>全外国人のOJT進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>閲覧できる全外国人の研修進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>閲覧できる全外国人のOJT進捗一覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
     <tr><td>未実施アラート</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
     <tr><td>担当外国人の進捗のみ</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
     <tr><td>未指導の細目一覧</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
@@ -113,11 +113,10 @@ tbody tr:hover{background:#f0f9ff}
   <thead><tr><th>操作</th><th>admin</th><th>supervisor</th><th>trainer</th><th>worker</th><th>executive</th></tr></thead>
   <tbody>
     <tr><td>予定の作成（研修・OJT）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
-    <tr><td>全員の予定を閲覧</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td></tr>
-    <tr><td>自分の予定のみ閲覧</td><td class="n">—</td><td class="n">—</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>全拠点の予定を閲覧（普段は自分の予定を表示し、「全員」に切り替え可能）</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="y">◯</td></tr>
     <tr><td>予定の編集（指導者変更等）</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
     <tr><td>予定の複製</td><td class="y">◯</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td></tr>
-    <tr><td>予定の削除</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>予定の削除</td><td class="y">◯</td><td class="y">◯</td><td class="y p">◯ 担当・作成した予定のみ</td><td class="n">—</td><td class="n">—</td></tr>
     <tr><td>予定の取消・延期</td><td class="y">◯</td><td class="y">◯</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
   </tbody>
 </table>

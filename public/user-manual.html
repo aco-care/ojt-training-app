@@ -466,8 +466,8 @@ code{
       <thead><tr><th>役割</th><th>できること</th></tr></thead>
       <tbody>
         <tr><td><strong>管理者</strong></td><td>全データの閲覧・編集、スタッフ管理、PDF出力</td></tr>
-        <tr><td><strong>指導者</strong></td><td>担当外国人の研修・OJT記録の入力</td></tr>
-        <tr><td><strong>指導責任者</strong></td><td>研修・OJTの承認、最終評価の承認</td></tr>
+        <tr><td><strong>指導者</strong></td><td>担当外国人の研修・OJT記録の入力（閲覧は全拠点）</td></tr>
+        <tr><td><strong>指導責任者</strong></td><td>研修・OJTの承認、最終評価の承認（閲覧は全拠点）</td></tr>
         <tr><td><strong>特定技能外国人</strong></td><td>自分の記録の閲覧、自己評価の入力</td></tr>
         <tr><td><strong>経営側</strong></td><td>全事業所の進捗ダッシュボードの閲覧（読み取り専用）</td></tr>
       </tbody>
@@ -566,6 +566,7 @@ code{
       <li><strong>月表示・週表示・日表示</strong>を切り替えられます</li>
       <li>「前」「次」ボタンまたはスワイプで前後に移動</li>
       <li>「今日」ボタンで今日に戻ります</li>
+      <li>普段は<strong>「自分の予定」</strong>（担当の予定）を表示します。<strong>「全員」</strong>に切り替えると、全拠点の全員の予定を表示します。自分の予定がない人は「全員」から始まり、外国人や他の指導者で絞り込むと「全員」に切り替わります</li>
     </ul>
   </div>
 
@@ -604,10 +605,11 @@ code{
         <tr><td><strong>詳細</strong></td><td>予定の詳細画面を開きます</td></tr>
         <tr><td><strong>編集</strong></td><td>予定の内容を変更します</td></tr>
         <tr><td><strong>複製</strong></td><td>同じ内容で新しい予定を作成します</td></tr>
-        <tr><td><strong>削除</strong></td><td>予定を削除します（確認ダイアログ表示）</td></tr>
+        <tr><td><strong>削除</strong></td><td>予定を削除します（確認ダイアログ表示）。指導者は自分が担当または作成した予定のみ削除できます</td></tr>
       </tbody>
     </table>
   </div>
+  <p>完了または取り消しになった予定は、指導者・外国人は入力を変更できません。</p>
 </section>
 
 <!-- ==================== 8. 研修記録 ==================== -->
@@ -897,7 +899,7 @@ code{
         <thead><tr><th>セクション</th><th>内容</th></tr></thead>
         <tbody>
           <tr><td><strong>サマリーカード</strong></td><td>外国人総数、研修完了率、OJT進行中/完了数</td></tr>
-          <tr><td><strong>研修進捗一覧</strong></td><td>全外国人の研修5項目の状態を色付きドットで表示</td></tr>
+          <tr><td><strong>研修進捗一覧</strong></td><td>閲覧できる全外国人の研修5項目の状態を色付きドットで表示</td></tr>
           <tr><td><strong>OJT進捗一覧</strong></td><td>進行中のOJTの利用者・現在のステップ</td></tr>
           <tr><td><strong>未実施アラート</strong></td><td>まだ研修が完了していない外国人と未実施項目</td></tr>
         </tbody>
