@@ -45,12 +45,14 @@
 
 - [x] 閲覧範囲: admin/executive/supervisor/trainer=全拠点(訪問事業で拠点をまたぐため。2026-11-02にオーナーの指示で、拠点だけに絞る決定から変更)、worker=自分の記録とそこに名前が載る職員だけ(`supabase/migrations/20261102000000_scope_reads_and_limit_writes.sql`)
 - [x] `training_plans`/`ojt_plans`/`feedbacks`/`notifications`の書き込みを限定。確認依頼とフィードバックの通知はDB関数経由に変更
-- [x] `feedback-images`を非公開にし、管理画面は署名付きURLで表示
+- [x] `feedback-images`のバケットを非公開にし、管理画面は署名付きURLで表示(バケットの設定だけの完了。画像の権限は下の確認が済むまで未完了)
 - [x] カレンダーは自分の予定を初期表示にし「全員」へ切り替え可能に。指導者の絞り込みを名前からIDへ変更
 - [x] Next.jsを16.4.3へ更新
 - [x] 本番にあってリポジトリに無かった定義を`20260531235959_sync_production_schema.sql`と`20261101000000_emergency_lockdown.sql`へ記録
 - [ ] 本番適用(`supabase/preflight/`で事前確認、戻す場合は`supabase/rollbacks/`)
 - [ ] `feedback-images`の適用を本番以外のプロジェクトで試す。本番のSQLの役割は`storage.objects`の所有者の権限を持たないため、バケット(`20261102000100`)とポリシー(`20261102000200`)を本体とは別に流す。手順はPR本文を参照
+- [ ] `feedback-images`の`storage.objects`のポリシーを確認する(`supabase/preflight/`の確認9-2)。バケットを非公開にしても、このポリシーは変わらない。`20261102000200`が本番で拒否された場合は今のポリシーが残るので、確認するまで画像の権限は未完了とする
+- [ ] 適用後の確認: adminが新しくアップロードした画像を管理画面で表示できること。外国人が他の人の画像を一覧できないこと
 - [ ] 本番のAuth設定のうち、メールテンプレートなどコードから読めないものをリポジトリへ記録(本番を読める作業で行う)
 
 テストは`npm test`(`tests/rls-role-scope.test.mjs`が実際のマイグレーションを使い捨てDBで流して役割ごとに確認する)。

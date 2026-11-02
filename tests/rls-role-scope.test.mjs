@@ -736,6 +736,28 @@ test('the preflight queries run and change nothing', async () => {
   assert.deepEqual(await policySnapshot(), before);
 });
 
+test('the preflight lists the storage policies that reach feedback-images', async () => {
+  const listed = async () => {
+    const results = await db.exec(await readFile(PREFLIGHT, 'utf8'));
+    return results.find((result) => result.fields.some((field) => field.name === 'policyname') && !result.fields.some((field) => field.name === 'schemaname'))
+      .rows.map((row) => row.policyname);
+  };
+  assert.deepEqual(await listed(), ['feedback_images_insert_own_folder', 'feedback_images_select_own_or_admin']);
+
+  await db.exec(`
+    create policy "any bucket read" on storage.objects for select using (true);
+    create policy "other bucket read" on storage.objects for select using (bucket_id = 'other');
+  `);
+  try {
+    assert.deepEqual(await listed(), ['feedback_images_insert_own_folder', 'any bucket read', 'feedback_images_select_own_or_admin']);
+  } finally {
+    await db.exec(`
+      drop policy "any bucket read" on storage.objects;
+      drop policy "other bucket read" on storage.objects;
+    `);
+  }
+});
+
 test('rollback restores the previous policies, then the migration applies again', async () => {
   await db.exec(await rollbackOf(STORAGE_POLICIES));
   await db.exec(await rollbackOf(BUCKET));

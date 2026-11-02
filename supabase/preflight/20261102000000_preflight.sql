@@ -105,9 +105,26 @@ SELECT to_regclass('supabase_migrations.schema_migrations') AS migration_history
 
 -- 9. 適用する接続が storage.objects の所有者の権限を持つか
 --     false なら 20261102000200 が失敗することがある。本体は別のトランザクションなので影響しない
+--     失敗してもバケットは非公開になるが、storage.objects のポリシーは今のまま残る。次の確認で中身を見る
 SELECT pg_has_role(current_user, c.relowner, 'MEMBER') AS can_manage_storage_policies
 FROM pg_class c
 WHERE c.oid = 'storage.objects'::regclass;
+
+-- 9-2. feedback-images に効く storage.objects のポリシー（バケットを指定しないものも含む）
+--     20261102000200 の適用後の想定は feedback_images_insert_own_folder と
+--     feedback_images_select_own_or_admin の2行だけ。
+--     ほかの行が読み書きを広く許していれば、バケットが非公開でも他の人の画像を一覧・取得できる。
+--     admin が読める SELECT が無ければ、管理画面に画像が表示されない。
+--     どちらかに当てはまる間は、画像の権限は未完了として扱う
+SELECT policyname, permissive, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'storage'
+  AND tablename = 'objects'
+  AND (
+    concat(qual, with_check) LIKE '%feedback-images%'
+    OR concat(qual, with_check) NOT LIKE '%bucket_id%'
+  )
+ORDER BY cmd, policyname;
 
 -- 10. 想定外の状態の予定。0行が想定
 --     行があると、指導者と外国人はその予定に入力できなくなるので、先に状態を直す
