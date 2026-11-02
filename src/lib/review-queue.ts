@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TrainingSession } from '@/lib/types';
 
 export type ReviewKind = 'training_plan' | 'ojt_plan' | 'training_item';
@@ -38,20 +39,19 @@ export function isItemEligibleForApproval(
 }
 
 // The state where the plan screens offer the supervisor's confirmation form
-export function isPlanAwaitingConfirmation(plan: {
-  status: string;
-  is_archived: boolean | null;
-  trainer_completed_at: string | null;
-  worker_completed_at: string | null;
-  supervisor_completed_at: string | null;
-}): boolean {
-  return (
-    !!plan.trainer_completed_at &&
-    !!plan.worker_completed_at &&
-    !plan.supervisor_completed_at &&
-    plan.status !== 'cancelled' &&
-    !plan.is_archived
-  );
+export function selectPlansAwaitingConfirmation(
+  supabase: SupabaseClient,
+  table: 'training_plans' | 'ojt_plans',
+  columns: string,
+) {
+  return supabase
+    .from(table)
+    .select(columns)
+    .not('trainer_completed_at', 'is', null)
+    .not('worker_completed_at', 'is', null)
+    .is('supervisor_completed_at', null)
+    .neq('status', 'cancelled')
+    .not('is_archived', 'is', true);
 }
 
 // Oldest first, so what has waited longest is at the top

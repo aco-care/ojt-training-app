@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calculateSessionHours,
   isItemEligibleForApproval,
-  isPlanAwaitingConfirmation,
+  selectPlansAwaitingConfirmation,
   sortReviewEntries,
 } from '../src/lib/review-queue.ts';
 
@@ -16,16 +16,35 @@ const plan = (extra = {}) => ({
   ...extra,
 });
 
+// Stands in for the query builder, applying each filter to rows the way SQL does
+const rowsQuery = (rows) => ({
+  rows,
+  not: (column, operator, value) => {
+    assert.equal(operator, 'is');
+    return rowsQuery(rows.filter((row) => row[column] !== value));
+  },
+  is: (column, value) => rowsQuery(rows.filter((row) => row[column] === value)),
+  neq: (column, value) => rowsQuery(rows.filter((row) => row[column] !== null && row[column] !== value)),
+});
+const isAwaitingConfirmation = (row) => {
+  const supabase = { from: () => ({ select: () => rowsQuery([row]) }) };
+  return selectPlansAwaitingConfirmation(supabase, 'training_plans', 'id').rows.length === 1;
+};
+
 test('a plan waits for confirmation once trainer and worker have both finished', () => {
-  assert.equal(isPlanAwaitingConfirmation(plan()), true);
-  assert.equal(isPlanAwaitingConfirmation(plan({ trainer_completed_at: null })), false);
-  assert.equal(isPlanAwaitingConfirmation(plan({ worker_completed_at: null })), false);
+  assert.equal(isAwaitingConfirmation(plan()), true);
+  assert.equal(isAwaitingConfirmation(plan({ trainer_completed_at: null })), false);
+  assert.equal(isAwaitingConfirmation(plan({ worker_completed_at: null })), false);
 });
 
 test('confirmed, cancelled and archived plans leave the queue', () => {
-  assert.equal(isPlanAwaitingConfirmation(plan({ supervisor_completed_at: '2026-10-02T00:00:00Z' })), false);
-  assert.equal(isPlanAwaitingConfirmation(plan({ status: 'cancelled' })), false);
-  assert.equal(isPlanAwaitingConfirmation(plan({ is_archived: true })), false);
+  assert.equal(isAwaitingConfirmation(plan({ supervisor_completed_at: '2026-10-02T00:00:00Z' })), false);
+  assert.equal(isAwaitingConfirmation(plan({ status: 'cancelled' })), false);
+  assert.equal(isAwaitingConfirmation(plan({ is_archived: true })), false);
+});
+
+test('a plan whose archive flag was never set still waits for confirmation', () => {
+  assert.equal(isAwaitingConfirmation(plan({ is_archived: null })), true);
 });
 
 const session = (subtopics, start = '09:00:00', end = '11:00:00', breakMinutes = 0) => ({

@@ -17,7 +17,7 @@ import { OJT_STEPS, ROLE_LABELS } from '@/lib/types';
 import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import {
   isItemEligibleForApproval,
-  isPlanAwaitingConfirmation,
+  selectPlansAwaitingConfirmation,
   sortReviewEntries,
   type ReviewEntry,
 } from '@/lib/review-queue';
@@ -131,10 +131,10 @@ export default async function DashboardPage() {
 
   const [
     { data: profileRow },
-    { data: workersData },
-    { data: itemsData },
-    { data: sessionsData },
-    { data: approvalsData },
+    { data: workersData, error: workersError },
+    { data: itemsData, error: itemsError },
+    { data: sessionsData, error: sessionsError },
+    { data: approvalsData, error: approvalsError },
     { data: ojtUsersData },
     { data: ojtRecordsData },
   ] = await Promise.all([
@@ -317,30 +317,19 @@ export default async function DashboardPage() {
     let reviewLoadFailed = false;
     if (role === 'supervisor') {
       type PlanWorker = { name: string; facility: { name: string } | null } | null;
-      type ReviewPlan = Parameters<typeof isPlanAwaitingConfirmation>[0] & {
+      type ReviewPlan = {
         id: string;
         planned_date: string;
         worker: PlanWorker;
       };
-      const planState = 'id, planned_date, status, is_archived, trainer_completed_at, worker_completed_at, supervisor_completed_at, worker:foreign_workers(name, facility:facilities(name))';
+      const planColumns = 'id, planned_date, worker:foreign_workers(name, facility:facilities(name))';
       const [{ data: trainingPlansData, error: trainingPlansError }, { data: ojtPlansData, error: ojtPlansError }] = await Promise.all([
-        supabase
-          .from('training_plans')
-          .select(`${planState}, item:training_items(title)`)
-          .not('trainer_completed_at', 'is', null)
-          .not('worker_completed_at', 'is', null)
-          .is('supervisor_completed_at', null),
-        supabase
-          .from('ojt_plans')
-          .select(`${planState}, step, ojt_user:ojt_users(user_initial)`)
-          .not('trainer_completed_at', 'is', null)
-          .not('worker_completed_at', 'is', null)
-          .is('supervisor_completed_at', null),
+        selectPlansAwaitingConfirmation(supabase, 'training_plans', `${planColumns}, item:training_items(title)`),
+        selectPlansAwaitingConfirmation(supabase, 'ojt_plans', `${planColumns}, step, ojt_user:ojt_users(user_initial)`),
       ]);
-      reviewLoadFailed = !!trainingPlansError || !!ojtPlansError;
+      reviewLoadFailed = [workersError, itemsError, sessionsError, approvalsError, trainingPlansError, ojtPlansError].some(Boolean);
 
       const trainingEntries = ((trainingPlansData ?? []) as unknown as (ReviewPlan & { item: { title: string } | null })[])
-        .filter(isPlanAwaitingConfirmation)
         .map((p): ReviewEntry => ({
           key: `training-plan-${p.id}`,
           kind: 'training_plan',
@@ -351,7 +340,6 @@ export default async function DashboardPage() {
           date: p.planned_date,
         }));
       const ojtEntries = ((ojtPlansData ?? []) as unknown as (ReviewPlan & { step: string; ojt_user: { user_initial: string } | null })[])
-        .filter(isPlanAwaitingConfirmation)
         .map((p): ReviewEntry => {
           const step = OJT_STEPS.find((s) => s.step === p.step);
           const stepLabel = step ? `${step.number} ${step.label}` : p.step;
