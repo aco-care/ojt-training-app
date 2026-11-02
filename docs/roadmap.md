@@ -43,7 +43,7 @@
 
 ログインした人なら全員の記録を読める状態を直す作業。コードとマイグレーションは実装済み、**本番適用は未実施**(キャプテンの確認後に実施)。
 
-- [x] 閲覧範囲: admin/executive=全拠点、supervisor/trainer=`profile_facilities`の所属拠点だけ、worker=自分の記録とそこに名前が載る職員だけ(`supabase/migrations/20261102000000_scope_reads_and_limit_writes.sql`)
+- [x] 閲覧範囲: admin/executive/supervisor/trainer=全拠点(訪問事業で拠点をまたぐため。2026-11-02にオーナーの指示で、拠点だけに絞る決定から変更)、worker=自分の記録とそこに名前が載る職員だけ(`supabase/migrations/20261102000000_scope_reads_and_limit_writes.sql`)
 - [x] `training_plans`/`ojt_plans`/`feedbacks`/`notifications`の書き込みを限定。確認依頼とフィードバックの通知はDB関数経由に変更
 - [x] `feedback-images`を非公開にし、管理画面は署名付きURLで表示
 - [x] カレンダーは自分の予定を初期表示にし「全員」へ切り替え可能に。指導者の絞り込みを名前からIDへ変更
@@ -55,7 +55,7 @@
 テストは`npm test`(`tests/rls-role-scope.test.mjs`が実際のマイグレーションを使い捨てDBで流して役割ごとに確認する)。
 
 ### 今回の範囲外として残した課題
-- [ ] 上記4表以外(`foreign_workers`、`training_sessions`、`ojt_records`、`final_evaluations`、`ojt_users`、`training_approvals`、`worker_facilities`、`profile_facilities`、`profiles`)の書き込み条件は変えていない。閲覧の限定で他拠点の行は通常の操作では更新できないが、書き込み条件そのものは役割だけで判定している
+- [ ] 上記4表以外(`foreign_workers`、`training_sessions`、`ojt_records`、`final_evaluations`、`ojt_users`、`training_approvals`、`worker_facilities`、`profile_facilities`、`profiles`)の書き込み条件は変えていない。書き込み条件は役割だけで判定している
 - [ ] 外国人は自分の記録に載る職員の行を読めるため、氏名以外の列(メールなど)も読める。行ごとに列を絞るには、該当画面を氏名だけの関数かビューへ切り替える必要がある
 - [ ] 退職処理(`is_archived`)はログインと閲覧を止めていない
 

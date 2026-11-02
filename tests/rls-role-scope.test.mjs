@@ -51,6 +51,7 @@ const PLAN_A_OTHER_TRAINER = uuid(51);
 const PLAN_A2 = uuid(52);
 const PLAN_B = uuid(53);
 const PLAN_ALSO_A = uuid(54);
+const PLAN_ACROSS_FACILITIES = uuid(57);
 const OJT_PLAN_A = uuid(55);
 const OJT_PLAN_B = uuid(56);
 const NOTIFICATION_WORKER_A = uuid(60);
@@ -155,7 +156,8 @@ const SEED = `
     ('${PLAN_A_OTHER_TRAINER}', '${FW_A}', '${ITEM}', '2026-11-10', '${TRAINER_A2}', '${SUPERVISOR_A}'),
     ('${PLAN_A2}', '${FW_A2}', '${ITEM}', '2026-11-10', '${TRAINER_A2}', '${SUPERVISOR_A}'),
     ('${PLAN_B}', '${FW_B}', '${ITEM}', '2026-11-10', '${TRAINER_B}', '${SUPERVISOR_B}'),
-    ('${PLAN_ALSO_A}', '${FW_B_ALSO_A}', '${ITEM}', '2026-11-10', '${TRAINER_B}', '${SUPERVISOR_B}');
+    ('${PLAN_ALSO_A}', '${FW_B_ALSO_A}', '${ITEM}', '2026-11-10', '${TRAINER_B}', '${SUPERVISOR_B}'),
+    ('${PLAN_ACROSS_FACILITIES}', '${FW_A2}', '${ITEM}', '2026-11-10', '${TRAINER_B}', '${SUPERVISOR_A}');
   insert into ojt_plans (id, worker_id, ojt_user_id, planned_date, step, companion_id, created_by) values
     ('${OJT_PLAN_A}', '${FW_A}', '${OJT_USER_A}', '2026-11-10', 'main', '${TRAINER_A}', '${SUPERVISOR_A}'),
     ('${OJT_PLAN_B}', '${FW_B}', '${OJT_USER_B}', '2026-11-10', 'main', '${TRAINER_B}', '${SUPERVISOR_B}');
@@ -251,7 +253,7 @@ test('every migration in the repo is covered by the replay', async () => {
 
 test('the production-like starting point really was open', () => {
   assert.equal(openBefore.workers.length, 4);
-  assert.equal(openBefore.plans.length, 5);
+  assert.equal(openBefore.plans.length, 6);
 });
 
 test('a worker reads only their own worker row and records', async () => {
@@ -284,52 +286,46 @@ test('a worker sees the trainer name on their own plan', async () => {
   assert.deepEqual(rows, [{ name: 'trainer-a' }]);
 });
 
-test('facility staff read their own facility only', async () => {
-  const expectedA = [FW_A, FW_A2, FW_B_ALSO_A].sort();
-  assert.deepEqual(await ids(TRAINER_A, 'foreign_workers'), expectedA);
-  assert.deepEqual(await ids(SUPERVISOR_A, 'foreign_workers'), expectedA);
-
-  const plans = await ids(TRAINER_A, 'training_plans');
-  assert.ok(plans.includes(PLAN_A) && plans.includes(PLAN_A2));
-  assert.ok(plans.includes(PLAN_ALSO_A), 'a worker who also belongs to A is in scope');
-  assert.ok(!plans.includes(PLAN_B));
-  assert.deepEqual(await ids(TRAINER_A, 'ojt_plans'), [OJT_PLAN_A]);
-  assert.ok(!(await ids(SUPERVISOR_A, 'ojt_records', 'worker_id')).includes(FW_B));
-  assert.ok(!(await ids(SUPERVISOR_A, 'final_evaluations', 'worker_id')).includes(FW_B));
-  assert.ok(!(await ids(SUPERVISOR_A, 'training_sessions', 'worker_id')).includes(FW_B));
+test('supervisors and trainers read every facility', async () => {
+  const everyWorker = [FW_A, FW_A2, FW_B, FW_B_ALSO_A].sort();
+  for (const uid of [SUPERVISOR_A, SUPERVISOR_B, SUPERVISOR_AB, TRAINER_A, TRAINER_B]) {
+    assert.deepEqual(await ids(uid, 'foreign_workers'), everyWorker, `${uid}: workers`);
+    assert.equal((await ids(uid, 'training_plans')).length, 6, `${uid}: training plans`);
+    assert.equal((await ids(uid, 'ojt_plans')).length, 2, `${uid}: OJT plans`);
+    assert.equal((await ids(uid, 'ojt_records', 'worker_id')).length, 3, `${uid}: OJT records`);
+    assert.equal((await ids(uid, 'final_evaluations', 'worker_id')).length, 3, `${uid}: evaluations`);
+    assert.equal((await ids(uid, 'training_sessions', 'worker_id')).length, 2, `${uid}: sessions`);
+    assert.equal((await ids(uid, 'worker_facilities', 'worker_id')).length, 5, `${uid}: worker facilities`);
+  }
 });
 
-test('someone in several facilities reads all of them', async () => {
-  assert.deepEqual(await ids(SUPERVISOR_AB, 'foreign_workers'), [FW_A, FW_A2, FW_B, FW_B_ALSO_A].sort());
-  assert.equal((await ids(SUPERVISOR_AB, 'training_plans')).length, 5);
+test('reading does not depend on having a facility on file', async () => {
+  await db.exec(`update profiles set facility_id = null where id = '${SUPERVISOR_LEGACY_B}'`);
+  try {
+    assert.equal((await ids(SUPERVISOR_LEGACY_B, 'foreign_workers')).length, 4);
+  } finally {
+    await db.exec(`update profiles set facility_id = '${FACILITY_B}' where id = '${SUPERVISOR_LEGACY_B}'`);
+  }
 });
 
-test('staff see every facility of the staff they can see, so an edit cannot drop one', async () => {
+test('staff read every membership, so a staff edit cannot drop one', async () => {
   const facilitiesOf = async (viewer, profileId) =>
     (await as(viewer, `select facility_id from profile_facilities where profile_id = '${profileId}'`)).rows
       .map((r) => r.facility_id)
       .sort();
 
-  for (const viewer of [SUPERVISOR_A, TRAINER_A, ADMIN, EXECUTIVE]) {
-    assert.deepEqual(await facilitiesOf(viewer, TRAINER_A2), [FACILITY_A, FACILITY_B], `${viewer}: colleague in A and B`);
+  for (const viewer of [SUPERVISOR_A, SUPERVISOR_B, TRAINER_A, ADMIN, EXECUTIVE]) {
+    assert.deepEqual(await facilitiesOf(viewer, TRAINER_A2), [FACILITY_A, FACILITY_B], `${viewer}: staff in A and B`);
   }
-  // Trainer B is only in B, but is named on a plan supervisor A can read
-  assert.ok((await ids(SUPERVISOR_A, 'profiles')).includes(TRAINER_B));
-  assert.deepEqual(await facilitiesOf(SUPERVISOR_A, TRAINER_B), [FACILITY_B]);
-
-  assert.deepEqual(await facilitiesOf(SUPERVISOR_A, WORKER_B), [], 'staff out of sight stay out of sight');
   assert.deepEqual(await facilitiesOf(WORKER_A, WORKER_A2), [], 'workers cannot read each other');
   assert.deepEqual(await facilitiesOf(WORKER_A, TRAINER_A), [], 'workers see only their own membership');
-});
-
-test('someone without profile_facilities rows falls back to profiles.facility_id', async () => {
-  assert.deepEqual(await ids(SUPERVISOR_LEGACY_B, 'foreign_workers'), [FW_B, FW_B_ALSO_A].sort());
+  assert.deepEqual(await facilitiesOf(WORKER_A, WORKER_A), [FACILITY_A]);
 });
 
 test('admin and executive read every facility', async () => {
   for (const uid of [ADMIN, EXECUTIVE]) {
     assert.equal((await ids(uid, 'foreign_workers')).length, 4);
-    assert.equal((await ids(uid, 'training_plans')).length, 5);
+    assert.equal((await ids(uid, 'training_plans')).length, 6);
     assert.equal((await ids(uid, 'ojt_records', 'worker_id')).length, 3);
     assert.equal((await ids(uid, 'profiles')).length, 12);
   }
@@ -344,19 +340,19 @@ test('the overlap check can still read other trainers plans for the same worker'
   assert.deepEqual(rows.map((r) => r.id), [PLAN_A, PLAN_A_OTHER_TRAINER]);
 });
 
-test('facility staff can see who is on their facility but not elsewhere', async () => {
-  const seen = await ids(TRAINER_A, 'profiles');
-  assert.ok(seen.includes(TRAINER_A2) && seen.includes(WORKER_A2));
-  assert.ok(seen.includes(ADMIN), 'admins stay selectable as a trainer');
-  assert.ok(!seen.includes(WORKER_B));
-  assert.ok(!seen.includes(SUPERVISOR_LEGACY_B));
+test('staff read every profile', async () => {
+  for (const uid of [SUPERVISOR_A, TRAINER_A]) {
+    assert.equal((await ids(uid, 'profiles')).length, 12, uid);
+  }
 });
 
-test('audit logs follow the facility; executives still have none', async () => {
-  assert.deepEqual(await ids(SUPERVISOR_A, 'audit_logs', 'actor_id'), [TRAINER_A]);
-  assert.equal((await ids(ADMIN, 'audit_logs', 'actor_id')).length, 2);
-  assert.deepEqual(await ids(EXECUTIVE, 'audit_logs', 'actor_id'), []);
-  assert.deepEqual(await ids(TRAINER_A, 'audit_logs', 'actor_id'), []);
+test('audit logs are for admins and supervisors, across facilities', async () => {
+  for (const uid of [ADMIN, SUPERVISOR_A, SUPERVISOR_B]) {
+    assert.equal((await ids(uid, 'audit_logs', 'actor_id')).length, 2, uid);
+  }
+  for (const uid of [EXECUTIVE, TRAINER_A, WORKER_A]) {
+    assert.deepEqual(await ids(uid, 'audit_logs', 'actor_id'), [], uid);
+  }
 });
 
 test('FOR ALL write rules keep working once they stop granting reads', async () => {
@@ -373,13 +369,11 @@ test('FOR ALL write rules keep working once they stop granting reads', async () 
   const update = await as(SUPERVISOR_A, `update foreign_workers set notes = 'n' where id = '${FW_A}'`);
   assert.equal(update.affected, 1);
 
-  const other = await as(SUPERVISOR_A, `update foreign_workers set notes = 'n' where id = '${FW_B}'`);
-  assert.equal(other.affected, 0, 'another facility stays out of reach');
+  const trainer = await as(TRAINER_A, `update foreign_workers set notes = 'n' where id = '${FW_A}'`);
+  assert.equal(trainer.affected, 0, 'the role rule on the split policy still applies');
 
   const record = await as(TRAINER_A, `update ojt_records set notes = 'n' where worker_id = '${FW_A}'`);
   assert.equal(record.affected, 1);
-
-  assert.deepEqual(await ids(SUPERVISOR_A, 'foreign_workers').then((r) => r.includes(FW_B)), false);
 });
 
 test('plans: who can create', async () => {
@@ -390,7 +384,7 @@ test('plans: who can create', async () => {
   assert.ok((await as(TRAINER_A, insert(FW_A, TRAINER_A))).ok);
   assert.ok((await as(SUPERVISOR_A, insert(FW_A, SUPERVISOR_A))).ok);
   assert.ok((await as(ADMIN, insert(FW_B, ADMIN))).ok);
-  assert.ok(!(await as(TRAINER_A, insert(FW_B, TRAINER_A))).ok, 'other facility');
+  assert.ok((await as(TRAINER_A, insert(FW_B, TRAINER_A))).ok, 'a worker in another facility');
   assert.ok(!(await as(TRAINER_A, insert(FW_A, TRAINER_A2))).ok, 'forged creator');
   assert.ok(!(await as(WORKER_A, insert(FW_A, WORKER_A))).ok, 'worker');
   assert.ok(!(await as(EXECUTIVE, insert(FW_A, EXECUTIVE))).ok, 'read-only role');
@@ -399,7 +393,7 @@ test('plans: who can create', async () => {
     `insert into ojt_plans (worker_id, planned_date, step, companion_id, created_by)
      values ('${FW_B}', '2026-12-01', 'main', '${TRAINER_A}', '${SUPERVISOR_A}')`,
   );
-  assert.ok(!ojt.ok, 'ojt plan in another facility');
+  assert.ok(ojt.ok, ojt.error);
 });
 
 test('plans: the three-party flow still saves', async () => {
@@ -435,6 +429,21 @@ test('plans: the three-party flow still saves', async () => {
   assert.equal(archive.affected, 1, archive.error);
 });
 
+test('plans: the flow works when the trainer and worker are in different facilities', async () => {
+  const trainer = await as(
+    TRAINER_B,
+    `update training_plans set trainer_comment = 'c', trainer_completed_at = now(), status = 'in_progress'
+     where id = '${PLAN_ACROSS_FACILITIES}'`,
+  );
+  assert.equal(trainer.affected, 1, trainer.error);
+
+  const supervisor = await as(
+    SUPERVISOR_B,
+    `update training_plans set supervisor_comment_to_worker = 'c', status = 'completed' where id = '${PLAN_A}'`,
+  );
+  assert.equal(supervisor.affected, 1, supervisor.error);
+});
+
 test('plans: nobody writes outside their part', async () => {
   const denied = async (uid, statement, label) => {
     const result = await as(uid, statement);
@@ -454,14 +463,12 @@ test('plans: nobody writes outside their part', async () => {
   await denied(TRAINER_A, `update training_plans set trainer_id = '${TRAINER_A2}' where id = '${PLAN_A}'`, 'trainer reassigns');
   await denied(TRAINER_A, `update training_plans set status = 'completed' where id = '${PLAN_A}'`, 'trainer completes');
   await denied(TRAINER_A, `update training_plans set trainer_comment = 'x' where id = '${PLAN_A_OTHER_TRAINER}'`, 'not the assignee');
-  await denied(TRAINER_A, `update training_plans set trainer_comment = 'x' where id = '${PLAN_B}'`, 'other facility');
-  await denied(TRAINER_B, `update ojt_plans set trainer_comment = 'x' where id = '${OJT_PLAN_A}'`, 'other facility companion');
+  await denied(TRAINER_A, `update training_plans set trainer_comment = 'x' where id = '${PLAN_B}'`, 'not the assignee in another facility');
+  await denied(TRAINER_B, `update ojt_plans set trainer_comment = 'x' where id = '${OJT_PLAN_A}'`, 'not the companion');
 
-  await denied(SUPERVISOR_A, `update training_plans set notes = 'x' where id = '${PLAN_B}'`, 'other facility supervisor');
   await denied(EXECUTIVE, `update training_plans set notes = 'x' where id = '${PLAN_A}'`, 'read-only role');
   await denied(TRAINER_A, `delete from training_plans where id = '${PLAN_A}'`, 'trainer deletes');
-  await denied(SUPERVISOR_A, `delete from training_plans where id = '${PLAN_B}'`, 'other facility delete');
-  await denied(SUPERVISOR_A, `update training_plans set worker_id = '${FW_B}' where id = '${PLAN_A}'`, 'moves a plan out of the facility');
+  await denied(WORKER_A, `delete from training_plans where id = '${PLAN_A}'`, 'worker deletes');
   assert.equal((await as(SUPERVISOR_A, `delete from training_plans where id = '${PLAN_A2}'`)).affected, 1);
 });
 
@@ -497,7 +504,7 @@ async function asSession(uid, statements) {
   }
 }
 
-test('plan review notice reaches the facility supervisors and admins', async () => {
+test('plan review notice reaches every active supervisor and admin', async () => {
   const { results, notices } = await asSession(WORKER_A, [
     `select public.notify_plan_ready_for_review('training', '${PLAN_A}') as sent`,
   ]);
@@ -506,6 +513,7 @@ test('plan review notice reaches the facility supervisors and admins', async () 
 
   await db.exec(`update training_plans set trainer_completed_at = now(), worker_completed_at = now() where id in ('${PLAN_A}', '${PLAN_ALSO_A}')`);
   await db.exec(`update ojt_plans set trainer_completed_at = now(), worker_completed_at = now() where id = '${OJT_PLAN_A}'`);
+  await db.exec(`update profiles set is_archived = true where id = '${SUPERVISOR_LEGACY_B}'`);
   try {
     const worker = await asSession(WORKER_A, [
       `select public.notify_plan_ready_for_review('training', '${PLAN_A}') as sent`,
@@ -513,26 +521,22 @@ test('plan review notice reaches the facility supervisors and admins', async () 
       `select public.notify_plan_ready_for_review('ojt', '${OJT_PLAN_A}') as sent`,
     ]);
     const recipients = worker.notices.filter((n) => n.link === `/training-plans/${PLAN_A}`).map((n) => n.user_id).sort();
-    assert.deepEqual(recipients, [ADMIN, SUPERVISOR_A, SUPERVISOR_AB].sort());
+    assert.deepEqual(recipients, [ADMIN, SUPERVISOR_A, SUPERVISOR_AB, SUPERVISOR_B].sort(), 'archived staff are left out');
     assert.equal(worker.results[1].rows[0].sent, 0, 'a repeat does not notify twice');
     const ojt = worker.notices.find((n) => n.link === `/ojt-plans/${OJT_PLAN_A}`);
     assert.equal(ojt.title, 'OJT記録の確認依頼');
     assert.match(ojt.message, /worker-aのOJT（⑤ OJT 2回目（メイン））の同行者・本人入力が完了しました/);
 
-    // A worker in two facilities reaches the supervisors of both
-    const multi = await asSession(TRAINER_B, [
-      `select public.notify_plan_ready_for_review('training', '${PLAN_ALSO_A}') as sent`,
-    ]);
-    const multiRecipients = multi.notices.filter((n) => n.link === `/training-plans/${PLAN_ALSO_A}`).map((n) => n.user_id).sort();
-    assert.deepEqual(multiRecipients, [ADMIN, SUPERVISOR_A, SUPERVISOR_AB, SUPERVISOR_B, SUPERVISOR_LEGACY_B].sort());
-
     const stranger = await as(WORKER_A2, `select public.notify_plan_ready_for_review('training', '${PLAN_A}')`);
     assert.ok(!stranger.ok, 'another worker cannot trigger it');
-    const otherFacility = await as(SUPERVISOR_B, `select public.notify_plan_ready_for_review('ojt', '${OJT_PLAN_A}')`);
-    assert.ok(!otherFacility.ok, 'a supervisor elsewhere cannot trigger it');
+    const notAssigned = await as(TRAINER_B, `select public.notify_plan_ready_for_review('ojt', '${OJT_PLAN_A}')`);
+    assert.ok(!notAssigned.ok, 'a trainer who is not on the plan cannot trigger it');
+    const anySupervisor = await as(SUPERVISOR_B, `select public.notify_plan_ready_for_review('ojt', '${OJT_PLAN_A}')`);
+    assert.ok(anySupervisor.ok, anySupervisor.error);
   } finally {
     await db.exec(`update training_plans set trainer_completed_at = null, worker_completed_at = null where id in ('${PLAN_A}', '${PLAN_ALSO_A}')`);
     await db.exec(`update ojt_plans set trainer_completed_at = null, worker_completed_at = null where id = '${OJT_PLAN_A}'`);
+    await db.exec(`update profiles set is_archived = false where id = '${SUPERVISOR_LEGACY_B}'`);
   }
 });
 
@@ -643,8 +647,7 @@ test('rollback restores the previous policies, then the migration applies again'
   const { rows: leftovers } = await db.query(`
     select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and proname in (
-      'is_corporate_viewer', 'scoped_facility_ids', 'readable_worker_ids', 'scoped_facility_profile_ids',
-      'readable_profile_ids', 'enforce_plan_update_columns', 'notify_plan_ready_for_review', 'notify_feedback_received'
+      'is_staff_viewer', 'readable_worker_ids', 'readable_profile_ids', 'enforce_plan_update_columns', 'notify_plan_ready_for_review', 'notify_feedback_received'
     )`);
   assert.deepEqual(leftovers, []);
   const { rows: triggers } = await db.query(`select tgname from pg_trigger where tgname like 'enforce_%'`);

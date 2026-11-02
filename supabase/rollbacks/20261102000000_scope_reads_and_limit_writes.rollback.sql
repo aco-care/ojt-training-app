@@ -58,10 +58,8 @@ DROP FUNCTION IF EXISTS public.enforce_plan_update_columns();
 DROP FUNCTION IF EXISTS public.notify_plan_ready_for_review(text, uuid);
 DROP FUNCTION IF EXISTS public.notify_feedback_received(uuid);
 DROP FUNCTION IF EXISTS public.readable_profile_ids();
-DROP FUNCTION IF EXISTS public.scoped_facility_profile_ids();
 DROP FUNCTION IF EXISTS public.readable_worker_ids();
-DROP FUNCTION IF EXISTS public.scoped_facility_ids();
-DROP FUNCTION IF EXISTS public.is_corporate_viewer();
+DROP FUNCTION IF EXISTS public.is_staff_viewer();
 
 REVOKE UPDATE (is_read) ON public.notifications FROM authenticated;
 GRANT UPDATE ON public.notifications TO authenticated;

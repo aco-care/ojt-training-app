@@ -2,9 +2,8 @@
 -- OJTアプリ 第2段階: 閲覧範囲の限定と書き込みの限定
 --
 -- 閲覧範囲
---   admin / executive    : 全拠点
---   supervisor / trainer : 自分の拠点だけ（profile_facilities の所属すべて）
---   worker               : 自分の記録と、そこに名前が載る職員だけ
+--   admin / executive / supervisor / trainer : 全拠点（訪問事業で拠点をまたぐため）
+--   worker                                   : 自分の記録と、そこに名前が載る職員だけ
 -- 書き込みの限定: training_plans / ojt_plans / feedbacks / notifications
 -- feedback-images は非公開にする
 --
@@ -48,33 +47,15 @@ WHERE id = 'feedback-images';
 -- （get_user_role は profiles を修飾せずに参照している）。
 -- ------------------------------------------------------------
 
--- 全拠点を見る役割か
-CREATE FUNCTION public.is_corporate_viewer()
+-- 全拠点を読む役割か。worker 以外の役割がこれにあたる
+CREATE FUNCTION public.is_staff_viewer()
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role IN ('admin', 'executive')
+    WHERE id = auth.uid() AND role IN ('admin', 'executive', 'supervisor', 'trainer')
   )
-$$;
-
--- 拠点で範囲が決まる役割の所属拠点。profile_facilities が無い人だけ profiles.facility_id を使う
-CREATE FUNCTION public.scoped_facility_ids()
-RETURNS SETOF uuid
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
-AS $$
-  SELECT pf.facility_id
-  FROM public.profile_facilities pf
-  JOIN public.profiles p ON p.id = pf.profile_id
-  WHERE p.id = auth.uid() AND p.role IN ('supervisor', 'trainer')
-  UNION
-  SELECT p.facility_id
-  FROM public.profiles p
-  WHERE p.id = auth.uid()
-    AND p.role IN ('supervisor', 'trainer')
-    AND p.facility_id IS NOT NULL
-    AND NOT EXISTS (SELECT 1 FROM public.profile_facilities pf WHERE pf.profile_id = p.id)
 $$;
 
 -- 読める外国人。記録と予定はすべてこの範囲で絞る
@@ -82,56 +63,21 @@ CREATE FUNCTION public.readable_worker_ids()
 RETURNS SETOF uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
-  SELECT fw.id FROM public.foreign_workers fw WHERE fw.profile_id = auth.uid()
-  UNION
-  SELECT fw.id FROM public.foreign_workers fw WHERE public.is_corporate_viewer()
-  UNION
   SELECT fw.id FROM public.foreign_workers fw
-  WHERE fw.facility_id IN (SELECT public.scoped_facility_ids())
-  UNION
-  SELECT wf.worker_id FROM public.worker_facilities wf
-  WHERE wf.facility_id IN (SELECT public.scoped_facility_ids())
+  WHERE fw.profile_id = auth.uid() OR public.is_staff_viewer()
 $$;
 
--- 自分の拠点に所属する職員・外国人のアカウント
-CREATE FUNCTION public.scoped_facility_profile_ids()
-RETURNS SETOF uuid
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
-AS $$
-  SELECT pf.profile_id FROM public.profile_facilities pf
-  WHERE pf.facility_id IN (SELECT public.scoped_facility_ids())
-  UNION
-  SELECT p.id FROM public.profiles p
-  WHERE p.facility_id IN (SELECT public.scoped_facility_ids())
-    AND NOT EXISTS (SELECT 1 FROM public.profile_facilities pf WHERE pf.profile_id = p.id)
-$$;
-
--- 読める profiles。外国人が他の外国人のアカウントを読むことはない
+-- 読める profiles。職員は全員、外国人は自分と、自分の記録に名前が載る職員だけ。
+-- 外国人が他の外国人のアカウントを読むことはない
 CREATE FUNCTION public.readable_profile_ids()
 RETURNS SETOF uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
-  WITH viewer AS (
-    SELECT role FROM public.profiles WHERE id = auth.uid()
-  ),
-  workers AS (
+  WITH workers AS (
     SELECT public.readable_worker_ids() AS id
   ),
-  candidates AS (
-    SELECT auth.uid() AS id
-    UNION
-    SELECT p.id FROM public.profiles p WHERE public.is_corporate_viewer()
-    UNION
-    SELECT public.scoped_facility_profile_ids()
-    UNION
-    -- 指導者の選択肢と通知のため、拠点の職員からは admin も見える
-    SELECT p.id FROM public.profiles p, viewer v
-    WHERE p.role = 'admin' AND v.role IN ('supervisor', 'trainer')
-    UNION
-    SELECT fw.profile_id FROM public.foreign_workers fw WHERE fw.id IN (SELECT id FROM workers)
-    -- 読める記録に名前が載る人
-    UNION
-    SELECT unnest(ARRAY[tp.trainer_id, tp.created_by, tp.supervisor_id])
+  named AS (
+    SELECT unnest(ARRAY[tp.trainer_id, tp.created_by, tp.supervisor_id]) AS id
     FROM public.training_plans tp WHERE tp.worker_id IN (SELECT id FROM workers)
     UNION
     SELECT unnest(ARRAY[op.companion_id, op.created_by, op.supervisor_id])
@@ -148,21 +94,16 @@ AS $$
   )
   SELECT p.id
   FROM public.profiles p
-  JOIN candidates c ON c.id = p.id
   WHERE p.id = auth.uid()
-    OR p.role <> 'worker'
-    OR (SELECT role FROM viewer) <> 'worker'
+    OR public.is_staff_viewer()
+    OR (p.role <> 'worker' AND p.id IN (SELECT id FROM named))
 $$;
 
-REVOKE ALL ON FUNCTION public.is_corporate_viewer() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.scoped_facility_ids() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.is_staff_viewer() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.readable_worker_ids() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.scoped_facility_profile_ids() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.readable_profile_ids() FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.is_corporate_viewer() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.scoped_facility_ids() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_staff_viewer() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.readable_worker_ids() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.scoped_facility_profile_ids() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.readable_profile_ids() TO authenticated, service_role;
 
 -- ------------------------------------------------------------
@@ -232,23 +173,17 @@ CREATE POLICY "profiles_select_scoped" ON profiles FOR SELECT TO authenticated
 CREATE POLICY "workers_select_scoped" ON foreign_workers FOR SELECT TO authenticated
   USING (
     profile_id = auth.uid()
-    OR public.is_corporate_viewer()
-    OR facility_id IN (SELECT public.scoped_facility_ids())
-    OR id IN (SELECT public.readable_worker_ids())
+    OR public.is_staff_viewer()
   );
 
 CREATE POLICY "worker_facilities_select_scoped" ON worker_facilities FOR SELECT TO authenticated
   USING (worker_id IN (SELECT public.readable_worker_ids()));
 
--- スタッフ編集は読めた所属で保存し直すので、読める職員の所属はすべて返す。
 -- 外国人が読めるのは自分の所属だけ
 CREATE POLICY "profile_facilities_select_scoped" ON profile_facilities FOR SELECT TO authenticated
   USING (
     profile_id = auth.uid()
-    OR (
-      public.get_user_role() <> 'worker'
-      AND profile_id IN (SELECT public.readable_profile_ids())
-    )
+    OR public.is_staff_viewer()
   );
 
 CREATE POLICY "sessions_select_scoped" ON training_sessions FOR SELECT TO authenticated
@@ -266,18 +201,8 @@ CREATE POLICY "ojt_records_select_scoped" ON ojt_records FOR SELECT TO authentic
 CREATE POLICY "evaluations_select_scoped" ON final_evaluations FOR SELECT TO authenticated
   USING (worker_id IN (SELECT public.readable_worker_ids()));
 
--- 指導責任者は自分の拠点の職員の操作だけ。admin は全件
 CREATE POLICY "audit_logs_select_scoped" ON audit_logs FOR SELECT TO authenticated
-  USING (
-    public.get_user_role() = 'admin'
-    OR (
-      public.get_user_role() = 'supervisor'
-      AND (
-        actor_id = auth.uid()
-        OR actor_id IN (SELECT public.scoped_facility_profile_ids())
-      )
-    )
-  );
+  USING (public.get_user_role() IN ('admin', 'supervisor'));
 
 -- ------------------------------------------------------------
 -- 研修予定 / OJT予定
@@ -518,30 +443,10 @@ BEGIN
     RETURN 0;
   END IF;
 
-  WITH worker_facility AS (
-    SELECT fw.facility_id FROM public.foreign_workers fw WHERE fw.id = plan_worker_id
-    UNION
-    SELECT wf.facility_id FROM public.worker_facilities wf WHERE wf.worker_id = plan_worker_id
-  ),
-  recipients AS (
+  WITH recipients AS (
     SELECT p.id FROM public.profiles p
     WHERE p.is_archived IS NOT TRUE
-      AND (
-        p.role = 'admin'
-        OR (
-          p.role = 'supervisor'
-          AND (
-            EXISTS (
-              SELECT 1 FROM public.profile_facilities pf
-              WHERE pf.profile_id = p.id AND pf.facility_id IN (SELECT facility_id FROM worker_facility)
-            )
-            OR (
-              p.facility_id IN (SELECT facility_id FROM worker_facility)
-              AND NOT EXISTS (SELECT 1 FROM public.profile_facilities pf WHERE pf.profile_id = p.id)
-            )
-          )
-        )
-      )
+      AND p.role IN ('admin', 'supervisor')
   )
   INSERT INTO public.notifications (user_id, title, message, is_read, link)
   SELECT r.id, notice_title, notice_message, false, notice_link
