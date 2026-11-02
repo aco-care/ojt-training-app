@@ -17,6 +17,7 @@ import { OJT_STEPS, ROLE_LABELS } from '@/lib/types';
 import { resolveTrainingItemsForFacility } from '@/lib/training-items';
 import {
   isItemEligibleForApproval,
+  readAllRows,
   selectPlansAwaitingConfirmation,
   sortReviewEntries,
   type ReviewEntry,
@@ -133,8 +134,8 @@ export default async function DashboardPage() {
     { data: profileRow },
     { data: workersData, error: workersError },
     { data: itemsData, error: itemsError },
-    { data: sessionsData, error: sessionsError },
-    { data: approvalsData, error: approvalsError },
+    { data: sessionsData },
+    { data: approvalsData },
     { data: ojtUsersData },
     { data: ojtRecordsData },
   ] = await Promise.all([
@@ -323,11 +324,32 @@ export default async function DashboardPage() {
         worker: PlanWorker;
       };
       const planColumns = 'id, planned_date, worker:foreign_workers(name, facility:facilities(name))';
-      const [{ data: trainingPlansData, error: trainingPlansError }, { data: ojtPlansData, error: ojtPlansError }] = await Promise.all([
+      type ReviewSession = Pick<TrainingSession, 'worker_id' | 'item_id' | 'date' | 'start_time' | 'end_time' | 'break_minutes' | 'completed_subtopics'>;
+      type ReviewApproval = Pick<TrainingApproval, 'worker_id' | 'item_id' | 'status'>;
+      const [
+        { data: trainingPlansData, error: trainingPlansError },
+        { data: ojtPlansData, error: ojtPlansError },
+        { rows: reviewSessions, failed: reviewSessionsFailed },
+        { rows: reviewApprovals, failed: reviewApprovalsFailed },
+      ] = await Promise.all([
         selectPlansAwaitingConfirmation(supabase, 'training_plans', `${planColumns}, item:training_items(title)`),
         selectPlansAwaitingConfirmation(supabase, 'ojt_plans', `${planColumns}, step, ojt_user:ojt_users(user_initial)`),
+        readAllRows<ReviewSession>((from, to) =>
+          supabase
+            .from('training_sessions')
+            .select('worker_id, item_id, date, start_time, end_time, completed_subtopics, break_minutes')
+            .order('id')
+            .range(from, to),
+        ),
+        readAllRows<ReviewApproval>((from, to) =>
+          supabase
+            .from('training_approvals')
+            .select('worker_id, item_id, status')
+            .order('id')
+            .range(from, to),
+        ),
       ]);
-      reviewLoadFailed = [workersError, itemsError, sessionsError, approvalsError, trainingPlansError, ojtPlansError].some(Boolean);
+      reviewLoadFailed = [workersError, itemsError, trainingPlansError, ojtPlansError, reviewSessionsFailed, reviewApprovalsFailed].some(Boolean);
 
       const trainingEntries = ((trainingPlansData ?? []) as unknown as (ReviewPlan & { item: { title: string } | null })[])
         .map((p): ReviewEntry => ({
@@ -355,8 +377,8 @@ export default async function DashboardPage() {
         });
       const itemEntries = workers.flatMap((w) =>
         resolveTrainingItemsForFacility(items, w.facility_id).flatMap((item): ReviewEntry[] => {
-          const itemSessions = sessions.filter((s) => s.worker_id === w.id && s.item_id === item.id);
-          const approval = approvals.find((a) => a.worker_id === w.id && a.item_id === item.id);
+          const itemSessions = reviewSessions.filter((s) => s.worker_id === w.id && s.item_id === item.id);
+          const approval = reviewApprovals.find((a) => a.worker_id === w.id && a.item_id === item.id);
           if (!isItemEligibleForApproval(itemSessions, item.subtopics ?? [], item.target_hours, approval?.status)) {
             return [];
           }

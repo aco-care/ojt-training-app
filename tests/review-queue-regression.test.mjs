@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calculateSessionHours,
   isItemEligibleForApproval,
+  readAllRows,
   selectPlansAwaitingConfirmation,
   sortReviewEntries,
 } from '../src/lib/review-queue.ts';
@@ -75,4 +76,26 @@ test('breaks do not count toward the hours', () => {
 test('the longest-waiting record comes first', () => {
   const entries = [{ key: 'new', date: '2026-10-02' }, { key: 'old', date: '2026-09-01' }];
   assert.deepEqual(sortReviewEntries(entries).map((e) => e.key), ['old', 'new']);
+});
+
+const ALL_ROWS = Array.from({ length: 2500 }, (_, i) => i);
+const cappedPage = (cap) => async (from, to) => ({
+  data: ALL_ROWS.slice(from, Math.min(to + 1, from + cap)),
+  error: null,
+});
+
+test('every row is read when the server caps each response', async () => {
+  for (const cap of [1000, 300]) {
+    assert.deepEqual(await readAllRows(cappedPage(cap)), { rows: ALL_ROWS, failed: false });
+  }
+});
+
+test('an error on any page marks the read as failed', async () => {
+  const fetchPage = async (from, to) =>
+    from === 0 ? cappedPage(1000)(from, to) : { data: null, error: new Error('boom') };
+  assert.equal((await readAllRows(fetchPage)).failed, true);
+});
+
+test('an empty table reads as no rows without failing', async () => {
+  assert.deepEqual(await readAllRows(async () => ({ data: [], error: null })), { rows: [], failed: false });
 });

@@ -13,6 +13,8 @@ export interface ReviewEntry {
   date: string | null;
 }
 
+const PAGE_SIZE = 1000;
+
 type SessionForHours = Pick<TrainingSession, 'start_time' | 'end_time' | 'break_minutes'>;
 
 export function calculateSessionHours(session: SessionForHours): number {
@@ -52,6 +54,19 @@ export function selectPlansAwaitingConfirmation(
     .is('supervisor_completed_at', null)
     .neq('status', 'cancelled')
     .not('is_archived', 'is', true);
+}
+
+// Stops at an empty page, not a short one, because the server may cap pages below PAGE_SIZE
+export async function readAllRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<{ rows: T[]; failed: boolean }> {
+  const rows: T[] = [];
+  while (true) {
+    const { data, error } = await fetchPage(rows.length, rows.length + PAGE_SIZE - 1);
+    if (error) return { rows, failed: true };
+    if (!data?.length) return { rows, failed: false };
+    rows.push(...data);
+  }
 }
 
 // Oldest first, so what has waited longest is at the top
