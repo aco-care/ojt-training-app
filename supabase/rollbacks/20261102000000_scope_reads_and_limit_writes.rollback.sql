@@ -1,5 +1,6 @@
 -- 第2段階を元に戻す。アプリが動かない場合だけ使う。穴も元に戻る。
--- 記録しておいた本番の定義へ、ポリシーとバケットの設定を戻す。
+-- 記録しておいた本番の定義へ、public のポリシーを戻す。
+-- feedback-images は別のファイルで戻す（20261102000200、20261102000100 の順）。
 -- 通知の関数も消すので、戻したあとは通知を送るアプリ側の変更も戻すこと。
 -- 20260531235959 で足した列と 20261101000000 の第1段階はそのまま残す。
 BEGIN;
@@ -23,16 +24,6 @@ BEGIN
         'final_evaluations', 'audit_logs',
         'training_plans', 'ojt_plans', 'feedbacks', 'notifications'
       )
-    UNION ALL
-    SELECT schemaname, tablename, policyname FROM pg_policies
-    WHERE schemaname = 'storage'
-      AND tablename = 'objects'
-      AND policyname IN ('feedback_images_insert_own_folder', 'feedback_images_select_own_or_admin')
-    UNION ALL
-    SELECT s.schemaname, s.tablename, s.policyname FROM private.rls_snapshot_20261102 s
-    JOIN pg_policies c
-      ON c.schemaname = s.schemaname AND c.tablename = s.tablename AND c.policyname = s.policyname
-    WHERE s.schemaname = 'storage'
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', p.policyname, p.schemaname, p.tablename);
   END LOOP;
@@ -64,13 +55,6 @@ DROP FUNCTION IF EXISTS public.is_staff_viewer();
 REVOKE UPDATE (is_read) ON public.notifications FROM authenticated;
 GRANT UPDATE ON public.notifications TO authenticated;
 
--- 記録が無いときは第2段階で作ったバケットなので消さず、公開設定も変えない
-UPDATE storage.buckets b
-SET public = s.public
-FROM private.feedback_bucket_snapshot_20261102 s
-WHERE b.id = s.id;
-
-DROP TABLE private.feedback_bucket_snapshot_20261102;
 DROP TABLE private.rls_snapshot_20261102;
 
 COMMIT;

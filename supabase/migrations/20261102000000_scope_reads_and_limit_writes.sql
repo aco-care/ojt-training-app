@@ -5,7 +5,9 @@
 --   admin / executive / supervisor / trainer : 全拠点（訪問事業で拠点をまたぐため）
 --   worker                                   : 自分の記録と、そこに名前が載る職員だけ
 -- 書き込みの限定: training_plans / ojt_plans / feedbacks / notifications
--- feedback-images は非公開にする
+--
+-- storage スキーマには触らない。feedback-images は、権限が別なので
+-- 20261102000100（バケット）と 20261102000200（ポリシー）へ分けている。
 --
 -- 本番には名前の分からないポリシーがあるため、名前を指定せず pg_policies から
 -- 探して置き換える。元の定義は private.rls_snapshot_20261102 に残し、
@@ -21,24 +23,13 @@ REVOKE ALL ON SCHEMA private FROM PUBLIC;
 CREATE TABLE private.rls_snapshot_20261102 AS
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
 FROM pg_policies
-WHERE (
-    schemaname = 'public'
-    AND tablename IN (
-      'profiles', 'foreign_workers', 'worker_facilities', 'profile_facilities',
-      'training_sessions', 'training_approvals', 'ojt_users', 'ojt_records',
-      'final_evaluations', 'audit_logs',
-      'training_plans', 'ojt_plans', 'feedbacks', 'notifications'
-    )
-  ) OR (
-    schemaname = 'storage'
-    AND tablename = 'objects'
-    AND concat(qual, with_check) LIKE '%feedback-images%'
+WHERE schemaname = 'public'
+  AND tablename IN (
+    'profiles', 'foreign_workers', 'worker_facilities', 'profile_facilities',
+    'training_sessions', 'training_approvals', 'ojt_users', 'ojt_records',
+    'final_evaluations', 'audit_logs',
+    'training_plans', 'ojt_plans', 'feedbacks', 'notifications'
   );
-
-CREATE TABLE private.feedback_bucket_snapshot_20261102 AS
-SELECT id, public
-FROM storage.buckets
-WHERE id = 'feedback-images';
 
 -- ------------------------------------------------------------
 -- 閲覧範囲の判定
@@ -153,12 +144,6 @@ BEGIN
     END IF;
 
     EXECUTE format('DROP POLICY %I ON public.%I', p.policyname, p.tablename);
-  END LOOP;
-
-  FOR p IN
-    SELECT policyname FROM private.rls_snapshot_20261102 WHERE schemaname = 'storage'
-  LOOP
-    EXECUTE format('DROP POLICY %I ON storage.objects', p.policyname);
   END LOOP;
 END $$;
 
@@ -538,27 +523,3 @@ REVOKE ALL ON FUNCTION public.notify_plan_ready_for_review(text, uuid) FROM PUBL
 REVOKE ALL ON FUNCTION public.notify_feedback_received(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.notify_plan_ready_for_review(text, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.notify_feedback_received(uuid) TO authenticated, service_role;
-
--- ------------------------------------------------------------
--- feedback-images を非公開にする。
--- 置き場所は送信者のフォルダだけ、読めるのは送信者本人と admin だけ。
--- 画面は保存したURLではなく、都度発行する署名付きURLで表示する。
--- ------------------------------------------------------------
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('feedback-images', 'feedback-images', false)
-ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
-
-CREATE POLICY "feedback_images_insert_own_folder" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'feedback-images'
-    AND (storage.foldername(name))[1] = auth.uid()::text
-  );
-
-CREATE POLICY "feedback_images_select_own_or_admin" ON storage.objects FOR SELECT TO authenticated
-  USING (
-    bucket_id = 'feedback-images'
-    AND (
-      (storage.foldername(name))[1] = auth.uid()::text
-      OR public.get_user_role() = 'admin'
-    )
-  );

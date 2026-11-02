@@ -11,10 +11,10 @@ const root = new URL('../', import.meta.url);
 const migrationsDir = new URL('supabase/migrations/', root);
 const LOCKDOWN = '20261101000000_emergency_lockdown.sql';
 const SCOPE = '20261102000000_scope_reads_and_limit_writes.sql';
-const ROLLBACK = new URL(
-  'supabase/rollbacks/20261102000000_scope_reads_and_limit_writes.rollback.sql',
-  root,
-);
+const BUCKET = '20261102000100_feedback_images_bucket_private.sql';
+const STORAGE_POLICIES = '20261102000200_feedback_images_storage_policies.sql';
+const rollbackOf = (migration) =>
+  readFile(new URL(`supabase/rollbacks/${migration.replace('.sql', '.rollback.sql')}`, root), 'utf8');
 
 const PREFLIGHT = new URL('supabase/preflight/20261102000000_preflight.sql', root);
 
@@ -95,6 +95,9 @@ const PRODUCTION_DRIFT = `
   create policy fb_w on feedbacks for all using (true);
   create policy stray_read on foreign_workers for select using (true);
   create policy stray_supervisor_all on ojt_records for all using (get_user_role() = 'supervisor');
+`;
+
+const STORAGE_DRIFT = `
   insert into storage.buckets (id, name, public) values ('feedback-images', 'feedback-images', true);
   create policy "public read images" on storage.objects for select using (bucket_id = 'feedback-images');
   create policy "anyone upload images" on storage.objects for insert with check (bucket_id = 'feedback-images');
@@ -233,6 +236,7 @@ before(async () => {
     await db.exec(await sql(file));
   }
   await db.exec(PRODUCTION_DRIFT);
+  await db.exec(STORAGE_DRIFT);
   await db.exec(SEED);
 
   openBefore = {
@@ -243,12 +247,14 @@ before(async () => {
   await db.exec(await sql(LOCKDOWN));
   policiesBefore = await policySnapshot();
   await db.exec(await sql(SCOPE));
+  await db.exec(await sql(BUCKET));
+  await db.exec(await sql(STORAGE_POLICIES));
 });
 
 test('every migration in the repo is covered by the replay', async () => {
   const files = (await readdir(migrationsDir)).filter((f) => f.endsWith('.sql')).sort();
-  assert.equal(files.at(-1), SCOPE);
-  assert.ok(files.includes(LOCKDOWN));
+  assert.equal(files.at(-1), STORAGE_POLICIES);
+  for (const file of [LOCKDOWN, SCOPE, BUCKET]) assert.ok(files.includes(file), file);
 });
 
 test('the production-like starting point really was open', () => {
@@ -731,7 +737,9 @@ test('the preflight queries run and change nothing', async () => {
 });
 
 test('rollback restores the previous policies, then the migration applies again', async () => {
-  await db.exec(await readFile(ROLLBACK, 'utf8'));
+  await db.exec(await rollbackOf(STORAGE_POLICIES));
+  await db.exec(await rollbackOf(BUCKET));
+  await db.exec(await rollbackOf(SCOPE));
 
   assert.deepEqual(await policySnapshot(), policiesBefore);
   const { rows: bucket } = await db.query(`select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'feedback-images'`);
@@ -749,5 +757,83 @@ test('rollback restores the previous policies, then the migration applies again'
   assert.equal((await as(WORKER_A, `update notifications set title = 'x'`)).affected, 2, 'all notification columns are writable again');
 
   await db.exec(await sql(SCOPE));
+  await db.exec(await sql(BUCKET));
+  await db.exec(await sql(STORAGE_POLICIES));
   assert.deepEqual(await ids(WORKER_A, 'foreign_workers'), [FW_A]);
+});
+
+// Production's SQL role does not own storage.objects, so the main fix has to
+// apply without it and the storage steps have to fail without leaving anything.
+test('applying as a role that does not own storage', async (t) => {
+  const main = db;
+  const restricted = new PGlite();
+  db = restricted;
+  t.after(() => {
+    db = main;
+  });
+
+  const storagePolicies = async () =>
+    (await db.query(`select policyname from pg_policies where schemaname = 'storage' order by policyname`)).rows
+      .map((r) => r.policyname);
+  const isPublic = async () =>
+    (await db.query(`select public from storage.buckets where id = 'feedback-images'`)).rows[0].public;
+
+  await db.exec(PLATFORM);
+  await db.exec(`
+    create role sql_editor;
+    grant create on schema public to sql_editor;
+    grant create on database postgres to sql_editor;
+    grant usage on schema public, auth, storage to sql_editor;
+    grant execute on function auth.uid() to sql_editor;
+    grant execute on function storage.foldername(text) to sql_editor;
+    grant references, select on auth.users to sql_editor;
+    grant select on storage.buckets, storage.objects to sql_editor;
+    grant authenticated, anon, service_role to sql_editor;
+    alter default privileges for role sql_editor in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges for role sql_editor in schema public grant execute on functions to anon, authenticated, service_role;
+    set role sql_editor;
+  `);
+  const files = (await readdir(migrationsDir)).filter((f) => f.endsWith('.sql')).sort();
+  for (const file of files.filter((f) => f < LOCKDOWN)) {
+    await db.exec(await sql(file));
+  }
+  await db.exec(PRODUCTION_DRIFT);
+  await db.exec('reset role');
+  await db.exec(STORAGE_DRIFT);
+  await db.exec(SEED);
+  const storageBefore = await storagePolicies();
+
+  await db.exec('set role sql_editor');
+  await db.exec(await sql(LOCKDOWN));
+  await db.exec(await sql(SCOPE));
+  await db.exec('reset role');
+
+  assert.deepEqual(await ids(WORKER_A, 'foreign_workers'), [FW_A], 'the main fix is in place');
+  assert.deepEqual(await storagePolicies(), storageBefore, 'the main fix leaves storage alone');
+  assert.equal(await isPublic(), true);
+
+  await db.exec('set role sql_editor');
+  await assert.rejects(db.exec(await sql(BUCKET)), /permission denied/, 'no update right on the bucket yet');
+  await db.exec('reset role');
+  assert.equal(await isPublic(), true);
+
+  await db.exec('grant update on storage.buckets to sql_editor; set role sql_editor;');
+  await db.exec(await sql(BUCKET));
+  await db.exec('reset role');
+  assert.equal(await isPublic(), false, 'an update right is all the bucket step needs');
+
+  await db.exec('set role sql_editor');
+  await assert.rejects(db.exec(await sql(STORAGE_POLICIES)), /must be owner/);
+  await db.exec('reset role');
+  assert.deepEqual(await storagePolicies(), storageBefore, 'a refused policy step leaves nothing behind');
+  const { rows } = await db.query(`select to_regclass('private.storage_rls_snapshot_20261102') as snapshot`);
+  assert.equal(rows[0].snapshot, null);
+  assert.deepEqual(await ids(WORKER_A, 'foreign_workers'), [FW_A], 'the main fix survives');
+
+  await db.exec('set role sql_editor');
+  await db.exec(await rollbackOf(SCOPE));
+  await db.exec('reset role');
+  assert.deepEqual(await storagePolicies(), storageBefore, 'the main rollback leaves storage alone');
+  assert.equal(await isPublic(), false);
+  assert.equal((await ids(WORKER_A, 'foreign_workers')).length, 4);
 });

@@ -50,6 +50,7 @@
 - [x] Next.jsを16.4.3へ更新
 - [x] 本番にあってリポジトリに無かった定義を`20260531235959_sync_production_schema.sql`と`20261101000000_emergency_lockdown.sql`へ記録
 - [ ] 本番適用(`supabase/preflight/`で事前確認、戻す場合は`supabase/rollbacks/`)
+- [ ] `feedback-images`の適用を本番以外のプロジェクトで試す。本番のSQLの役割は`storage.objects`の所有者の権限を持たないため、バケット(`20261102000100`)とポリシー(`20261102000200`)を本体とは別に流す。手順はPR本文を参照
 - [ ] 本番のAuth設定のうち、メールテンプレートなどコードから読めないものをリポジトリへ記録(本番を読める作業で行う)
 
 テストは`npm test`(`tests/rls-role-scope.test.mjs`が実際のマイグレーションを使い捨てDBで流して役割ごとに確認する)。

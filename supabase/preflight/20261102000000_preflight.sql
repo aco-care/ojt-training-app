@@ -103,8 +103,8 @@ SELECT count(*) AS feedbacks_with_image FROM public.feedbacks WHERE image_url IS
 -- 8. マイグレーション履歴。無ければ supabase db push ではなく手順どおりに流す
 SELECT to_regclass('supabase_migrations.schema_migrations') AS migration_history_table;
 
--- 9. 適用する接続が storage.objects のポリシーを変更できるか。true が想定
---     false なら feedback-images の手順が失敗する（全体を1トランザクションで流すので途中までは残らない）
+-- 9. 適用する接続が storage.objects の所有者の権限を持つか
+--     false なら 20261102000200 が失敗することがある。本体は別のトランザクションなので影響しない
 SELECT pg_has_role(current_user, c.relowner, 'MEMBER') AS can_manage_storage_policies
 FROM pg_class c
 WHERE c.oid = 'storage.objects'::regclass;
