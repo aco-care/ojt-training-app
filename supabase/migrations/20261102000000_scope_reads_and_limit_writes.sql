@@ -280,7 +280,8 @@ CREATE POLICY "ojt_plans_delete_scoped" ON ojt_plans FOR DELETE TO authenticated
 
 -- 行は上のポリシーで絞り、列は役割ごとにここで絞る。
 -- 指導者は担当の予定の指導者欄、外国人は自分の予定の本人欄だけ変更できる。
-CREATE FUNCTION public.enforce_plan_update_columns()
+-- 指導者が作る予定は未入力の状態に限り、完了・中止した予定は入力を変更できない。
+CREATE FUNCTION public.enforce_plan_write_limits()
 RETURNS trigger
 LANGUAGE plpgsql SET search_path = ''
 AS $$
@@ -295,6 +296,25 @@ BEGIN
 
   SELECT role INTO viewer_role FROM public.profiles WHERE id = auth.uid();
   IF viewer_role IN ('admin', 'supervisor') THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.status IS DISTINCT FROM 'scheduled' OR EXISTS (
+      SELECT 1 FROM jsonb_each(to_jsonb(NEW)) AS c
+      WHERE c.key = ANY (ARRAY[
+        'trainer_completed_at', 'trainer_checked_subtopics', 'trainer_checked_items',
+        'trainer_eval', 'trainer_comment', 'trainer_custom_content', 'result',
+        'worker_completed_at', 'worker_checked_subtopics', 'worker_checked_items',
+        'worker_eval', 'worker_comment', 'worker_custom_content',
+        'supervisor_comment_to_trainer', 'supervisor_comment_to_worker',
+        'supervisor_completed_at', 'supervisor_id',
+        'cancel_reason', 'cancel_history', 'is_archived'
+      ])
+      AND c.value NOT IN ('null', '[]', 'false')
+    ) THEN
+      RAISE EXCEPTION '入力済みの予定を作成する権限がありません' USING ERRCODE = '42501';
+    END IF;
     RETURN NEW;
   END IF;
 
@@ -322,19 +342,26 @@ BEGIN
     RAISE EXCEPTION '予定の状態を変更する権限がありません' USING ERRCODE = '42501';
   END IF;
 
+  -- 完了・中止した予定でも、アーカイブだけはできる
+  IF OLD.status NOT IN ('scheduled', 'in_progress')
+    AND (to_jsonb(NEW) - ARRAY['is_archived', 'updated_at']) IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['is_archived', 'updated_at'])
+  THEN
+    RAISE EXCEPTION '完了・中止した予定は変更できません' USING ERRCODE = '42501';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.enforce_plan_update_columns() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.enforce_plan_write_limits() FROM PUBLIC, anon, authenticated;
 
-CREATE TRIGGER enforce_training_plan_update_columns
-  BEFORE UPDATE ON training_plans
-  FOR EACH ROW EXECUTE FUNCTION public.enforce_plan_update_columns();
+CREATE TRIGGER enforce_training_plan_writes
+  BEFORE INSERT OR UPDATE ON training_plans
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_plan_write_limits();
 
-CREATE TRIGGER enforce_ojt_plan_update_columns
-  BEFORE UPDATE ON ojt_plans
-  FOR EACH ROW EXECUTE FUNCTION public.enforce_plan_update_columns();
+CREATE TRIGGER enforce_ojt_plan_writes
+  BEFORE INSERT OR UPDATE ON ojt_plans
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_plan_write_limits();
 
 -- ------------------------------------------------------------
 -- フィードバック: 送信は本人名義で未対応のまま。対応は admin だけ

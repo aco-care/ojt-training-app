@@ -85,7 +85,7 @@ FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
   AND p.proname IN (
-    'is_staff_viewer', 'readable_worker_ids', 'readable_profile_ids', 'enforce_plan_update_columns',
+    'is_staff_viewer', 'readable_worker_ids', 'readable_profile_ids', 'enforce_plan_write_limits',
     'notify_plan_ready_for_review', 'notify_feedback_received'
   );
 
@@ -108,3 +108,11 @@ SELECT to_regclass('supabase_migrations.schema_migrations') AS migration_history
 SELECT pg_has_role(current_user, c.relowner, 'MEMBER') AS can_manage_storage_policies
 FROM pg_class c
 WHERE c.oid = 'storage.objects'::regclass;
+
+-- 10. 想定外の状態の予定。0行が想定
+--     行があると、指導者と外国人はその予定に入力できなくなるので、先に状態を直す
+SELECT 'training_plans' AS table_name, status, count(*) FROM public.training_plans
+WHERE status NOT IN ('scheduled', 'in_progress', 'completed', 'cancelled') GROUP BY status
+UNION ALL
+SELECT 'ojt_plans', status, count(*) FROM public.ojt_plans
+WHERE status NOT IN ('scheduled', 'in_progress', 'completed', 'cancelled') GROUP BY status;

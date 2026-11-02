@@ -194,8 +194,8 @@ let db;
 const sql = (name) => readFile(new URL(name, migrationsDir), 'utf8');
 
 // Runs one statement as a role inside a transaction that is always rolled back.
-async function run(role, uid, statement) {
-  await db.exec(`begin; select set_config('app.uid', '${uid ?? ''}', true); set local role ${role};`);
+async function run(role, uid, statement, setup = '') {
+  await db.exec(`begin; ${setup}; select set_config('app.uid', '${uid ?? ''}', true); set local role ${role};`);
   try {
     const result = await db.query(statement);
     return { ok: true, rows: result.rows, affected: result.affectedRows ?? 0 };
@@ -472,6 +472,91 @@ test('plans: nobody writes outside their part', async () => {
   assert.equal((await as(SUPERVISOR_A, `delete from training_plans where id = '${PLAN_A2}'`)).affected, 1);
 });
 
+test('plans: a trainer can only create an empty plan', async () => {
+  const training = (columns, values, uid = TRAINER_A) =>
+    `insert into training_plans (worker_id, item_id, planned_date, trainer_id, created_by${columns})
+     values ('${FW_A}', '${ITEM}', '2026-12-01', '${TRAINER_A}', '${uid}'${values})`;
+  const ojt = (columns, values, uid = TRAINER_A) =>
+    `insert into ojt_plans (worker_id, planned_date, step, companion_id, created_by${columns})
+     values ('${FW_A}', '2026-12-01', 'main', '${TRAINER_A}', '${uid}'${values})`;
+
+  const forged = [
+    [training, ', status', `, 'completed'`],
+    [training, ', status', `, 'in_progress'`],
+    [training, ', status', `, 'cancelled'`],
+    [training, ', supervisor_completed_at', ', now()'],
+    [training, ', supervisor_id', `, '${SUPERVISOR_A}'`],
+    [training, ', supervisor_comment_to_worker', `, 'x'`],
+    [training, ', supervisor_comment_to_trainer', `, 'x'`],
+    [training, ', worker_eval', `, '{"overall":"good"}'`],
+    [training, ', worker_comment', `, 'x'`],
+    [training, ', worker_completed_at', ', now()'],
+    [training, ', trainer_eval', `, '{"overall":"good"}'`],
+    [training, ', trainer_completed_at', ', now()'],
+    [training, ', trainer_checked_subtopics', `, '{${ITEM}}'`],
+    [training, ', cancel_reason', `, 'x'`],
+    [training, ', cancel_history', `, '[{"action":"x"}]'`],
+    [training, ', is_archived', ', true'],
+    [ojt, ', status', `, 'completed'`],
+    [ojt, ', result', `, 'pass'`],
+    [ojt, ', supervisor_completed_at', ', now()'],
+    [ojt, ', worker_checked_items', `, '{x}'`],
+    [ojt, ', trainer_checked_items', `, '{x}'`],
+  ];
+  for (const [insert, columns, values] of forged) {
+    const result = await as(TRAINER_A, insert(columns, values));
+    assert.match(result.error ?? '', /入力済みの予定を作成する権限がありません/, `${insert === ojt ? 'ojt' : 'training'}${columns}${values}`);
+  }
+
+  const planned = await as(
+    TRAINER_A,
+    training(', planned_subtopics, start_time, end_time, method, break_minutes', `, '{${ITEM}}', '09:00', '10:00', 'x', 10`),
+  );
+  assert.ok(planned.ok, planned.error);
+  const plannedOjt = await as(TRAINER_A, ojt(', start_time, end_time, break_minutes', `, '09:00', '10:00', 10`));
+  assert.ok(plannedOjt.ok, plannedOjt.error);
+
+  for (const uid of [ADMIN, SUPERVISOR_A]) {
+    const filled = await as(uid, training(', status, supervisor_comment_to_worker', `, 'completed', 'x'`, uid));
+    assert.ok(filled.ok, filled.error);
+  }
+  const server = await run('service_role', null, training(', status, worker_comment', `, 'completed', 'x'`));
+  assert.ok(server.ok, server.error);
+});
+
+test('plans: completed and cancelled plans stay closed, except for archiving', async () => {
+  for (const status of ['completed', 'cancelled']) {
+    const closed = `update training_plans set status = '${status}' where id = '${PLAN_A}';
+      update ojt_plans set status = '${status}' where id = '${OJT_PLAN_A}'`;
+    const denied = async (uid, statement, label) => {
+      const result = await run('authenticated', uid, statement, closed);
+      assert.match(result.error ?? '', /完了・中止した予定は変更できません|予定の状態を変更する権限がありません/, `${status}: ${label}`);
+    };
+    const allowed = async (role, uid, statement, label) => {
+      const result = await run(role, uid, statement, closed);
+      assert.equal(result.affected, 1, `${status}: ${label}: ${result.error}`);
+    };
+
+    await denied(WORKER_A, `update training_plans set status = 'in_progress', worker_comment = 'x' where id = '${PLAN_A}'`, 'worker reopens');
+    await denied(WORKER_A, `update training_plans set worker_comment = 'x' where id = '${PLAN_A}'`, 'worker rewrites');
+    await denied(WORKER_A, `update ojt_plans set worker_comment = 'x' where id = '${OJT_PLAN_A}'`, 'worker rewrites OJT');
+    await denied(TRAINER_A, `update training_plans set status = 'in_progress', trainer_comment = 'x' where id = '${PLAN_A}'`, 'trainer reopens');
+    await denied(TRAINER_A, `update training_plans set trainer_comment = 'x' where id = '${PLAN_A}'`, 'trainer rewrites');
+    await denied(TRAINER_A, `update ojt_plans set result = 'pass' where id = '${OJT_PLAN_A}'`, 'trainer rewrites OJT result');
+    await denied(TRAINER_A, `update training_plans set is_archived = true, trainer_comment = 'x' where id = '${PLAN_A}'`, 'archive with an edit');
+
+    await allowed('authenticated', TRAINER_A, `update training_plans set is_archived = true where id = '${PLAN_A}'`, 'trainer archives');
+    await allowed('authenticated', TRAINER_A, `update ojt_plans set is_archived = true where id = '${OJT_PLAN_A}'`, 'trainer archives OJT');
+    await allowed('authenticated', SUPERVISOR_A, `update training_plans set status = 'in_progress', supervisor_comment_to_worker = 'x' where id = '${PLAN_A}'`, 'supervisor reopens');
+    await allowed('authenticated', ADMIN, `update training_plans set status = 'in_progress', notes = 'x' where id = '${PLAN_A}'`, 'admin reopens');
+    await allowed('service_role', null, `update training_plans set status = 'in_progress' where id = '${PLAN_A}'`, 'server reopens');
+  }
+
+  const inProgress = `update training_plans set status = 'in_progress' where id = '${PLAN_A}'`;
+  const open = await run('authenticated', WORKER_A, `update training_plans set worker_comment = 'x' where id = '${PLAN_A}'`, inProgress);
+  assert.equal(open.affected, 1, open.error);
+});
+
 test('notifications: own only, and only the read flag', async () => {
   assert.deepEqual(await ids(WORKER_A, 'notifications'), [NOTIFICATION_WORKER_A]);
   assert.deepEqual(await ids(ADMIN, 'notifications'), []);
@@ -635,6 +720,7 @@ test('the preflight queries run and change nothing', async () => {
   const before = await policySnapshot();
   const results = await db.exec(await readFile(PREFLIGHT, 'utf8'));
   assert.deepEqual(results[0].rows, [], 'no code-referenced column is missing');
+  assert.deepEqual(results.at(-1).rows, [], 'no plan has an unexpected status');
   assert.deepEqual(await policySnapshot(), before);
 });
 
@@ -647,7 +733,7 @@ test('rollback restores the previous policies, then the migration applies again'
   const { rows: leftovers } = await db.query(`
     select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and proname in (
-      'is_staff_viewer', 'readable_worker_ids', 'readable_profile_ids', 'enforce_plan_update_columns', 'notify_plan_ready_for_review', 'notify_feedback_received'
+      'is_staff_viewer', 'readable_worker_ids', 'readable_profile_ids', 'enforce_plan_write_limits', 'notify_plan_ready_for_review', 'notify_feedback_received'
     )`);
   assert.deepEqual(leftovers, []);
   const { rows: triggers } = await db.query(`select tgname from pg_trigger where tgname like 'enforce_%'`);

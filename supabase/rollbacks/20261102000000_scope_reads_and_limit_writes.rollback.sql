@@ -52,9 +52,9 @@ BEGIN
   END LOOP;
 END $$;
 
-DROP TRIGGER IF EXISTS enforce_training_plan_update_columns ON public.training_plans;
-DROP TRIGGER IF EXISTS enforce_ojt_plan_update_columns ON public.ojt_plans;
-DROP FUNCTION IF EXISTS public.enforce_plan_update_columns();
+DROP TRIGGER IF EXISTS enforce_training_plan_writes ON public.training_plans;
+DROP TRIGGER IF EXISTS enforce_ojt_plan_writes ON public.ojt_plans;
+DROP FUNCTION IF EXISTS public.enforce_plan_write_limits();
 DROP FUNCTION IF EXISTS public.notify_plan_ready_for_review(text, uuid);
 DROP FUNCTION IF EXISTS public.notify_feedback_received(uuid);
 DROP FUNCTION IF EXISTS public.readable_profile_ids();

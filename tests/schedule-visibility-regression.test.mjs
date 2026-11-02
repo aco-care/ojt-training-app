@@ -102,3 +102,14 @@ test('stored feedback images resolve to a storage path, old public URLs included
     'user-1/a b.png',
   );
 });
+
+test('a malformed stored image URL keeps its raw path instead of throwing', () => {
+  assert.equal(
+    feedbackImagePath('https://x.supabase.co/storage/v1/object/public/feedback-images/%E0%A4'),
+    '%E0%A4',
+  );
+  assert.equal(
+    feedbackImagePath('https://x.supabase.co/storage/v1/object/public/feedback-images/user-1/100%.png?t=1'),
+    'user-1/100%.png',
+  );
+});

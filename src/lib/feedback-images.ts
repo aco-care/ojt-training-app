@@ -7,5 +7,10 @@ const PUBLIC_URL_MARKER = '/storage/v1/object/public/feedback-images/';
 export function feedbackImagePath(imageUrl: string): string {
   const markerIndex = imageUrl.indexOf(PUBLIC_URL_MARKER);
   if (markerIndex === -1) return imageUrl;
-  return decodeURIComponent(imageUrl.slice(markerIndex + PUBLIC_URL_MARKER.length).split('?')[0]);
+  const path = imageUrl.slice(markerIndex + PUBLIC_URL_MARKER.length).split('?')[0];
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
 }
