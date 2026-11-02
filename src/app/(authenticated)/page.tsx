@@ -15,11 +15,18 @@ import type {
 } from '@/lib/types';
 import { OJT_STEPS, ROLE_LABELS } from '@/lib/types';
 import { resolveTrainingItemsForFacility } from '@/lib/training-items';
+import {
+  isItemEligibleForApproval,
+  isPlanAwaitingConfirmation,
+  sortReviewEntries,
+  type ReviewEntry,
+} from '@/lib/review-queue';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import ProgressBar from '@/components/progress-bar';
 import dynamic from 'next/dynamic';
 import FeedbackButton from '@/components/feedback-button';
+import ReviewQueue from './review-queue';
 
 const AdminDashboardContent = dynamic(() => import('./dashboard-content'), {
   loading: () => <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />,
@@ -305,6 +312,80 @@ export default async function DashboardPage() {
       facility_id: i.facility_id,
     }));
 
+    // Records waiting for this supervisor; RLS keeps this to what they may read
+    let reviewEntries: ReviewEntry[] = [];
+    let reviewLoadFailed = false;
+    if (role === 'supervisor') {
+      type PlanWorker = { name: string; facility: { name: string } | null } | null;
+      type ReviewPlan = Parameters<typeof isPlanAwaitingConfirmation>[0] & {
+        id: string;
+        planned_date: string;
+        worker: PlanWorker;
+      };
+      const planState = 'id, planned_date, status, is_archived, trainer_completed_at, worker_completed_at, supervisor_completed_at, worker:foreign_workers(name, facility:facilities(name))';
+      const [{ data: trainingPlansData, error: trainingPlansError }, { data: ojtPlansData, error: ojtPlansError }] = await Promise.all([
+        supabase
+          .from('training_plans')
+          .select(`${planState}, item:training_items(title)`)
+          .not('trainer_completed_at', 'is', null)
+          .not('worker_completed_at', 'is', null)
+          .is('supervisor_completed_at', null),
+        supabase
+          .from('ojt_plans')
+          .select(`${planState}, step, ojt_user:ojt_users(user_initial)`)
+          .not('trainer_completed_at', 'is', null)
+          .not('worker_completed_at', 'is', null)
+          .is('supervisor_completed_at', null),
+      ]);
+      reviewLoadFailed = !!trainingPlansError || !!ojtPlansError;
+
+      const trainingEntries = ((trainingPlansData ?? []) as unknown as (ReviewPlan & { item: { title: string } | null })[])
+        .filter(isPlanAwaitingConfirmation)
+        .map((p): ReviewEntry => ({
+          key: `training-plan-${p.id}`,
+          kind: 'training_plan',
+          href: `/training-plans/${p.id}`,
+          workerName: p.worker?.name ?? '不明',
+          facilityName: p.worker?.facility?.name ?? null,
+          title: p.item?.title ?? '',
+          date: p.planned_date,
+        }));
+      const ojtEntries = ((ojtPlansData ?? []) as unknown as (ReviewPlan & { step: string; ojt_user: { user_initial: string } | null })[])
+        .filter(isPlanAwaitingConfirmation)
+        .map((p): ReviewEntry => {
+          const step = OJT_STEPS.find((s) => s.step === p.step);
+          const stepLabel = step ? `${step.number} ${step.label}` : p.step;
+          return {
+            key: `ojt-plan-${p.id}`,
+            kind: 'ojt_plan',
+            href: `/ojt-plans/${p.id}`,
+            workerName: p.worker?.name ?? '不明',
+            facilityName: p.worker?.facility?.name ?? null,
+            title: p.ojt_user ? `${stepLabel}（利用者 ${p.ojt_user.user_initial}）` : stepLabel,
+            date: p.planned_date,
+          };
+        });
+      const itemEntries = workers.flatMap((w) =>
+        resolveTrainingItemsForFacility(items, w.facility_id).flatMap((item): ReviewEntry[] => {
+          const itemSessions = sessions.filter((s) => s.worker_id === w.id && s.item_id === item.id);
+          const approval = approvals.find((a) => a.worker_id === w.id && a.item_id === item.id);
+          if (!isItemEligibleForApproval(itemSessions, item.subtopics ?? [], item.target_hours, approval?.status)) {
+            return [];
+          }
+          return [{
+            key: `training-item-${w.id}-${item.id}`,
+            kind: 'training_item',
+            href: `/training/${w.id}/${item.id}`,
+            workerName: w.name,
+            facilityName: w.facility?.name ?? null,
+            title: item.title,
+            date: itemSessions.map((s) => s.date).sort().at(-1) ?? null,
+          }];
+        }),
+      );
+      reviewEntries = sortReviewEntries([...trainingEntries, ...ojtEntries, ...itemEntries]);
+    }
+
     const ojtUserDataForClient = ojtUsersEnriched.map((u) => {
       const userRecords = ojtRecords.filter((r) => r.ojt_user_id === u.id);
       const hasIndependent = userRecords.some((r) => r.step === 'independent');
@@ -330,6 +411,9 @@ export default async function DashboardPage() {
         />
 
         <div className="px-4 py-6 sm:px-6">
+          {role === 'supervisor' && (
+            <ReviewQueue entries={reviewEntries} loadFailed={reviewLoadFailed} />
+          )}
           <AdminDashboardContent
             userName={userName}
             role={role}
